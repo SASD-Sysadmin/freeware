@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Rotate file snapshots: FILE.0 is newest, FILE.9 is oldest.
+set -euo pipefail
+
+usage() {
+    printf 'Usage: %s FILE\n' "${0##*/}" >&2
+}
+
+if (( $# != 1 )); then
+    usage
+    exit 2
+fi
+
+source_file=$1
+# Keep paths beginning with '-' safe for commands such as mktemp.
+if [[ $source_file == -* ]]; then
+    source_file=./$source_file
+fi
+
+if [[ ! -f $source_file || -L $source_file ]]; then
+    printf 'rotate: expected an existing regular file (not a symlink): %s\n' "$source_file" >&2
+    exit 1
+fi
+
+# A directory or symlink in a numbered slot could cause a misleading or
+# unsafe rotation. Reject the entire operation before changing any backups.
+for (( number=0; number<=9; number++ )); do
+    slot="${source_file}.${number}"
+    if [[ -L $slot || ( -e $slot && ! -f $slot ) ]]; then
+        printf 'rotate: backup slot is not a regular file: %s\n' "$slot" >&2
+        exit 1
+    fi
+done
+
+# The mkdir lock prevents two cooperating rotate processes from clobbering
+# each other's snapshots. A stale lock after SIGKILL requires manual review.
+lock_dir="${source_file}.rotate.lock"
+if ! ( umask 077; mkdir -- "$lock_dir" ) 2>/dev/null; then
+    printf 'rotate: cannot acquire lock (another rotation may be running): %s\n' "$lock_dir" >&2
+    exit 1
+fi
+
+temporary_file=
+cleanup() {
+    if [[ -n $temporary_file ]]; then
+        rm -f -- "$temporary_file"
+    fi
+    rmdir -- "$lock_dir"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+
+# Snapshot first so a failed copy does not disturb the previous history.
+temporary_file=$(mktemp "${source_file}.rotate.XXXXXXXX")
+cp -p -- "$source_file" "$temporary_file"
+
+# Drop legacy numbered files >= .10, but never similarly named files like
+# FILE.01 or FILE.10.notes. Only ordinary files and symlinks are removed.
+for old_backup in "${source_file}".[1-9][0-9]*; do
+    suffix=${old_backup##*.}
+    if [[ $suffix =~ ^[1-9][0-9]+$ && ( -f $old_backup || -L $old_backup ) ]]; then
+        rm -f -- "$old_backup"
+    fi
+done
+
+rm -f -- "${source_file}.9"
+for (( number=8; number>=0; number-- )); do
+    previous="${source_file}.${number}"
+    if [[ -f $previous ]]; then
+        mv -f -- "$previous" "${source_file}.$((number + 1))"
+    fi
+done
+
+mv -f -- "$temporary_file" "${source_file}.0"
+temporary_file=

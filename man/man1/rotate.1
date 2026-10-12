@@ -1,0 +1,75 @@
+.TH ROTATE 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+rotate \- retain ten numbered backup copies of a regular file
+.SH SYNOPSIS
+.B rotate
+.I FILE
+.SH DESCRIPTION
+.B rotate
+creates a copy of
+.I FILE
+in the same directory, keeping at most ten generations.
+The source file is not changed.
+.B FILE.0
+is the newest snapshot;
+.B FILE.9
+is the oldest.
+Before creating the next snapshot, the previous
+.B FILE.9
+is removed and lower generations are shifted upward.
+Existing ordinary files or symbolic links with purely numeric suffixes
+.B .10
+and above are deleted.
+Names such as
+.B FILE.01
+and
+.B FILE.10.notes
+are preserved.
+.PP
+The source must be an existing regular file, not a symbolic link.
+Backup slots .0 through .9 must be ordinary files or absent.
+A temporary
+.B FILE.rotate.lock
+directory blocks concurrent cooperating invocations.
+.SH EXAMPLES
+.TP
+.B rotate ./hosts
+Create ./hosts.0 while retaining ./hosts.
+.TP
+.B sudo rotate /etc/hosts
+Rotate a protected system file (requires suitable directory permissions).
+.TP
+.B cp -p /etc/hosts.2 /etc/hosts
+Manually restore an inspected generation (overwrites the original).
+.SH EXIT STATUS
+.TP
+.B 0
+Snapshot completed.
+.TP
+.B 2
+Incorrect argument count.
+.TP
+.B other nonzero
+Invalid file type, unavailable lock, insufficient permissions, or failed operation.
+.SH NOTES
+The operation is not transactionally atomic. If interrupted during
+renames, inspect the backup generations before retrying. The script
+snapshots a file but cannot guarantee a consistent copy while another
+process writes it. The backup may contain confidential data. The copy
+preserves metadata where supported and permitted. A stale lock may need
+manual removal after ensuring no rotation is active.
+.SH FILES
+.TP
+.I FILE.0 ... FILE.9
+Numbered backup generations.
+.TP
+.I FILE.rotate.lock
+Temporary concurrency lock directory.
+.SH SEE ALSO
+.BR cp (1),
+.BR mv (1),
+.BR logrotate (8)
+.SH AUTHOR
+SASD-SysAdmin contributors.
+.SH LICENSE
+MIT License. See the LICENSE file in the project repository.
