@@ -1,6 +1,6 @@
 # `rotate` — File snapshot rotation
 
-[English](rotate.md) | [Deutsch](rotate.de.md) · [Project README](../README.md) · [Manual page](../man/man1/rotate.1)
+[English](rotate.md) | [Deutsch](rotate.de.md) · [Project README](../../README.md) · [Manual page](../../man/man1/rotate.1)
 
 ## Summary
 
@@ -68,4 +68,4 @@ Exit statuses: `0` for success, `2` for an incorrect argument count, and another
 
 The implementation targets Bash (including the Bash 3.2 series commonly found on older macOS versions) and customary GNU/BSD command-line tools. GitHub Actions is configured for Ubuntu and macOS; actual CI results should be checked in GitHub. This is a deliberately small utility, not a replacement for `logrotate`, filesystem snapshots, or off-site backups.
 
-Licensed under the repository's [MIT License](../LICENSE).
+Licensed under the repository's [MIT License](../../LICENSE).

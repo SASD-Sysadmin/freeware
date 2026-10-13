@@ -1,0 +1,35 @@
+.TH OWNER-AUDIT 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+owner-audit \- find numeric file owners not resolved by the host name service
+.SH SYNOPSIS
+.B owner-audit
+.RB [ --scope " user|group|both" ]
+.RB [ --one-file-system ]
+.RB [ --null ]
+.I DIRECTORY
+.br
+.B owner-audit
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Checks UID/GID lookups through the operating system's configured name
+service using getpwuid and getgrgid. Does not modify ownership. Failed
+lookups can result from temporary NIS/LDAP failures as well as deleted accounts.
+Symbolic links are examined with lstat but not followed.
+.SH OPTIONS
+.TP
+.B --scope user|group|both
+Select which identity classes to check (default: both).
+.TP
+.B --one-file-system
+Do not descend into other devices.
+.TP
+.B --null
+Emit NUL-terminated ISSUE, UID, GID, PATH fields without summary.
+.TP
+.BR --help , --version
+Display help or version.
+.SH EXIT STATUS
+0 scan completed; 1 incomplete scan; 2 usage error; 3 required library missing.
+.SH SEE ALSO
+.BR ls (1),
+.BR getent (1)

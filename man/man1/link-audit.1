@@ -1,0 +1,35 @@
+.TH LINK-AUDIT 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+link-audit \- report dangling and unresolved symbolic links
+.SH SYNOPSIS
+.B link-audit
+.RB [ --all ]
+.RB [ --one-file-system ]
+.RB [ --null ]
+.I DIRECTORY
+.br
+.B link-audit
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Lists symbolic links with dangling targets, resolution loops or an otherwise
+unresolved target. The scan does not modify links and never traverses symbolic
+link directories. A stat operation does resolve each symlink target for checking.
+.SH OPTIONS
+.TP
+.B --all
+Also show valid links.
+.TP
+.B --one-file-system
+Do not descend into other devices.
+.TP
+.B --null
+Emit NUL-terminated STATUS, PATH, TARGET fields without summary.
+.TP
+.BR --help , --version
+Display help or version.
+.SH EXIT STATUS
+0 complete scan; 1 incomplete scan or unresolved target status;
+2 usage error; 3 required library missing.
+.SH SEE ALSO
+.BR find (1),
+.BR readlink (1)

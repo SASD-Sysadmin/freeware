@@ -8,29 +8,32 @@ SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die 
 
 | Befehl | Pfad | Funktion | Dokumentation |
 | --- | --- | --- | --- |
-| `core-report` | [`bin/core-report`](bin/core-report) | Dateien mit Core-Dump-typischen Namen und ihre Größen erfassen. | [Deutsch](docu/core-report.de.md) · [English](docu/core-report.md) · [Manpage](man/man1/core-report.1) |
-| `path-audit` | [`bin/path-audit`](bin/path-audit) | Überlange Pfadkomponenten und Pfadnamen ermitteln. | [Deutsch](docu/path-audit.de.md) · [English](docu/path-audit.md) · [Manpage](man/man1/path-audit.1) |
-| `rotate` | [`bin/rotate`](bin/rotate) | Bis zu zehn Sicherungsgenerationen einer regulären Datei (`.0` neueste, `.9` älteste). | [Deutsch](docu/rotate.de.md) · [English](docu/rotate.md) · [Manpage](man/man1/rotate.1) |
-| `fs-report` | [`bin/fs-report`](bin/fs-report) | Verzeichnisse und logische Dateigrößen erfassen. | [Anleitung](docu/fs-report.de.md) · [English](docu/fs-report.md) · [Manpage](man/man1/fs-report.1) |
-| `largefiles` | [`bin/largefiles`](bin/largefiles) | Große reguläre Dateien ermitteln. | [Anleitung](docu/largefiles.de.md) · [English](docu/largefiles.md) · [Manpage](man/man1/largefiles.1) |
-| `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Dateisystembelegung per df prüfen. | [Anleitung](docu/fs-usage.de.md) · [English](docu/fs-usage.md) · [Manpage](man/man1/fs-usage.1) |
-| `quota-report` | [`bin/quota-report`](bin/quota-report) | Benutzer-, Gruppen- und Dateisystem-Quotas abfragen. | [Anleitung](docu/quota-report.de.md) · [English](docu/quota-report.md) · [Manpage](man/man1/quota-report.1) |
-| `quota-status` | [`bin/quota-status`](bin/quota-status) | Aktivierungszustand von Linux-Quotas über `quotaon -p` anzeigen. | [Anleitung](docu/quota-status.de.md) · [English](docu/quota-status.md) · [Manpage](man/man1/quota-status.1) |
-| `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Vollständige Linux-Quotas vorbereiten oder ausdrücklich bestätigt anwenden. | [Anleitung](docu/quota-set.de.md) · [English](docu/quota-set.md) · [Manpage](man/man8/quota-set.8) |
-| `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Syntaxprüfung der Hosts-Datei. | [Perl-Anleitung](docu/perl-tools.de.md) · [Manpage](man/man1/hosts-lint.1) |
-| `account-audit` | [`bin/account-audit`](bin/account-audit) | Strukturanalyse einer Unix-Kontodatei. | [Perl-Anleitung](docu/perl-tools.de.md) · [Manpage](man/man1/account-audit.1) |
-| `log-summary` | [`bin/log-summary`](bin/log-summary) | Logmeldungen nach Schweregrad zählen. | [Perl-Anleitung](docu/perl-tools.de.md) · [Manpage](man/man1/log-summary.1) |
-| `ssh-key-audit` | [`bin/ssh-key-audit`](bin/ssh-key-audit) | SSH-Schlüsseldatei schreibgeschützt prüfen. | [Automatisierungs-Anleitung](docu/automation-tools.de.md) · [Manpage](man/man1/ssh-key-audit.1) |
-| `file-integrity` | [`bin/file-integrity`](bin/file-integrity) | SHA-256-Basisliste erstellen und Änderungen prüfen. | [Automatisierungs-Anleitung](docu/automation-tools.de.md) · [Manpage](man/man1/file-integrity.1) |
-| `suid-audit` | [`bin/suid-audit`](bin/suid-audit) | SUID-/SGID-Dateien inventarisieren. | [Automatisierungs-Anleitung](docu/automation-tools.de.md) · [Manpage](man/man1/suid-audit.1) |
-| `tcp-check` | [`bin/tcp-check`](bin/tcp-check) | TCP-Port erreichbar? Optional Nagios-Rückgabewerte. | [Automatisierungs-Anleitung](docu/automation-tools.de.md) · [Manpage](man/man1/tcp-check.1) |
+| `core-report` | [`bin/core-report`](bin/core-report) | Dateien mit Core-Dump-typischen Namen und ihre Größen erfassen. | [Deutsch](docs/commands/core-report.de.md) · [English](docs/commands/core-report.md) · [Manpage](man/man1/core-report.1) |
+| `path-audit` | [`bin/path-audit`](bin/path-audit) | Überlange Pfadkomponenten und Pfadnamen ermitteln. | [Deutsch](docs/commands/path-audit.de.md) · [English](docs/commands/path-audit.md) · [Manpage](man/man1/path-audit.1) |
+| `link-audit` | [`bin/link-audit`](bin/link-audit) | Defekte, zyklische und nicht auflösbare symbolische Links anzeigen. | [Deutsch](docs/commands/link-audit.de.md) · [English](docs/commands/link-audit.md) · [Manpage](man/man1/link-audit.1) |
+| `owner-audit` | [`bin/owner-audit`](bin/owner-audit) | Nicht auflösbare UID-/GID-Zuordnungen inventarisieren. | [Deutsch](docs/commands/owner-audit.de.md) · [English](docs/commands/owner-audit.md) · [Manpage](man/man1/owner-audit.1) |
+| `permission-audit` | [`bin/permission-audit`](bin/permission-audit) | Weltweit beschreibbare Dateisystemeinträge ermitteln. | [Deutsch](docs/commands/permission-audit.de.md) · [English](docs/commands/permission-audit.md) · [Manpage](man/man1/permission-audit.1) |
+| `rotate` | [`bin/rotate`](bin/rotate) | Bis zu zehn Sicherungsgenerationen einer regulären Datei (`.0` neueste, `.9` älteste). | [Deutsch](docs/commands/rotate.de.md) · [English](docs/commands/rotate.md) · [Manpage](man/man1/rotate.1) |
+| `fs-report` | [`bin/fs-report`](bin/fs-report) | Verzeichnisse und logische Dateigrößen erfassen. | [Anleitung](docs/commands/fs-report.de.md) · [English](docs/commands/fs-report.md) · [Manpage](man/man1/fs-report.1) |
+| `largefiles` | [`bin/largefiles`](bin/largefiles) | Große reguläre Dateien ermitteln. | [Anleitung](docs/commands/largefiles.de.md) · [English](docs/commands/largefiles.md) · [Manpage](man/man1/largefiles.1) |
+| `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Dateisystembelegung per df prüfen. | [Anleitung](docs/commands/fs-usage.de.md) · [English](docs/commands/fs-usage.md) · [Manpage](man/man1/fs-usage.1) |
+| `quota-report` | [`bin/quota-report`](bin/quota-report) | Benutzer-, Gruppen- und Dateisystem-Quotas abfragen. | [Anleitung](docs/commands/quota-report.de.md) · [English](docs/commands/quota-report.md) · [Manpage](man/man1/quota-report.1) |
+| `quota-status` | [`bin/quota-status`](bin/quota-status) | Aktivierungszustand von Linux-Quotas über `quotaon -p` anzeigen. | [Anleitung](docs/commands/quota-status.de.md) · [English](docs/commands/quota-status.md) · [Manpage](man/man1/quota-status.1) |
+| `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Vollständige Linux-Quotas vorbereiten oder ausdrücklich bestätigt anwenden. | [Anleitung](docs/commands/quota-set.de.md) · [English](docs/commands/quota-set.md) · [Manpage](man/man8/quota-set.8) |
+| `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Syntaxprüfung der Hosts-Datei. | [Perl-Anleitung](docs/commands/perl-tools.de.md) · [Manpage](man/man1/hosts-lint.1) |
+| `account-audit` | [`bin/account-audit`](bin/account-audit) | Strukturanalyse einer Unix-Kontodatei. | [Perl-Anleitung](docs/commands/perl-tools.de.md) · [Manpage](man/man1/account-audit.1) |
+| `log-summary` | [`bin/log-summary`](bin/log-summary) | Logmeldungen nach Schweregrad zählen. | [Perl-Anleitung](docs/commands/perl-tools.de.md) · [Manpage](man/man1/log-summary.1) |
+| `ssh-key-audit` | [`bin/ssh-key-audit`](bin/ssh-key-audit) | SSH-Schlüsseldatei schreibgeschützt prüfen. | [Automatisierungs-Anleitung](docs/commands/automation-tools.de.md) · [Manpage](man/man1/ssh-key-audit.1) |
+| `file-integrity` | [`bin/file-integrity`](bin/file-integrity) | SHA-256-Basisliste erstellen und Änderungen prüfen. | [Automatisierungs-Anleitung](docs/commands/automation-tools.de.md) · [Manpage](man/man1/file-integrity.1) |
+| `suid-audit` | [`bin/suid-audit`](bin/suid-audit) | SUID-/SGID-Dateien inventarisieren. | [Automatisierungs-Anleitung](docs/commands/automation-tools.de.md) · [Manpage](man/man1/suid-audit.1) |
+| `tcp-check` | [`bin/tcp-check`](bin/tcp-check) | TCP-Port erreichbar? Optional Nagios-Rückgabewerte. | [Automatisierungs-Anleitung](docs/commands/automation-tools.de.md) · [Manpage](man/man1/tcp-check.1) |
 
 Beispiel: `rotate /etc/hosts` erstellt `/etc/hosts.0`, während `/etc/hosts` unverändert bleibt. Beim nächsten Aufruf wird die bisherige `.0` zu `.1`, und eine neue `.0` entsteht. Sind zehn Generationen vorhanden, wird `.9` vor dem Nachrücken gelöscht. `rotate` ist ein **einfaches Hilfswerkzeug zur Dateisicherung**, aber kein Ersatz für Backups, Versionsverwaltung oder eine umfangreiche `logrotate`-Konfiguration.
 
 ## Vorgesehene Verzeichnisstruktur
 
 ```text
-/usr/freeware/
+freeware/
 ├── bin/               Benutzerprogramme (rotate und Perl-Werkzeuge)
 ├── sbin/              Administrationsprogramme (quota-set)
 ├── lib/               Architekturunabhängige Bibliotheken
@@ -38,16 +41,17 @@ Beispiel: `rotate /etc/hosts` erstellt `/etc/hosts.0`, während `/etc/hosts` unv
 ├── man/
 │   ├── man1/          Handbuchseiten für Benutzerprogramme
 │   └── man8/          Handbuchseiten für Administrationsprogramme
-├── docu/              Englische und deutsche Bedienungsanleitungen
 ├── tests/             Automatisierte Tests im Git-Checkout
 ├── .github/workflows/ CI-Konfiguration im Git-Checkout
-├── docs/              Entwicklungs- und Wartungsinformationen
+├── docs/              Dokumentation und Wartungsinformationen
+│   ├── commands/      Englische und deutsche Bedienungsanleitungen
+│   └── DEVELOPMENT.*   Entwicklungs- und Wartungsrichtlinien
 ├── Makefile           Test-, Installations- und Deinstallationsziele
 ├── README.md          Englische Projektbeschreibung
 └── README.de.md       Deutsche Projektbeschreibung
 ```
 
-Die Verzeichnisnamen orientieren sich bewusst an der geplanten Installation. `lib64` ist nur eine vorgesehene Konvention und nicht auf jeder Plattform erforderlich. Git speichert keine leeren Verzeichnisse; deshalb enthalten noch nicht genutzte Ordner eine `.gitkeep`-Datei.
+Installierte Programme und Anleitungen übernehmen die entsprechende Struktur unter dem gewählten `PREFIX`. Tests, CI-Dateien und Entwicklungsrichtlinien bleiben im Checkout. `lib64` ist nur eine vorgesehene Konvention und nicht auf jeder Plattform erforderlich. Git speichert keine leeren Verzeichnisse; deshalb enthalten noch nicht genutzte Ordner eine `.gitkeep`-Datei.
 
 ## Voraussetzungen
 
@@ -96,7 +100,7 @@ man -M /usr/freeware/man rotate
 
 Das kurzlebige Sperrverzeichnis `DATEI.rotate.lock` verhindert gleichzeitige Rotationen kooperierender Prozesse. Nach einem erzwungenen Programmabbruch muss eine eventuell zurückgebliebene Sperre geprüft und gegebenenfalls manuell entfernt werden. Die Gesamtabfolge der Umbenennungen ist **nicht transaktional atomar**; bei einem Abbruch sind Lücken möglich. `cp -p` übernimmt Berechtigungen und Zeitstempel, soweit System und Rechte dies zulassen. Sensible Sicherungen müssen über passende Verzeichnisrechte geschützt werden.
 
-Weiterführende Bedienungsanleitungen: [rotate](docu/rotate.de.md), [core-report](docu/core-report.de.md), [path-audit](docu/path-audit.de.md), [Dateisystem- und Kontowerkzeuge](docu/perl-tools.de.md) sowie [SSH-, Integritäts- und Monitoringwerkzeuge](docu/automation-tools.de.md). Entwicklungs- und Wartungsrichtlinien stehen in [docs/DEVELOPMENT.de.md](docs/DEVELOPMENT.de.md).
+Weiterführende Bedienungsanleitungen: [rotate](docs/commands/rotate.de.md), [core-report](docs/commands/core-report.de.md), [path-audit](docs/commands/path-audit.de.md), [Dateisystem- und Kontowerkzeuge](docs/commands/perl-tools.de.md) sowie [SSH-, Integritäts- und Monitoringwerkzeuge](docs/commands/automation-tools.de.md). Entwicklungs- und Wartungsrichtlinien stehen in [docs/DEVELOPMENT.de.md](docs/DEVELOPMENT.de.md).
 
 ## Entwicklung und Qualitätssicherung
 

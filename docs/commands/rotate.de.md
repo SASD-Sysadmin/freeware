@@ -1,6 +1,6 @@
 # `rotate` — Rotierende Dateisicherungen
 
-[English](rotate.md) | [Deutsch](rotate.de.md) · [Projektbeschreibung](../README.de.md) · [Manpage](../man/man1/rotate.1)
+[English](rotate.md) | [Deutsch](rotate.de.md) · [Projektbeschreibung](../../README.de.md) · [Manpage](../../man/man1/rotate.1)
 
 ## Zusammenfassung
 
@@ -68,4 +68,4 @@ Rückgabewerte: `0` bedeutet Erfolg, `2` eine falsche Anzahl von Parametern und 
 
 Das Script setzt Bash voraus und vermeidet bewusst Funktionen, die Bash 4 erfordern; dies ist für ältere macOS-Bash-Versionen hilfreich. Es verwendet übliche GNU-/BSD-Werkzeuge. Eine CI-Prüfung ist für Ubuntu und macOS konfiguriert; maßgeblich sind die tatsächlichen Ergebnisse auf GitHub. Für umfangreiche Logrotation, Dateisystem-Snapshots und externe Backups sind geeignete Speziallösungen vorzuziehen.
 
-Es gilt die [MIT-Lizenz](../LICENSE) des Repositories.
+Es gilt die [MIT-Lizenz](../../LICENSE) des Repositories.

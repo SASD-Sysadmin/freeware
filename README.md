@@ -8,29 +8,32 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 
 | Command | Location | Purpose | Documentation |
 | --- | --- | --- | --- |
-| `core-report` | [`bin/core-report`](bin/core-report) | Inventory files with core-dump-style names, including logical sizes. | [Guide](docu/core-report.md) · [Deutsch](docu/core-report.de.md) · [Manpage](man/man1/core-report.1) |
-| `path-audit` | [`bin/path-audit`](bin/path-audit) | Identify pathnames exceeding configured byte limits. | [Guide](docu/path-audit.md) · [Deutsch](docu/path-audit.de.md) · [Manpage](man/man1/path-audit.1) |
-| `rotate` | [`bin/rotate`](bin/rotate) | Preserve up to ten generations of a regular file (`.0` newest, `.9` oldest). | [Guide](docu/rotate.md) · [Deutsch](docu/rotate.de.md) · [Manpage](man/man1/rotate.1) |
-| `fs-report` | [`bin/fs-report`](bin/fs-report) | Directory inventory and logical file sizes. | [Guide](docu/fs-report.md) · [Deutsch](docu/fs-report.de.md) · [Manpage](man/man1/fs-report.1) |
-| `largefiles` | [`bin/largefiles`](bin/largefiles) | Find large regular files. | [Guide](docu/largefiles.md) · [Deutsch](docu/largefiles.de.md) · [Manpage](man/man1/largefiles.1) |
-| `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Check mounted filesystem capacity using df. | [Guide](docu/fs-usage.md) · [Deutsch](docu/fs-usage.de.md) · [Manpage](man/man1/fs-usage.1) |
-| `quota-report` | [`bin/quota-report`](bin/quota-report) | Query user, group, and filesystem quota reports. | [Guide](docu/quota-report.md) · [Deutsch](docu/quota-report.de.md) · [Manpage](man/man1/quota-report.1) |
-| `quota-status` | [`bin/quota-status`](bin/quota-status) | Show Linux quota activation status using native `quotaon -p`. | [Guide](docu/quota-status.md) · [Deutsch](docu/quota-status.de.md) · [Manpage](man/man1/quota-status.1) |
-| `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Preview or explicitly apply complete Linux user/group quotas. | [Guide](docu/quota-set.md) · [Deutsch](docu/quota-set.de.md) · [Manpage](man/man8/quota-set.8) |
-| `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Validate hosts-file syntax without changes. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/hosts-lint.1) |
-| `account-audit` | [`bin/account-audit`](bin/account-audit) | Structural audit of a Unix passwd file. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/account-audit.1) |
-| `log-summary` | [`bin/log-summary`](bin/log-summary) | Count log entries by severity markers. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/log-summary.1) |
-| `ssh-key-audit` | [`bin/ssh-key-audit`](bin/ssh-key-audit) | Read-only OpenSSH authorized_keys review. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/ssh-key-audit.1) |
-| `file-integrity` | [`bin/file-integrity`](bin/file-integrity) | Explicit SHA-256 baseline creation and comparison. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/file-integrity.1) |
-| `suid-audit` | [`bin/suid-audit`](bin/suid-audit) | SUID/SGID permissions inventory. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/suid-audit.1) |
-| `tcp-check` | [`bin/tcp-check`](bin/tcp-check) | Single TCP endpoint test; optional Nagios exit codes. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/tcp-check.1) |
+| `core-report` | [`bin/core-report`](bin/core-report) | Inventory files with core-dump-style names, including logical sizes. | [Guide](docs/commands/core-report.md) · [Deutsch](docs/commands/core-report.de.md) · [Manpage](man/man1/core-report.1) |
+| `path-audit` | [`bin/path-audit`](bin/path-audit) | Identify pathnames exceeding configured byte limits. | [Guide](docs/commands/path-audit.md) · [Deutsch](docs/commands/path-audit.de.md) · [Manpage](man/man1/path-audit.1) |
+| `link-audit` | [`bin/link-audit`](bin/link-audit) | Inventory dangling, looping and unresolved symbolic links. | [Guide](docs/commands/link-audit.md) · [Deutsch](docs/commands/link-audit.de.md) · [Manpage](man/man1/link-audit.1) |
+| `owner-audit` | [`bin/owner-audit`](bin/owner-audit) | Report file UIDs/GIDs not resolved by the host name service. | [Guide](docs/commands/owner-audit.md) · [Deutsch](docs/commands/owner-audit.de.md) · [Manpage](man/man1/owner-audit.1) |
+| `permission-audit` | [`bin/permission-audit`](bin/permission-audit) | Report world-writable filesystem entries. | [Guide](docs/commands/permission-audit.md) · [Deutsch](docs/commands/permission-audit.de.md) · [Manpage](man/man1/permission-audit.1) |
+| `rotate` | [`bin/rotate`](bin/rotate) | Preserve up to ten generations of a regular file (`.0` newest, `.9` oldest). | [Guide](docs/commands/rotate.md) · [Deutsch](docs/commands/rotate.de.md) · [Manpage](man/man1/rotate.1) |
+| `fs-report` | [`bin/fs-report`](bin/fs-report) | Directory inventory and logical file sizes. | [Guide](docs/commands/fs-report.md) · [Deutsch](docs/commands/fs-report.de.md) · [Manpage](man/man1/fs-report.1) |
+| `largefiles` | [`bin/largefiles`](bin/largefiles) | Find large regular files. | [Guide](docs/commands/largefiles.md) · [Deutsch](docs/commands/largefiles.de.md) · [Manpage](man/man1/largefiles.1) |
+| `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Check mounted filesystem capacity using df. | [Guide](docs/commands/fs-usage.md) · [Deutsch](docs/commands/fs-usage.de.md) · [Manpage](man/man1/fs-usage.1) |
+| `quota-report` | [`bin/quota-report`](bin/quota-report) | Query user, group, and filesystem quota reports. | [Guide](docs/commands/quota-report.md) · [Deutsch](docs/commands/quota-report.de.md) · [Manpage](man/man1/quota-report.1) |
+| `quota-status` | [`bin/quota-status`](bin/quota-status) | Show Linux quota activation status using native `quotaon -p`. | [Guide](docs/commands/quota-status.md) · [Deutsch](docs/commands/quota-status.de.md) · [Manpage](man/man1/quota-status.1) |
+| `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Preview or explicitly apply complete Linux user/group quotas. | [Guide](docs/commands/quota-set.md) · [Deutsch](docs/commands/quota-set.de.md) · [Manpage](man/man8/quota-set.8) |
+| `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Validate hosts-file syntax without changes. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/hosts-lint.1) |
+| `account-audit` | [`bin/account-audit`](bin/account-audit) | Structural audit of a Unix passwd file. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/account-audit.1) |
+| `log-summary` | [`bin/log-summary`](bin/log-summary) | Count log entries by severity markers. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/log-summary.1) |
+| `ssh-key-audit` | [`bin/ssh-key-audit`](bin/ssh-key-audit) | Read-only OpenSSH authorized_keys review. | [Automation guide](docs/commands/automation-tools.md) · [Manpage](man/man1/ssh-key-audit.1) |
+| `file-integrity` | [`bin/file-integrity`](bin/file-integrity) | Explicit SHA-256 baseline creation and comparison. | [Automation guide](docs/commands/automation-tools.md) · [Manpage](man/man1/file-integrity.1) |
+| `suid-audit` | [`bin/suid-audit`](bin/suid-audit) | SUID/SGID permissions inventory. | [Automation guide](docs/commands/automation-tools.md) · [Manpage](man/man1/suid-audit.1) |
+| `tcp-check` | [`bin/tcp-check`](bin/tcp-check) | Single TCP endpoint test; optional Nagios exit codes. | [Automation guide](docs/commands/automation-tools.md) · [Manpage](man/man1/tcp-check.1) |
 
 Example: `rotate /etc/hosts` creates `/etc/hosts.0` without modifying `/etc/hosts`; running it again moves the previous `.0` to `.1` and creates a new `.0`. The oldest `.9` is removed on subsequent rotations. `rotate` is a **file snapshot helper**, not a replacement for scheduled log rotation, version control, or a complete backup strategy.
 
-## Planned directory layout
+## Repository layout
 
 ```text
-/usr/freeware/
+freeware/
 ├── bin/               User commands (rotate and Perl tools)
 ├── sbin/              Administrative commands (quota-set)
 ├── lib/               Architecture-independent libraries
@@ -38,16 +41,17 @@ Example: `rotate /etc/hosts` creates `/etc/hosts.0` without modifying `/etc/host
 ├── man/
 │   ├── man1/          User-command manual pages
 │   └── man8/          Administrative-command manual pages
-├── docu/              English and German command guides
 ├── tests/             Automated command tests (repository checkout)
 ├── .github/workflows/ CI tests (repository checkout)
-├── docs/              Development and maintenance information
+├── docs/              Documentation and maintenance information
+│   ├── commands/      English and German command guides
+│   └── DEVELOPMENT.*   Development and maintenance guidelines
 ├── Makefile           Test/install/uninstall targets
 ├── README.md          English project documentation
 └── README.de.md       German project documentation
 ```
 
-The top-level directory names intentionally follow the planned `/usr/freeware` installation tree. `lib64` is a reserved convention, not a guarantee that every platform uses a separate `lib64` directory. Git cannot track truly empty directories, so reserved ones contain `.gitkeep` files.
+Installed commands and guides use matching paths below the chosen `PREFIX`. Tests, CI files and development guidelines remain in the checkout. `lib64` is a reserved convention, not a guarantee that every platform uses a separate `lib64` directory. Git cannot track truly empty directories, so reserved ones contain `.gitkeep` files.
 
 ## Requirements
 
@@ -67,7 +71,7 @@ make test
 sudo make install PREFIX=/usr/freeware
 ```
 
-This installs the executable commands, their manual pages, and user guides under `docu/`. Tests and Git metadata remain in the checkout. Set `DESTDIR` for packaging or staging, for example `make install DESTDIR=/tmp/package PREFIX=/usr/freeware`.
+This installs executable commands, manual pages, and user guides under `/usr/freeware/docs/commands/` (or the selected `PREFIX`). Tests and Git metadata remain in the checkout. Set `DESTDIR` for packaging or staging, for example `make install DESTDIR=/tmp/package PREFIX=/usr/freeware`.
 
 ### Alternative: use a checkout directly from /usr/freeware
 
@@ -96,7 +100,7 @@ man -M /usr/freeware/man rotate
 
 A short-lived directory named `FILE.rotate.lock` prevents concurrent cooperating rotations. If a process is forcibly terminated, inspect the directory before deleting a stale lock. Rotations are **not transactionally atomic**: interruption during renames can leave gaps; always check critical backups. Copied file permissions and timestamps are preserved by `cp -p`, subject to OS and user privileges. Backup files may contain secrets; secure their parent directory.
 
-For detailed command instructions, see [rotate](docu/rotate.md), [core-report](docu/core-report.md), [path-audit](docu/path-audit.md), [filesystem and account tools](docu/perl-tools.md), and [SSH, integrity and monitoring tools](docu/automation-tools.md). Development and maintenance guidelines are available in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+For detailed command instructions, see [rotate](docs/commands/rotate.md), [core-report](docs/commands/core-report.md), [path-audit](docs/commands/path-audit.md), [filesystem and account tools](docs/commands/perl-tools.md), and [SSH, integrity and monitoring tools](docs/commands/automation-tools.md). Development and maintenance guidelines are available in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Development and verification
 

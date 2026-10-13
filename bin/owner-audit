@@ -1,0 +1,82 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Inventory file ownership identities unresolved by the host name service.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::Walk; 1 }) {
+        print STDERR "owner-audit: required Perl module SASD::Freeware::Walk is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::Walk qw(walk_tree directory_root display_path);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $one_fs, $null) = (0, 0, 0, 0);
+my $scope = 'both';
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'one-file-system' => \$one_fs, 'null' => \$null,
+           'scope=s' => \$scope) or usage(2);
+usage(0) if $help;
+if ($version) { print "owner-audit $VERSION\n"; exit 0; }
+usage(2) unless @ARGV == 1 && $scope =~ /\A(?:user|group|both)\z/;
+my $root = shift @ARGV;
+$root =~ s{/+\z}{} unless $root =~ m{\A/+\z};
+my $problem = directory_root($root);
+if ($problem ne '') { warn "owner-audit: $problem\n"; exit 1; }
+my (%user_exists, %group_exists);
+my ($scanned, $findings) = (0, 0);
+print "ISSUE\tUID\tGID\tPATH\n" unless $null;
+my $errors = walk_tree($root, $one_fs,
+    sub {
+        my ($path, $st) = @_;
+        ++$scanned;
+        my ($uid, $gid) = ($st->[4], $st->[5]);
+        my ($bad_uid, $bad_gid) = (0, 0);
+        if ($scope ne 'group') {
+            if (!exists $user_exists{$uid}) {
+                $user_exists{$uid} = defined(scalar(getpwuid($uid))) ? 1 : 0;
+            }
+            $bad_uid = !$user_exists{$uid};
+        }
+        if ($scope ne 'user') {
+            if (!exists $group_exists{$gid}) {
+                $group_exists{$gid} = defined(scalar(getgrgid($gid))) ? 1 : 0;
+            }
+            $bad_gid = !$group_exists{$gid};
+        }
+        return unless $bad_uid || $bad_gid;
+        ++$findings;
+        my $issue = $bad_uid && $bad_gid ? 'user+group'
+                  : $bad_uid ? 'user' : 'group';
+        if ($null) {
+            print join("\0", $issue, $uid, $gid, $path), "\0";
+        } else {
+            print join("\t", $issue, $uid, $gid, display_path($path)), "\n";
+        }
+    },
+    sub {
+        my ($path, $message) = @_;
+        warn "owner-audit: ", display_path($path), ": $message\n";
+    });
+print "Entries scanned: $scanned\nUnresolved entries: $findings\nErrors: $errors\n"
+    unless $null;
+exit($errors ? 1 : 0);
+
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: owner-audit [--scope user|group|both] [--one-file-system] [--null] DIRECTORY
+       owner-audit --help | --version
+Report file UID/GID values that the host's name service cannot resolve.
+--scope            Select user, group, or both checks (default: both).
+--one-file-system  Do not descend into other filesystems.
+--null             Output NUL-separated ISSUE, UID, GID, PATH records.
+HELP
+    exit $code;
+}

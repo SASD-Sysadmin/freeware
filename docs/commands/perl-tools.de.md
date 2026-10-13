@@ -1,6 +1,6 @@
 # Perl-Werkzeuge für die Systemadministration
 
-[English](perl-tools.md) | [Deutsch](perl-tools.de.md) · [Projektbeschreibung](../README.de.md)
+[English](perl-tools.md) | [Deutsch](perl-tools.de.md) · [Projektbeschreibung](../../README.de.md)
 
 ## Zusammenfassung
 

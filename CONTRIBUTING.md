@@ -6,7 +6,7 @@ Thank you for improving this collection. Contributions are welcome through GitHu
 
 1. Open an issue for significant new utilities or behavior changes so the purpose and intended audience are clear.
 2. Keep utilities focused, understandable, and useful for Unix-like administration. Do not include credentials, confidential files, or host-specific configuration.
-3. Place general commands in `bin/`, administration commands in `sbin/`, libraries in `lib/` or `lib64/` as appropriate, documentation in `docu/`, and man pages in `man/manN/`.
+3. Place general commands in `bin/`, administration commands in `sbin/`, libraries in `lib/` or `lib64/` as appropriate, documentation in `docs/commands/`, and man pages in `man/manN/`.
 4. For a new command, provide a short English description in `README.md`, a German counterpart in `README.de.md`, at least one usage example, a man page, and tests for edge cases and failure modes.
 5. Preserve source file formatting (UTF-8, LF line endings). Prefer portable Bash when there is no strong reason to use platform-specific behavior. Document any dependencies and privilege requirements.
 6. Run `make test` before submitting. If available, run `shellcheck bin/rotate tests/test_rotate.sh` for shell changes.

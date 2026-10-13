@@ -29,7 +29,7 @@ Perl-Programme verwenden `strict`, `warnings`, lexikalische Variablen und geprü
 
 ## Repository-Struktur
 
-`bin/` enthält allgemeine Kommandos, `sbin/` administrative Programme; `lib/` und `lib64/` enthalten Hilfsbibliotheken. Englisch- und deutschsprachige Bedienungsanleitungen stehen in `docu/`, Manpages in `man/man1/` oder `man/man8/`, Tests in `tests/` und Wartungsinformationen in `docs/`.
+`bin/` enthält allgemeine Kommandos, `sbin/` administrative Programme; `lib/` und `lib64/` enthalten Hilfsbibliotheken. Englisch- und deutschsprachige Bedienungsanleitungen stehen in `docs/commands/`, Manpages in `man/man1/` oder `man/man8/`, Tests in `tests/` und Entwicklungs- und Wartungsrichtlinien in `docs/`.
 
 ## Tests und Veröffentlichung
 

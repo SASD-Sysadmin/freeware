@@ -1,0 +1,74 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Find world-writable filesystem entries; symbolic links are not followed.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Fcntl qw(S_ISDIR S_ISREG S_ISLNK);
+BEGIN {
+    unless (eval { require SASD::Freeware::Walk; 1 }) {
+        print STDERR "permission-audit: required Perl module SASD::Freeware::Walk is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::Walk qw(walk_tree directory_root display_path);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $one_fs, $null, $include_sticky) = (0, 0, 0, 0, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'one-file-system' => \$one_fs, 'null' => \$null,
+           'include-sticky' => \$include_sticky) or usage(2);
+usage(0) if $help;
+if ($version) { print "permission-audit $VERSION\n"; exit 0; }
+usage(2) unless @ARGV == 1;
+my $root = shift @ARGV;
+$root =~ s{/+\z}{} unless $root =~ m{\A/+\z};
+my $problem = directory_root($root);
+if ($problem ne '') { warn "permission-audit: $problem\n"; exit 1; }
+my ($scanned, $findings) = (0, 0);
+print "TYPE\tMODE\tPATH\n" unless $null;
+my $errors = walk_tree($root, $one_fs,
+    sub {
+        my ($path, $st) = @_;
+        my $mode = $st->[2];
+        return if S_ISLNK($mode);
+        ++$scanned;
+        return unless $mode & 0002;
+        my $is_dir = S_ISDIR($mode);
+        my $sticky_dir = $is_dir && ($mode & 01000);
+        return if $sticky_dir && !$include_sticky;
+        my $type = $sticky_dir ? 'sticky-directory'
+                 : $is_dir ? 'directory'
+                 : S_ISREG($mode) ? 'file' : 'special';
+        ++$findings;
+        my $permissions = sprintf('%04o', $mode & 07777);
+        if ($null) {
+            print join("\0", $type, $permissions, $path), "\0";
+        } else {
+            print join("\t", $type, $permissions, display_path($path)), "\n";
+        }
+    },
+    sub {
+        my ($path, $message) = @_;
+        warn "permission-audit: ", display_path($path), ": $message\n";
+    });
+print "Entries scanned: $scanned\nFindings: $findings\nErrors: $errors\n"
+    unless $null;
+exit($errors ? 1 : 0);
+
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: permission-audit [--include-sticky] [--one-file-system] [--null] DIRECTORY
+       permission-audit --help | --version
+Report entries writable by all users, without modifying permissions.
+--include-sticky   Also report world-writable sticky directories (e.g. /tmp).
+--one-file-system  Do not descend into other filesystems.
+--null             Output NUL-separated TYPE, MODE, PATH records.
+HELP
+    exit $code;
+}

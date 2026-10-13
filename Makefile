@@ -50,10 +50,10 @@ install:
 			install -d "$(DESTDIR)$(PREFIX)/$$dir"; \
 			install -m 644 "$$page" "$(DESTDIR)$(PREFIX)/$$page"; \
 		done; \
-		for doc in docu/*.md; do \
+		for doc in docs/commands/*.md; do \
 			[ -e "$$doc" ] || continue; \
 			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid guide: $$doc" >&2; exit 1; }; \
-			install -d "$(DESTDIR)$(PREFIX)/docu"; \
+			install -d "$(DESTDIR)$(PREFIX)/docs/commands"; \
 			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
 		done
 
@@ -69,7 +69,7 @@ uninstall:
 			[ -f "$$module" ] && [ ! -L "$$module" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$module"; \
 		done; \
-		for page in man/man[1-9]/*.[1-9] docu/*.md; do \
+		for page in man/man[1-9]/*.[1-9] docs/commands/*.md; do \
 			[ -f "$$page" ] && [ ! -L "$$page" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$page"; \
 		done
