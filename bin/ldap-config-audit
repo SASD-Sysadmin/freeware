@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Read-only static OpenLDAP ldap.conf review. Does not follow INCLUDE directives.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+my $VERSION='0.1.0';
+my ($help,$version,$file)=(0,0,undef);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'file=s'=>\$file) or usage(2);
+usage(0) if $help;
+if ($version) {print "ldap-config-audit $VERSION\n";exit 0;}
+usage(2) if @ARGV;
+$file //= $^O eq 'darwin' ? '/etc/openldap/ldap.conf' : '/etc/ldap/ldap.conf';
+length($file)>0 && $file !~ /\0/ or fail('invalid config pathname',2);
+open my $fh,'<',$file or fail("cannot open OpenLDAP client configuration: $!",3);
+my ($lines,$issues,$notices)=(0,0,0);
+my (%keys,%seen);
+sub issue {my($line,$code)=@_;print "ISSUE\t$line\t$code\n"; ++$issues;}
+sub notice {my($line,$code)=@_;print "NOTE\t$line\t$code\n"; ++$notices;}
+print "LEVEL\tLINE\tCODE\n";
+while (my $line=<$fh>) {
+    ++$lines;
+    if (length($line)>16384) {issue($lines,'line-too-long');next;}
+    $line =~ s/\r?\n\z//;
+    next if $line =~ /^\s*(?:#|\z)/;
+    if ($line =~ /[\x00-\x08\x0b-\x1f\x7f]/) {issue($lines,'invalid-control-byte');next;}
+    my ($key,$value)=$line =~ /^\s*([A-Za-z][A-Za-z0-9_]*)\s+(.+?)\s*\z/;
+    if (!defined $key) {issue($lines,'malformed-directive');next;}
+    $key=uc $key;
+    # Never echo raw values, which may contain URLs, usernames or credentials.
+    if ($key eq 'INCLUDE') {notice($lines,'include-not-followed-review-separately');next;}
+    if ($key eq 'TLS_REQCERT') {
+        issue($lines,'duplicate-tls-reqcert') if $seen{$key}++;
+        my $v=lc $value;$v =~ s/\s*#.*$//;$v =~ s/\s+$//;
+        if ($v =~ /\A(?:never|allow|try)\z/) {issue($lines,'weak-tls-certificate-policy');}
+        elsif ($v !~ /\A(?:demand|hard)\z/) {issue($lines,'unknown-tls-certificate-policy');}
+        $keys{$key}=1;
+    } elsif ($key eq 'URI') {
+        ++$seen{$key};
+        my @uri=split /\s+/,$value;
+        if (!@uri) {issue($lines,'empty-directory-uri');}
+        for my $uri (@uri) {
+            if ($uri =~ /^ldap:\/\//i) {notice($lines,'plaintext-ldap-uri-requires-explicit-starttls');}
+            elsif ($uri !~ /^ldaps:\/\//i) {notice($lines,'unrecognized-ldap-uri-scheme');}
+        }
+    } elsif ($key eq 'TLS_CACERT' || $key eq 'TLS_CACERTDIR') {
+        $keys{$key}=1;
+    }
+}
+close $fh or fail("cannot close configuration: $!",3);
+notice(0,'tls-reqcert-not-explicit-client-default-applies') if !$keys{TLS_REQCERT};
+notice(0,'tls-ca-path-not-in-this-file') if !$keys{TLS_CACERT} && !$keys{TLS_CACERTDIR};
+print "Issues: $issues\nNotes: $notices\n";
+exit($issues ? 1 : 0);
+sub fail {my($msg,$rc)=@_;warn "ldap-config-audit: $msg\n";exit $rc;}
+sub usage {my($rc)=@_;my$o=$rc?*STDERR:*STDOUT;print {$o} <<'USAGE';
+Usage: ldap-config-audit [--file PATH] [--help | --version]
+Read-only static inspection of an OpenLDAP ldap.conf client text file.
+Does not follow INCLUDE, discover per-user LDAPRC or validate server TLS.
+No configuration values are printed (may contain sensitive information).
+Exit 0 = no definite local issues, 1 = issues, 2 = usage, 3 = file unavailable.
+USAGE
+exit $rc;}

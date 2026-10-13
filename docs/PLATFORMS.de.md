@@ -12,6 +12,10 @@ SASD Freeware wird mit GitHub Actions unter Ubuntu Linux und macOS getestet. **B
 | `account-inventory` | Standardmäßig lokale Dateien; NSS wählbar | Standardmäßig NSS; lokale Textdateien wählbar | NSS-Aufzählung ist nicht zwingend vollständig; Einzelauflösung kann funktionieren, obwohl Konten in der Liste fehlen. |
 | `nss-lookup` | Direkte libc-/NSS-Abfrage | Direkte libc-/Directory-Services-Abfrage | Keine sichere Unterscheidung zwischen fehlendem Eintrag und Fehler des NSS-Backends; keine vollständige Aufzählung. |
 | `host-resolve` | System-Resolver | System-Resolver | `/etc/hosts`, mDNS, Caches und DNS können beteiligt sein; kein DNS-Protokolltester. Perl Socket mit `getaddrinfo`/`getnameinfo` erforderlich. |
+| `nsswitch-audit` | Standardmäßig Linux-NSS-Switch-Datei | Nur explizite Textdateien | Nur Textsyntax; macOS Directory Services sind anders konfiguriert. |
+| `dns-query` | Optionaler `dig`-Client | Optionaler `dig`-Client | DNS direkt, nicht System-Resolver; ohne DNSSEC-Prüfung, ggf. Klartext. |
+| `nis-probe` | Optionaler `ypwhich`-Client | Ggf. nicht vorhanden | Prüft nur lokale NIS-Bindung; keine Map-Abfragen. |
+| `ldap-config-audit` | OpenLDAP-Clientkonfiguration | OpenLDAP-Clientkonfiguration, soweit vorhanden | Nur statische TLS-Hinweise; Includes und Umgebungsvariablen nicht berücksichtigt. |
 | `ldap-probe` | Optional `ldapsearch` | Optional `ldapsearch` | Nur anonyme LDAPS-Root-DSE-Abfrage; keine vollständige LDAP- oder NSS-Integrationsprüfung. Zertifikatsprüfung bleibt verpflichtend. |
 | `home-audit` | Standardmäßig lokale Dateien; UID ab 1000 | Standardmäßig NSS; UID ab 500 | UID-Bereiche sind Richtlinien. macOS-ACLs und Datenschutzregeln werden nicht berücksichtigt. |
 | `group-audit` / `account-audit` | Unix-Textdateien | Nur Unix-Textdateien | `/etc/passwd` und `/etc/group` sind unter macOS keine vollständige Open-Directory-Datenbank. |

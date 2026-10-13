@@ -1,0 +1,25 @@
+.TH NIS-PROBE 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+nis-probe \- local nis/yp binding diagnosis
+.SH SYNOPSIS
+.B nis-probe
+[options] [--help | --version]
+.SH DESCRIPTION
+Read-only local NIS server binding check via ypwhich. No maps, user accounts or group membership are requested. Client availability differs by OS. NIS is a legacy insecure protocol.
+.SH OPTIONS
+.TP
+.B --domain DOMAIN
+Use explicit NIS domain instead of the local default.
+.TP
+.B --timeout 1..10
+Maximum native operation budget plus safety margin.
+.TP
+.B --help
+Display help and exit.
+.TP
+.B --version
+Display version and exit.
+.SH EXIT STATUS
+0 success/clean; 1 unsuccessful/finding; 2 invalid arguments; 3 missing prerequisites or unexpected errors.
+.SH SECURITY
+Only read-only checks. Query tools can send network traffic; configure only authorized targets.

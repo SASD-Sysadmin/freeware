@@ -1,0 +1,86 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Structural read-only audit of an nsswitch.conf text file. No service queries.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION='0.1.0';
+my ($help,$version,$file)=(0,0,undef);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'file=s'=>\$file) or usage(2);
+usage(0) if $help;
+if ($version) { print "nsswitch-audit $VERSION\n"; exit 0; }
+usage(2) if @ARGV;
+if (!defined $file) {
+    $^O eq 'linux' or fail('no authoritative nsswitch.conf default on this OS; use --file for an explicit text file',3);
+    $file='/etc/nsswitch.conf';
+}
+length($file) > 0 && $file !~ /\0/ or fail('file must be a non-empty pathname',2);
+open my $fh,'<',$file or fail('cannot open supplied nsswitch.conf: ' . $!,3);
+my %seen;
+my ($entries,$issues,$notices,$lines)=(0,0,0,0);
+sub issue { my($line,$code)=@_;print "ISSUE\t$line\t$code\n"; ++$issues; }
+sub notice { my($line,$code)=@_;print "NOTE\t$line\t$code\n"; ++$notices; }
+print "LEVEL\tLINE\tCODE\n";
+while (my $line=<$fh>) {
+    ++$lines;
+    if (length($line)>16384) { issue($lines,'line-too-long'); next; }
+    $line =~ s/\r?\n\z//;
+    $line =~ s/#.*\z//;
+    next if $line =~ /^\s*\z/;
+    # Control bytes cannot occur in a normal nsswitch source line.
+    if ($line =~ /[\x00-\x08\x0b-\x1f\x7f]/) { issue($lines,'invalid-control-byte');next; }
+    my ($database,$sources)=$line =~ /^\s*([A-Za-z][A-Za-z0-9_-]*):\s*(.*?)\s*\z/;
+    if (!defined $database) { issue($lines,'malformed-database-line');next; }
+    my $db=lc $database;
+    if ($seen{$db}++) { issue($lines,'duplicate-database'); }
+    ++$entries;
+    if ($sources eq '') { issue($lines,'no-services'); next; }
+    # Preserve bracket actions as one token, even when they include whitespace.
+    # Reject unclosed, nested and stray brackets rather than guessing an NSS rule.
+    my @tokens;
+    pos($sources)=0;
+    my $bad=0;
+    while (pos($sources)<length($sources)) {
+        $sources =~ /\G\s+/gc;
+        last if pos($sources)>=length($sources);
+        if ($sources =~ /\G(\[[^\[\]]*\])/gc) { push @tokens,$1; }
+        elsif ($sources =~ /\G([^\s\[\]]+)/gc) { push @tokens,$1; }
+        else { $bad=1;last; }
+    }
+    if ($bad || !@tokens) { issue($lines,'invalid-service-list');next; }
+    my ($service_count,$last_service)=(0,0);
+    my %services;
+    for my $token (@tokens) {
+        if ($token =~ /^\[/) {
+            # [STATUS=ACTION] may contain multiple clauses; do not interpret policy.
+            my $body=substr($token,1,-1);
+            if (!$last_service || $body !~ /\A\s*!?(?:SUCCESS|NOTFOUND|UNAVAIL|TRYAGAIN|\*)=(?:return|continue|merge)(?:\s+!?(?:SUCCESS|NOTFOUND|UNAVAIL|TRYAGAIN|\*)=(?:return|continue|merge))*\s*\z/i) {
+                issue($lines,'invalid-action-clause');
+            }
+            $last_service=0;
+            next;
+        }
+        if ($token !~ /\A[a-zA-Z][a-zA-Z0-9_-]*\z/) {issue($lines,'invalid-service-name');next;}
+        my $service=lc $token;
+        ++$service_count;
+        issue($lines,'duplicate-service') if $services{$service}++;
+        notice($lines,'legacy-nis-family-service') if $service eq 'nis' || $service eq 'nisplus' || $service eq 'compat';
+        $last_service=1;
+    }
+    issue($lines,'no-services') if !$service_count;
+}
+close $fh or fail('cannot close nsswitch.conf: ' . $!,3);
+for my $db (qw(passwd group hosts)) { notice(0,"database-not-configured-$db") unless $seen{$db}; }
+print "Databases: $entries\nIssues: $issues\nNotes: $notices\n";
+exit($issues ? 1 : 0);
+sub fail { my($msg,$rc)=@_;warn "nsswitch-audit: $msg\n";exit $rc; }
+sub usage { my($rc)=@_;my $out=$rc ? *STDERR:*STDOUT;print {$out} <<'USAGE';
+Usage: nsswitch-audit [--file PATH] [--help | --version]
+Read-only structural audit of a Linux-style nsswitch.conf file.
+On Linux, default path is /etc/nsswitch.conf; other OSes require --file.
+Never queries NSS, does not verify whether listed modules are installed.
+Exit 0 = no structural issues, 1 = findings, 2 = usage, 3 = I/O or unsupported default.
+USAGE
+exit $rc; }
