@@ -2,7 +2,7 @@
 
 [Deutsch](account-manage.de.md) · [Project](../../README.md)
 
-`account-manage` is a deliberately narrow **local Linux** account administration wrapper. It is read-only by default, and mutation requires *both* `--apply` and `--confirm-apply` plus effective root privileges. **It cannot manage NIS, NIS+, LDAP, FreeIPA or Active Directory accounts.** It is not an identity reconciliation engine.
+`account-manage` is a deliberately narrow **local Linux** account administration wrapper. **On macOS/other non-Linux systems, even a preview is explicitly refused (exit 3)** rather than claiming that a Linux `useradd`/`groupadd` command would manage native Directory Services accounts. It is read-only by default, and mutation requires *both* `--apply` and `--confirm-apply` plus effective root privileges. **It cannot manage NIS, NIS+, LDAP, FreeIPA or Active Directory accounts.** It is not an identity reconciliation engine.
 
 ## Actions and examples
 

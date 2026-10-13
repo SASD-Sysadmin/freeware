@@ -4,7 +4,7 @@ account-manage \- Preview or explicitly perform guarded local Linux account oper
 .SH SYNOPSIS
 \fBaccount-manage\fR --action ACTION --name NAME [--apply --confirm-apply]
 .SH DESCRIPTION
-Only local Linux accounts, not LDAP/NIS. Default behavior is preview-only. Password locking does not revoke SSH keys or active sessions. Apply operations are not transactional and were not live-tested on system accounts.
+Only local Linux accounts, not LDAP/NIS. Non-Linux operating systems (including macOS) are refused even in preview mode. Default Linux behavior is preview-only. Password locking does not revoke SSH keys or active sessions. Apply operations are not transactional and were not live-tested on system accounts.
 .SH OPTIONS
 .TP
 .B --action user-create|group-create|password-lock

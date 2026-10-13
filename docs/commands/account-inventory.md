@@ -16,10 +16,11 @@
 
 ## Sources and limitations
 
-- **`--source local` (default)**: parses `/etc/passwd` and `/etc/group` (or the chosen `--passwd-file` / `--group-file`). This is *only* the local text database, not all identities accepted by the host.
+- **`--source local` (default on Linux/other Unix)**: parses `/etc/passwd` and `/etc/group` (or the chosen `--passwd-file` / `--group-file`). This is *only* the local text database, not all identities accepted by the host.
 - **`--source nss`**: invokes Perl's native `getpwent` / `getgrent` interfaces. Returned accounts may come from `files`, NIS, LDAP, or other NSS sources, depending on host configuration. **Enumeration is not proof of completeness**: some sources support individual lookups but not complete enumeration. No direct NIS, NIS+, or LDAP protocol implementation is bundled.
 - NIS compatibility entries beginning with `+` or `-` in local files are **identified and skipped**, never mistaken for real local accounts. Malformed local records cause exit 1 with a diagnostic.
-- `--passwd-file` and `--group-file` are available for the local source only. The default source is deliberate; switching to NSS requires explicit `--source nss`.
+- **macOS default is `--source nss`** because `/etc/passwd` and `/etc/group` are not the authoritative Open Directory identity database. Explicit file overrides imply the local source unless `--source nss` is also specified (which is rejected). On macOS, explicitly requesting default local files emits an incompleteness warning.
+- `--passwd-file` and `--group-file` are available for the local source only. On Linux/other Unix, NSS requires explicit `--source nss`.
 
 ## Output
 

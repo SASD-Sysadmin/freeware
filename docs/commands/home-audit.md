@@ -2,17 +2,27 @@
 
 [Deutsch](home-audit.de.md) · [Project](../../README.md)
 
-`home-audit` checks the metadata of home directory paths listed in a **local passwd-style file**. It does not recursively read users' private files and never corrects modes, ownership, or paths.
+`home-audit` checks home-directory metadata for users from a **local passwd-style file** or native **NSS/Directory Services enumeration**. It never enters a user's home, follows home symlinks, or modifies a file.
 
 ```sh
 ./bin/home-audit
-./bin/home-audit --file ./passwd.sample --all
+./bin/home-audit --source nss
+./bin/home-audit --source local --file ./passwd.sample --all
 ./bin/home-audit --min-uid 2000 --max-uid 49999
 ./bin/home-audit --all --null > homes.bin
 ```
 
-Default account selection is UID **1000 through 59999** (inclusive), avoiding common service and `nobody` IDs. This is a configurable policy, **not a universal Unix definition of human accounts**. Use `--all` to include every valid local passwd record, including root and service users; their home paths may intentionally be absent or nonstandard.
+## Sources and default ranges
 
-Findings: `missing` (no path), `symlink` (lstat sees a symlink), `not-directory`, `wrong-owner` (directory UID differs from passwd UID), and `world-writable` (directory grants write access to everyone). A missing, restricted, or shared home is not automatically an incident; examine local policy. An `lstat` failure other than missing files is an **error**, making the report incomplete. The program never follows a home symlink or changes filesystem objects. NSS-only or LDAP accounts are not included in a local file scan.
+- **Linux/other Unix:** default source `local` (`/etc/passwd`), UID range **1000..59999**.
+- **macOS:** default source `nss` (`getpwent`, backed by native system directory resolution), UID range **500..59999**, to include typical macOS user UIDs. The `/etc/passwd` text file is **not** a complete account source on macOS.
+- **`--source local`:** local passwd-format file. Explicit `--file PATH` also selects local mode, unless `--source` was explicitly set otherwise.
+- **`--source nss`:** host NSS enumeration; cannot be combined with `--file`. **NSS is not guaranteed to enumerate every account**, especially with external directory services. A completed scan cannot certify all LDAP/NIS/AD identities. NSS records with invalid UID/home fields are reported as errors.
 
-Human output: `ISSUE USER UID HOME` tab-separated with escaped controls; `--null` produces exact NUL-separated records with no header/summary. Exit 0 after a complete read (findings do not change status), 1 for malformed passwd records or access errors, 2 bad options, 3 missing file or bundled Perl library. Depends on Perl core modules and `SASD::Freeware::Account`, no CPAN downloads.
+The UID range is an operator policy, not proof of which accounts are human. `--all` selects every enumerated identity, including service accounts; their home paths may intentionally be absent or unconventional.
+
+## Findings and statuses
+
+Findings: `missing`, `symlink`, `not-directory`, `wrong-owner`, and `world-writable`. These require administrator interpretation, not automatic repair. `lstat` failures other than absent files produce a nonzero incomplete-scan result. **APFS ACLs and macOS TCC/privacy protections are not audited**; Unix mode bits alone do not represent full access control.
+
+Human output is tab-separated `ISSUE USER UID HOME` with escaped control characters. `--null` emits four raw NUL-separated fields per finding without headers or totals. Exit 0 for completed scan (including findings), 1 for invalid identity records or access errors, 2 invalid arguments, 3 unavailable input/module. Requires Perl core modules and bundled `SASD::Freeware::Account`, no CPAN dependencies.

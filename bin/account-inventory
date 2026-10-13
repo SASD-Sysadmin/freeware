@@ -15,13 +15,17 @@ BEGIN {
 use SASD::Freeware::Account qw(read_local display_field);
 my $VERSION = '0.1.0';
 my ($help, $version, $source, $kind, $passwd_file, $group_file, $null) =
-    (0, 0, 'local', 'both', '/etc/passwd', '/etc/group', 0);
+    (0, 0, $^O eq 'darwin' ? 'nss' : 'local', 'both', '/etc/passwd', '/etc/group', 0);
+my $source_selected = 0;
 Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
-GetOptions('help|h'=>\$help,'version'=>\$version,'source=s'=>\$source,
+GetOptions('help|h'=>\$help,'version'=>\$version,
+    'source=s'=>sub { $source = $_[1]; $source_selected = 1; },
     'kind=s'=>\$kind,'passwd-file=s'=>\$passwd_file,'group-file=s'=>\$group_file,
     'null'=>\$null) or usage(2);
 usage(0) if $help;
 if ($version) { print "account-inventory $VERSION\n"; exit 0; }
+$source = 'local' if !$source_selected &&
+    ($passwd_file ne '/etc/passwd' || $group_file ne '/etc/group');
 usage(2) if @ARGV || $source !~ /\A(?:local|nss)\z/ ||
     $kind !~ /\A(?:users|groups|both)\z/ ||
     ($source eq 'nss' && ($passwd_file ne '/etc/passwd' || $group_file ne '/etc/group'));
@@ -35,6 +39,8 @@ sub output_row {
 }
 sub warning { warn "account-inventory: $_[0]\n"; }
 if ($source eq 'local') {
+    warn "account-inventory: macOS local passwd/group text files do not enumerate Open Directory; use --source nss (still not guaranteed exhaustive)\n"
+        if $^O eq 'darwin' && $passwd_file eq '/etc/passwd' && $group_file eq '/etc/group';
     if ($kind ne 'groups') {
         my $data = read_local($passwd_file,'passwd',\&warning);
         unless (defined $data) { exit 3; }
@@ -77,6 +83,7 @@ sub usage {
     print {$out} "Usage: account-inventory [--source local|nss] [--kind users|groups|both]\n",
         "       [--passwd-file PATH --group-file PATH] [--null]\n",
         "       account-inventory --help | --version\n",
-        "Local is the default. NSS enumeration is not guaranteed complete.\n";
+        "Default source: NSS on macOS, local files on Linux/other Unix.\n",
+        "NSS enumeration is not guaranteed complete.\n";
     exit $code;
 }

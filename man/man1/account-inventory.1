@@ -4,11 +4,11 @@ account-inventory \- Inventory local or NSS-enumerated Unix users and groups
 .SH SYNOPSIS
 \fBaccount-inventory\fR [options]
 .SH DESCRIPTION
-By default scans /etc/passwd and /etc/group. NSS enumeration may omit remotely configured identities. Historical NIS compatibility records are skipped.
+By default scans /etc/passwd and /etc/group on Linux, or enumerates NSS on macOS, where text files are not an authoritative Directory Services source. NSS enumeration may omit remotely configured identities. Historical NIS compatibility records are skipped.
 .SH OPTIONS
 .TP
 .B --source local|nss
-Select local files (default) or NSS enumeration. NSS is not guaranteed complete.
+Select local files (Linux/other Unix default) or NSS enumeration (macOS default). NSS is not guaranteed complete.
 .TP
 .B --kind users|groups|both
 Select records.

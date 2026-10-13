@@ -4,6 +4,14 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Changed
+
+- macOS now defaults to NSS enumeration for `account-inventory` and `home-audit`, avoiding false completeness from `/etc/passwd`; explicit local-file fixtures remain supported.
+- `home-audit` accepts `--source local|nss`, uses macOS-appropriate default UID thresholds, and documents NSS enumeration limits.
+- `account-manage` rejects non-Linux platforms even for preview, with an explicit error rather than interpreting macOS passwd/group compatibility files as Linux accounts.
+- Added bilingual platform-support guidance and platform-aware regression tests.
+
+
 ### Added
 
 - `account-inventory`: source-explicit local or NSS account/group inventory with unambiguous NUL output and NIS compatibility handling.

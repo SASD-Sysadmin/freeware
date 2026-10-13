@@ -16,10 +16,11 @@
 
 ## Quellen und Grenzen
 
-- **`--source local` (Voreinstellung):** liest `/etc/passwd` und `/etc/group` beziehungsweise die mit `--passwd-file` und `--group-file` angegebenen Dateien. Damit erfasst man nur die lokale Textdatenbank.
+- **`--source local` (Voreinstellung unter Linux/anderen Unix-Systemen):** liest `/etc/passwd` und `/etc/group` beziehungsweise die mit `--passwd-file` und `--group-file` angegebenen Dateien. Damit erfasst man nur die lokale Textdatenbank.
 - **`--source nss`:** verwendet `getpwent` und `getgrent`. Je nach NSS-Konfiguration können Ergebnisse aus lokalen Dateien, NIS, LDAP oder anderen Quellen kommen. **Eine vollständige Aufzählung ist nicht garantiert**; manche Quellen erlauben nur Einzelabfragen. Das Programm implementiert keine eigenen NIS-, NIS+- oder LDAP-Protokolle.
 - Mit `+` oder `-` beginnende historische NIS-Kompatibilitätseinträge werden gemeldet und übersprungen. Fehlerhafte lokale Datensätze führen zu Exitstatus 1.
-- Externe Dateipfade sind nur zusammen mit `--source local` vorgesehen.
+- **Unter macOS ist `--source nss` die Voreinstellung**, da `/etc/passwd` und `/etc/group` nicht die maßgebliche Open-Directory-Datenbank enthalten. Eine explizit angegebene Datei wählt automatisch die lokale Quelle, sofern nicht ausdrücklich `--source nss` angegeben ist (diese Kombination wird abgelehnt). Das Lesen der macOS-Standarddateien im lokalen Modus erzeugt eine Warnung zur Unvollständigkeit.
+- Externe Dateipfade sind nur für die lokale Quelle vorgesehen.
 
 ## Ausgabe
 

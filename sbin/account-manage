@@ -28,6 +28,11 @@ usage(2) if @ARGV || !defined($action) || !defined($name) ||
 valid_name($name) && $name =~ /\A[a-z_][a-z0-9_-]{0,31}\z/
     or fail('invalid local name: use 1..32 lowercase letters, digits, _ and -; start with letter/_',2);
 $name ne 'root' or fail('refusing to manage root account or group',2);
+# Validate the confirmation handshake before any filesystem / NSS access.
+$apply && !$confirm and fail('applying changes requires --confirm-apply in addition to --apply',2);
+# On macOS, /etc/passwd and /etc/group are not authoritative. Even a Linux
+# command *preview* would be misleading, so reject it before reading them.
+$^O eq 'linux' or fail('local account management (including preview) is Linux-only; use native macOS Directory Services tooling',3);
 
 # Read local files rather than using NSS to determine whether an account is local.
 # The NSS check is separate; remote identities are not mutation targets.
@@ -79,8 +84,6 @@ unless ($apply) {
         if $action eq 'password-lock';
     exit 0;
 }
-$confirm or fail('applying changes requires --confirm-apply in addition to --apply',2);
-$^O eq 'linux' or fail('applying changes is currently supported only on Linux',3);
 $> == 0 or fail('applying changes requires effective UID 0 (root)',3);
 # These paths are checked for the privileged operation, not the default preview.
 for my $db ('/etc/passwd','/etc/group') {

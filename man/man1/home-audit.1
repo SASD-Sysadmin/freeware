@@ -1,20 +1,23 @@
 .TH HOME-AUDIT 1 "2026-10-13" "SASD Freeware" "Unix Administration"
 .SH NAME
-home-audit \- Check local passwd home-directory metadata
+home-audit \- Check local or NSS-enumerated user home-directory metadata
 .SH SYNOPSIS
 \fBhome-audit\fR [options]
 .SH DESCRIPTION
-Checks only the home-directory inode and never follows a home symbolic link. Findings do not by themselves imply compromise. NSS-only users are outside the local-file scope.
+Checks only the home-directory inode and never follows a home symbolic link. Findings do not by themselves imply compromise. Uses local passwd files by default on Linux and NSS enumeration by default on macOS. NSS enumeration is not guaranteed exhaustive; APFS ACLs are not checked.
 .SH OPTIONS
+.TP
+.B --source local|nss
+Select local passwd text or host NSS enumeration. Explicit --file selects local; --file and --source nss cannot be combined.
 .TP
 .B --file PATH
 Read the specified passwd-style file.
 .TP
 .B --min-uid N, --max-uid N
-Default range is UID 1000 through 59999.
+Default range is 500 through 59999 on macOS, 1000 through 59999 elsewhere.
 .TP
 .B --all
-Include every valid local passwd record.
+Include every enumerated identity.
 .TP
 .B --null
 Emit NUL-separated ISSUE, USER, UID, HOME records.

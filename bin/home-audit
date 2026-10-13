@@ -16,17 +16,38 @@ BEGIN {
 use SASD::Freeware::Account qw(read_local display_field);
 my $VERSION = '0.1.0';
 my ($help, $version, $file, $min_uid, $max_uid, $all, $null) =
-    (0, 0, '/etc/passwd', 1000, 59999, 0, 0);
+    (0, 0, '/etc/passwd', $^O eq 'darwin' ? 500 : 1000, 59999, 0, 0);
+my $source = $^O eq 'darwin' ? 'nss' : 'local';
+my ($source_selected, $file_selected) = (0, 0);
 Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
-GetOptions('help|h'=>\$help,'version'=>\$version,'file=s'=>\$file,
+GetOptions('help|h'=>\$help,'version'=>\$version,
+           'source=s'=>sub { $source = $_[1]; $source_selected = 1; },
+           'file=s'=>sub { $file = $_[1]; $file_selected = 1; },
            'min-uid=s'=>\$min_uid,'max-uid=s'=>\$max_uid,'all'=>\$all,'null'=>\$null) or usage(2);
 usage(0) if $help;
 if ($version) { print "home-audit $VERSION\n"; exit 0; }
-usage(2) if @ARGV || $min_uid !~ /\A\d{1,10}\z/ || $max_uid !~ /\A\d{1,10}\z/ ||
+$source = 'local' if $file_selected && !$source_selected;
+usage(2) if @ARGV || $source !~ /\A(?:local|nss)\z/ ||
+    ($source eq 'nss' && $file_selected) || $min_uid !~ /\A\d{1,10}\z/ || $max_uid !~ /\A\d{1,10}\z/ ||
     $min_uid > 4294967295 || $max_uid > 4294967295 || $min_uid > $max_uid;
 sub diagnostic { warn "home-audit: $_[0]\n"; }
-my $data = read_local($file,'passwd',\&diagnostic);
-defined $data or exit 3;
+my $data;
+if ($source eq 'local') {
+    diagnostic('macOS /etc/passwd is not an authoritative user list; prefer --source nss')
+        if $^O eq 'darwin' && !$file_selected && $file eq '/etc/passwd';
+    $data = read_local($file,'passwd',\&diagnostic);
+    defined $data or exit 3;
+} else {
+    my @records;
+    setpwent();
+    while (my @user = getpwent()) {
+        # Perl getpwent fields: name, passwd, UID, GID, ..., home, shell.
+        push @records, [ $user[0], '', $user[2], $user[3], '', $user[7], $user[8] ];
+    }
+    endpwent();
+    $data = { records => \@records, errors => 0, compat => 0 };
+    diagnostic('NSS enumeration can omit remote/directory users; results are not an exhaustive account inventory');
+}
 my ($scanned, $findings, $errors) = (0, 0, $data->{errors});
 print "ISSUE\tUSER\tUID\tHOME\n" unless $null;
 sub finding {
@@ -37,7 +58,19 @@ sub finding {
 }
 for my $u (@{$data->{records}}) {
     my ($name, $uid, $home) = ($u->[0], $u->[2], $u->[5]);
+    # Apply selection before validating home paths: service accounts outside
+    # the selected range can legitimately have empty Directory Services homes.
+    if (!defined($uid) || $uid !~ /\A[0-9]+\z/) {
+        ++$errors;
+        diagnostic('NSS record has invalid UID for user ' . display_field($name));
+        next;
+    }
     next if !$all && ($uid < $min_uid || $uid > $max_uid);
+    if (!defined($home) || $home !~ m{\A/} || $home =~ /[\x00-\x1f\x7f]/) {
+        ++$errors;
+        diagnostic('NSS record has invalid home path for user ' . display_field($name));
+        next;
+    }
     ++$scanned;
     my @stat = lstat($home);
     if (!@stat) {
@@ -57,8 +90,9 @@ exit($errors ? 1 : 0);
 sub usage {
     my ($code) = @_;
     my $out = $code ? *STDERR : *STDOUT;
-    print {$out} "Usage: home-audit [--file PATH] [--min-uid N] [--max-uid N] [--all] [--null]\n",
+    print {$out} "Usage: home-audit [--source local|nss] [--file PATH] [--min-uid N] [--max-uid N] [--all] [--null]\n",
                  "       home-audit --help | --version\n",
-                 "Local passwd records only; default UID range is 1000..59999.\n";
+                 "Default source: NSS on macOS, local files elsewhere; --file implies local.\n",
+                 "Default UID range: 500..59999 on macOS, 1000..59999 elsewhere.\n";
     exit $code;
 }
