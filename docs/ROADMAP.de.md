@@ -1,11 +1,11 @@
 # SASD Freeware – Bestandsaufnahme und priorisierte Roadmap
 
-Repository: https://github.com/SASD-Sysadmin/freeware  
-Analyzed main commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`  
-Assessment date: 2026-10-13
+Repository: https://github.com/SASD-Sysadmin/freeware
+Untersuchter main-Commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`
+Bestandsstichtag: 2026-10-13
 
 
-> **Status:** Technische Bewertung und Planungsdokument, **noch kein Commit** im Repository. Geprüft wurden Repository-Baum, README, Changelog, Plattform- und Testdokumente, CI, Makefile sowie ausgewählte Implementierungen. Alle Risikobewertungen sind Engineering-Empfehlungen; nicht jeder denkbare Fehler wurde reproduziert.
+> **Status:** Technische Bewertung und Planungsdokument, bereits im Repository versioniert. Geprüft wurden Repository-Baum, README, Changelog, Plattform- und Testdokumente, CI, Makefile sowie ausgewählte Implementierungen. Alle Risikobewertungen sind Engineering-Empfehlungen; nicht jeder denkbare Fehler wurde reproduziert.
 
 ## 1. Verifizierter Bestand
 
@@ -138,7 +138,7 @@ Ohne Änderung an `main` die Aufgaben für **M1 (`quality-contracts`)** präzisi
 ## 8. Geprüfte Quellen
 
 - [Repository und vollständiger Code](https://github.com/SASD-Sysadmin/freeware/tree/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb)
-- [README.de.md]({prefix}README.de.md), [CHANGELOG.md]({prefix}CHANGELOG.md)
-- [Entwicklungsrichtlinien]({prefix}docs/DEVELOPMENT.de.md), [Plattformen]({prefix}docs/PLATFORMS.de.md), [Integrationstests]({prefix}docs/TESTING.de.md), [Rückgabecodes]({prefix}docs/EXIT-CODES.de.md)
-- [Makefile]({prefix}Makefile), [CI-Konfiguration]({prefix}.github/workflows/ci.yml), [Sicherheitsrichtlinie]({prefix}SECURITY.md)
+- [README.de.md](../README.de.md), [CHANGELOG.md](../CHANGELOG.md)
+- [Entwicklungsrichtlinien](DEVELOPMENT.de.md), [Plattformen](PLATFORMS.de.md), [Integrationstests](TESTING.de.md), [Rückgabecodes](EXIT-CODES.de.md)
+- [Makefile](../Makefile), [CI-Konfiguration](../.github/workflows/ci.yml), [Sicherheitsrichtlinie](../SECURITY.md)
 - [GitHub-Actions-Hauptbranch-Lauf #13](https://github.com/SASD-Sysadmin/freeware/actions/runs/38394032369)

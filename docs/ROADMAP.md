@@ -1,11 +1,11 @@
 # SASD Freeware – Technical inventory and prioritized roadmap
 
-Repository: https://github.com/SASD-Sysadmin/freeware  
-Analyzed main commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`  
+Repository: https://github.com/SASD-Sysadmin/freeware
+Analyzed main commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`
 Assessment date: 2026-10-13
 
 
-> **Status:** Engineering review and planning document, **not committed** to the repository. Based on the repository tree, README, changelog, platform and test guides, CI, Makefile, and selected implementations. Priorities are engineering recommendations; they are not statements that every possible defect has been reproduced.
+> **Status:** Engineering review and planning document, now versioned in the repository. Based on the repository tree, README, changelog, platform and test guides, CI, Makefile, and selected implementations. Priorities are engineering recommendations; they are not statements that every possible defect has been reproduced.
 
 ## 1. Verified inventory
 
@@ -127,6 +127,6 @@ Scope M1 into a small, reviewable `feat/quality-contracts` branch without modify
 ## 8. Audited sources
 
 - [Repository tree](https://github.com/SASD-Sysadmin/freeware/tree/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb)
-- [README]({prefix}README.md), [Changelog]({prefix}CHANGELOG.md), [Development]({prefix}docs/DEVELOPMENT.md), [Platforms]({prefix}docs/PLATFORMS.md), [Testing]({prefix}docs/TESTING.md), [Exit codes]({prefix}docs/EXIT-CODES.md)
-- [Makefile]({prefix}Makefile), [CI]({prefix}.github/workflows/ci.yml), [Security]({prefix}SECURITY.md)
+- [README](../README.md), [Changelog](../CHANGELOG.md), [Development](DEVELOPMENT.md), [Platforms](PLATFORMS.md), [Testing](TESTING.md), [Exit codes](EXIT-CODES.md)
+- [Makefile](../Makefile), [CI](../.github/workflows/ci.yml), [Security](../SECURITY.md)
 - [Verified main CI run #13](https://github.com/SASD-Sysadmin/freeware/actions/runs/38394032369)
