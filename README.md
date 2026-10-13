@@ -1,6 +1,6 @@
 # SASD Freeware
 
-**English** | [Deutsch](README.de.md) · [MIT License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Platform support](docs/PLATFORMS.md)
+**English** | [Deutsch](README.de.md) · [MIT License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Roadmap](docs/ROADMAP.md) · [Platform support](docs/PLATFORMS.md)
 
 SASD Freeware provides a collection of command-line utilities, scripts, and libraries for Linux and Unix system administration. The tools are designed for reliable operation, straightforward integration into existing environments, and long-term maintainability. Each utility includes documentation, practical usage examples, and automated tests.
 

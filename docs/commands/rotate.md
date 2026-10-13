@@ -6,6 +6,10 @@
 
 `rotate` creates a numbered copy of one existing regular file without modifying the source. At most ten automatically managed generations are kept beside the file: `.0` is the newest and `.9` is the oldest. Before creating a new `.0`, existing snapshots are renamed toward `.9` and the oldest one is removed. Legacy backup files with purely numeric suffixes `.10` and above are deleted. The program is written in Bash and uses standard Unix utilities.
 
+
+All commands described here also support `--help` and `--version` without
+reading their target files. These options exit with status 0 and write to stdout.
+
 ## Synopsis and example
 
 ```text

@@ -3,6 +3,21 @@
 # Rotate file snapshots: FILE.0 is newest, FILE.9 is oldest.
 set -euo pipefail
 
+# Metadata options terminate before any filesystem operation or lock creation.
+# A file literally named --help or --version remains addressable as ./--help.
+if (( $# == 1 )); then
+    case "$1" in
+        --help)
+            printf 'Usage: %s FILE | --help | --version\n' "${0##*/}"
+            exit 0
+            ;;
+        --version)
+            printf 'rotate 0.1.0\n'
+            exit 0
+            ;;
+    esac
+fi
+
 usage() {
     printf 'Usage: %s FILE\n' "${0##*/}" >&2
 }

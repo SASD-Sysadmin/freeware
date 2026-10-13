@@ -2,6 +2,10 @@
 
 [Deutsch](automation-tools.de.md) | **English** · [Project README](../../README.md) · [Previous Perl tools](perl-tools.md)
 
+
+All commands described here also support `--help` and `--version` without
+reading their target files. These options exit with status 0 and write to stdout.
+
 ## Summary
 
 Four Perl 5 commands provide SSH key file inspection, SHA-256 file integrity tracking, SUID/SGID inventories and IPv4 TCP reachability checks. Each command has its own documented options, permission requirements and exit statuses.

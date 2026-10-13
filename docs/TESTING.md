@@ -6,7 +6,7 @@
 
 1. `make test`: **fast, offline unit/regression tests**. Runs Perl syntax, Bash checks, documentation checks and mock-client tests. It must not modify system accounts, files in `/etc`, or system services.
 2. `make integration-test`: **opt-in local network integration**. Starts loopback-only DNS and, when prerequisites permit, an LDAPS server fixture. Calls the real `dig` and `ldapsearch` executables through the unmodified SASD commands. Uses random unprivileged local ports; creates a short-lived self-signed TLS trust anchor; no root privileges, external endpoints, directory users or credentials are required.
-3. GitHub Actions: Ubuntu installs `dnsutils` and `ldap-utils` and **requires both** integrations. macOS **requires DNS**; LDAPS is intentionally skipped in macOS CI until its native client differences are validated separately. The ordinary test suite and staged install/uninstall run on both systems.
+3. GitHub Actions: Ubuntu installs `dnsutils` and `ldap-utils` and **requires both** integrations. macOS **requires DNS**, but explicitly skips LDAPS until native client compatibility is validated. The standard suites and staged install/uninstall run on both platforms.
 
 The test servers in `tests/integration/local_servers.py` implement **minimal fixed DNS and LDAP protocol responses**, not the functionality of full production BIND/OpenLDAP servers. This tests actual UDP, TLS, LDAP client compatibility, timeout handling and exit statuses, but **does not replace end-to-end testing against a production-like server**. Do not claim deployment readiness from these tests alone.
 
@@ -38,3 +38,11 @@ The integration fixture operates on `127.0.0.1` and does not require inbound Int
 - Plaintext LDAP URI rejected before contacting the client.
 
 A green GitHub job should include the integration step, not just `make test`. If an integration job fails, inspect which client was installed, the tool's stderr, certificate creation and the loopback listener startup. **Never disable certificate verification to make a test green.**
+
+## Interface and repository contracts
+
+`make test` also runs `tests/test_cli_contracts.t` (the `--help`/`--version`
+metadata interface for every executable) and `tests/test_repository_contracts.t`
+(Markdown formatting, template placeholders, and Git-index file modes).
+`make shellcheck` is a separate, opt-in local target; it is mandatory in the
+Ubuntu CI job.

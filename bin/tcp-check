@@ -7,10 +7,12 @@ use Getopt::Long qw(GetOptions);
 use IO::Socket::INET;
 use Time::HiRes qw(time);
 
-my ($host,$port,$timeout,$nagios,$help) = (undef,undef,3,0,0);
+my ($host,$port,$timeout,$nagios,$help,$version) = (undef,undef,3,0,0,0);
 GetOptions('host=s' => \$host, 'port=i' => \$port, 'timeout=i' => \$timeout,
-           'nagios' => \$nagios, 'help' => \$help) or usage(2);
+           'nagios' => \$nagios, 'help' => \$help,
+           'version' => \$version) or usage(2);
 usage(0) if $help;
+if ($version) { print "tcp-check 0.1.0\n"; exit 0; }
 usage(2) if @ARGV || !defined($host) || $host eq '' || !defined($port)
     || $port < 1 || $port > 65535 || $timeout < 1 || $timeout > 30;
 my $start = time();
@@ -28,6 +30,6 @@ exit($nagios ? 2 : 1);
 sub usage {
     my ($code) = @_;
     print {$code ? *STDERR : *STDOUT}
-        "Usage: tcp-check --host HOST --port PORT [--timeout 1..30] [--nagios] [--help]\n";
+        "Usage: tcp-check --host HOST --port PORT [--timeout 1..30] [--nagios] [--help | --version]\n";
     exit($code ? ($nagios ? 3 : 2) : 0);
 }

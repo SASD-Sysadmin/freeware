@@ -6,6 +6,11 @@
 
 `rotate` erstellt eine durchnummerierte Kopie einer vorhandenen regulären Datei, ohne deren Inhalt zu verändern. Im gleichen Verzeichnis werden bis zu zehn Generationen vorgehalten: `.0` ist die neueste, `.9` die älteste. Bei jedem Aufruf rücken bisherige Kopien um eine Nummer weiter; die bisherige `.9` wird bei Bedarf entfernt. Zusätzlich werden ältere Sicherungen mit rein numerischen Endungen ab `.10` gelöscht. Das Programm ist in Bash implementiert und verwendet übliche Unix-Werkzeuge.
 
+
+Alle hier beschriebenen Programme unterstützen außerdem `--help` und
+`--version`, ohne Eingabedateien zu lesen. Beide Optionen enden mit Exitcode 0
+und schreiben nach stdout.
+
 ## Aufruf und Beispiel
 
 ```text
