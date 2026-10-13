@@ -1,0 +1,31 @@
+.TH DNS-QUERY 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+dns-query \- direct dns protocol query
+.SH SYNOPSIS
+.B dns-query
+[options] [--help | --version]
+.SH DESCRIPTION
+Read-only direct DNS query via optional dig. Distinct from libc system resolver. A NOERROR response with an answer record is required for status 0. DNS traffic is typically unencrypted; DNSSEC validation is not performed.
+.SH OPTIONS
+.TP
+.B --name DNSNAME
+DNS query name, mandatory.
+.TP
+.B --type TYPE
+A, AAAA, MX, TXT, NS, PTR, CNAME, SOA, SRV, CAA; default A.
+.TP
+.B --server IP
+Explicit numeric DNS server address, optional.
+.TP
+.B --timeout 1..10
+Native query deadline in seconds; overall safety timeout is longer.
+.TP
+.B --help
+Display help and exit.
+.TP
+.B --version
+Display version and exit.
+.SH EXIT STATUS
+0 success/clean; 1 unsuccessful/finding; 2 invalid arguments; 3 missing prerequisites or unexpected errors.
+.SH SECURITY
+Only read-only checks. Query tools can send network traffic; configure only authorized targets.

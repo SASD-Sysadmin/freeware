@@ -1,0 +1,22 @@
+.TH NSSWITCH-AUDIT 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+nsswitch-audit \- structural nss switch-file diagnosis
+.SH SYNOPSIS
+.B nsswitch-audit
+[options] [--help | --version]
+.SH DESCRIPTION
+Read-only syntactic checks of Linux-style nsswitch.conf files. Reports structural errors and notes, without interpreting NSS modules. On non-Linux hosts an explicit file must be supplied.
+.SH OPTIONS
+.TP
+.B --file PATH
+Inspect explicit nsswitch-compatible text. Required on non-Linux platforms.
+.TP
+.B --help
+Display help and exit.
+.TP
+.B --version
+Display version and exit.
+.SH EXIT STATUS
+0 success/clean; 1 unsuccessful/finding; 2 invalid arguments; 3 missing prerequisites or unexpected errors.
+.SH SECURITY
+Only read-only checks. Query tools can send network traffic; configure only authorized targets.

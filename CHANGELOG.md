@@ -6,6 +6,14 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ### Added
 
+- `nsswitch-audit` for structural, read-only Linux-style NSS source configuration checks.
+- `dns-query` for direct DNS response/status diagnostics via optional `dig`, separate from system host resolution.
+- `nis-probe` for local NIS/YP binding checks without fetching directory maps.
+- `ldap-config-audit` for static OpenLDAP client certificate-policy inspection without revealing configuration values.
+- Bilingual command guides, manual pages and offline regression tests for these diagnostics.
+
+### Added
+
 - Read-only `nss-lookup` for targeted libc name-service user/group queries (without claiming complete enumeration).
 - `host-resolve` for system resolver forward/reverse IPv4/IPv6 diagnosis (distinct from direct DNS protocol testing).
 - `ldap-probe` for anonymous LDAPS rootDSE metadata checks using an optional native ldapsearch client with certificate verification enforcement.

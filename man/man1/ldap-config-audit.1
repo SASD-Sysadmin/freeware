@@ -1,0 +1,22 @@
+.TH LDAP-CONFIG-AUDIT 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+ldap-config-audit \- openldap client tls configuration review
+.SH SYNOPSIS
+.B ldap-config-audit
+[options] [--help | --version]
+.SH DESCRIPTION
+Read-only inspection of one OpenLDAP ldap.conf for weak TLS_REQCERT policy, malformed directives and informational LDAP URI schemes. Does not print values, follow includes, inspect LDAPRC or connect to a server.
+.SH OPTIONS
+.TP
+.B --file PATH
+Read an explicit OpenLDAP configuration file instead of the platform default.
+.TP
+.B --help
+Display help and exit.
+.TP
+.B --version
+Display version and exit.
+.SH EXIT STATUS
+0 success/clean; 1 unsuccessful/finding; 2 invalid arguments; 3 missing prerequisites or unexpected errors.
+.SH SECURITY
+Only read-only checks. Query tools can send network traffic; configure only authorized targets.

@@ -1,0 +1,88 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Direct DNS diagnostics via native dig; not the OS libc system resolver.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Socket qw(AF_INET AF_INET6 inet_pton);
+BEGIN { unless (eval {require SASD::Freeware::External;1}) {
+    print STDERR "dns-query: bundled Perl library unavailable: $@";exit 3;
+} }
+use SASD::Freeware::External qw(find_program);
+
+my $VERSION='0.1.0';
+my ($help,$version,$name,$type,$server,$timeout)=(0,0,undef,'A',undef,3);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'name=s'=>\$name,
+           'type=s'=>\$type,'server=s'=>\$server,'timeout=s'=>\$timeout) or usage(2);
+usage(0) if $help;
+if ($version) {print "dns-query $VERSION\n";exit 0;}
+usage(2) if @ARGV || !defined($name) || $timeout !~ /\A(?:[1-9]|10)\z/;
+$type=uc $type;
+$type =~ /\A(?:A|AAAA|MX|TXT|NS|PTR|CNAME|SOA|SRV|CAA)\z/
+    or fail('type must be A AAAA MX TXT NS PTR CNAME SOA SRV CAA',2);
+length($name) >= 1 && length($name)<=253 && $name !~ /[\x00-\x20\x7f]/
+    or fail('invalid DNS name',2);
+my $qname=$name; $qname =~ s/\.$//;
+for my $label (split /\./,$qname,-1) {
+    length($label)>=1 && length($label)<=63 && $label =~ /\A[a-zA-Z0-9_](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?\z/
+        or fail('DNS name must consist of 1..63 byte ASCII labels',2);
+}
+if (defined $server) {
+    my $s=$server;
+    if ($s =~ /^\[(.+)\]$/) { $s=$1; }
+    ($s !~ /[%\x00-\x20\x7f]/ && (defined(inet_pton(AF_INET,$s)) || defined(inet_pton(AF_INET6,$s))))
+        or fail('server must be numeric IPv4 or IPv6 (no names, ports or zones)',2);
+    $server=$s;
+}
+my $dig=find_program('dig');
+defined($dig) or fail('dig not found in PATH; install DNS client utilities',3);
+my @args=("+time=$timeout",'+tries=1','+noall','+comments','+answer','-q',$name,'-t',$type);
+unshift @args,'@'.$server if defined($server);
+my $pid=open(my $fh,'-|',$dig,@args);
+defined($pid) or fail("cannot start dig: $!",3);
+my $data='';
+my $complete=eval {
+    local $SIG{ALRM}=sub {die "DNS client overall timeout\n"};
+    alarm($timeout+10);
+    while (1) {
+        my $bytes=read($fh,my $chunk,8192);
+        defined($bytes) or die "cannot read dig output: $!\n";
+        last if $bytes==0;
+        length($data)+$bytes<=131072 or die "dig output exceeds 128 KiB\n";
+        $data.=$chunk;
+    }
+    alarm(0);1;
+};
+if (!$complete) {
+    my $why=$@;alarm(0);kill 'KILL',$pid if $pid>0;close $fh;
+    $why =~ s/\s+\z//;fail("$why; discarded result",3);
+}
+my $ok=close $fh;
+$ok or fail('dig failed; check DNS availability and query settings',1);
+my ($status)=$data =~ /^;;\s*->>HEADER<<-.*?\bstatus:\s*([A-Z]+)\s*,/m;
+defined($status) or fail('dig returned no recognizable DNS response header',3);
+my $answer=0;
+my $in_answer=0;
+for my $line (split /\n/,$data) {
+    if ($line =~ /^;;\s*ANSWER SECTION:/) {$in_answer=1;next;}
+    if ($line =~ /^;;/ && $in_answer) {$in_answer=0;next;}
+    ++$answer if $in_answer && $line =~ /^\S+\s+\d+\s+IN\s+\S+\s+\S/i;
+}
+# Escape arbitrary terminal bytes coming from a native client and remote records.
+$data =~ s/([\x00-\x08\x0b-\x1f\x7f\x1b])/sprintf('\\x%02X',ord($1))/ge;
+print "DNS status: $status\nAnswers: $answer\n";
+print $data;
+exit($status eq 'NOERROR' && $answer>0 ? 0 : 1);
+sub fail {my($s,$rc)=@_;warn "dns-query: $s\n";exit $rc;}
+sub usage {my($rc)=@_;my$o=$rc?*STDERR:*STDOUT;print {$o} <<'USAGE';
+Usage: dns-query --name DNSNAME [--type A|AAAA|MX|TXT|NS|PTR|CNAME|SOA|SRV|CAA]
+                 [--server NUMERIC_IP] [--timeout 1..10]
+       dns-query --help | --version
+Send a direct DNS query through dig (may contact external servers; plaintext DNS).
+This is NOT the system hosts/NSS resolver and does not validate DNSSEC.
+Exit 0 = NOERROR with an answer, 1 = DNS error/no answer, 2 = usage, 3 = prerequisite/protocol error.
+USAGE
+exit $rc;}
