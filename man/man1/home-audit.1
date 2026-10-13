@@ -1,0 +1,32 @@
+.TH HOME-AUDIT 1 "2026-10-13" "SASD Freeware" "Unix Administration"
+.SH NAME
+home-audit \- Check local passwd home-directory metadata
+.SH SYNOPSIS
+\fBhome-audit\fR [options]
+.SH DESCRIPTION
+Checks only the home-directory inode and never follows a home symbolic link. Findings do not by themselves imply compromise. NSS-only users are outside the local-file scope.
+.SH OPTIONS
+.TP
+.B --file PATH
+Read the specified passwd-style file.
+.TP
+.B --min-uid N, --max-uid N
+Default range is UID 1000 through 59999.
+.TP
+.B --all
+Include every valid local passwd record.
+.TP
+.B --null
+Emit NUL-separated ISSUE, USER, UID, HOME records.
+.TP
+.B --help
+Display usage information.
+.TP
+.B --version
+Display program version.
+.SH EXIT STATUS
+0 completed, 1 malformed local data or traversal errors, 2 argument errors, 3 missing prerequisites.
+.SH SEE ALSO
+passwd(5), group(5), getent(1)
+.SH AUTHOR
+SASD Freeware contributors.

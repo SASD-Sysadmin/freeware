@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Structural audit of local Unix group files; never changes group membership.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::Account; 1 }) {
+        print STDERR "group-audit: required bundled Perl module SASD::Freeware::Account is unavailable: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::Account qw(read_local valid_name display_field);
+my $VERSION = '0.1.0';
+my ($help, $version, $file) = (0, 0, '/etc/group');
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'file=s'=>\$file) or usage(2);
+usage(0) if $help;
+if ($version) { print "group-audit $VERSION\n"; exit 0; }
+usage(2) if @ARGV;
+sub diagnostic { warn "group-audit: $_[0]\n"; }
+my $data = read_local($file, 'group', \&diagnostic);
+defined $data or exit 3;
+my ($errors, $warnings, %names, %gids) = ($data->{errors}, $data->{compat});
+for my $g (@{$data->{records}}) {
+    my ($name, $password, $gid, $members) = @$g;
+    if ($names{$name}++) { ++$warnings; diagnostic("duplicate group name: " . display_field($name)); }
+    if (exists($gids{$gid}) && $gids{$gid} ne $name) {
+        ++$warnings; diagnostic("shared GID $gid ($gids{$gid}, $name)");
+    } else { $gids{$gid} = $name; }
+    if ($gid == 0 && $name ne 'root') {
+        ++$warnings; diagnostic("non-root group has GID 0: " . display_field($name));
+    }
+    next if $members eq '';
+    my %listed;
+    for my $member (split(/,/, $members, -1)) {
+        if (!valid_name($member)) {
+            ++$errors; diagnostic("invalid member in group " . display_field($name));
+        } elsif ($listed{$member}++) {
+            ++$warnings; diagnostic("duplicate member " . display_field($member) .
+                                     " in group " . display_field($name));
+        }
+    }
+}
+print "Groups: ", scalar(@{$data->{records}}), "\nDistinct GIDs: ",
+    scalar(keys %gids), "\nWarnings: $warnings\nErrors: $errors\n";
+exit($errors ? 1 : 0);
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: group-audit [--file PATH]   (default: /etc/group)\n",
+                 "       group-audit --help | --version\n";
+    exit $code;
+}

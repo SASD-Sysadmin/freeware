@@ -1,0 +1,82 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Enumerate explicitly selected account source. NSS enumeration is not exhaustive.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::Account; 1 }) {
+        print STDERR "account-inventory: required bundled Perl module SASD::Freeware::Account is unavailable: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::Account qw(read_local display_field);
+my $VERSION = '0.1.0';
+my ($help, $version, $source, $kind, $passwd_file, $group_file, $null) =
+    (0, 0, 'local', 'both', '/etc/passwd', '/etc/group', 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'source=s'=>\$source,
+    'kind=s'=>\$kind,'passwd-file=s'=>\$passwd_file,'group-file=s'=>\$group_file,
+    'null'=>\$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "account-inventory $VERSION\n"; exit 0; }
+usage(2) if @ARGV || $source !~ /\A(?:local|nss)\z/ ||
+    $kind !~ /\A(?:users|groups|both)\z/ ||
+    ($source eq 'nss' && ($passwd_file ne '/etc/passwd' || $group_file ne '/etc/group'));
+my ($entries, $errors, $compat) = (0, 0, 0);
+print "TYPE\tNAME\tUID\tGID\tHOME\tSHELL\tMEMBERS\n" unless $null;
+sub output_row {
+    my @cols = @_;
+    if ($null) { print join("\0", @cols), "\0"; }
+    else { print join("\t", map { display_field($_) } @cols), "\n"; }
+    ++$entries;
+}
+sub warning { warn "account-inventory: $_[0]\n"; }
+if ($source eq 'local') {
+    if ($kind ne 'groups') {
+        my $data = read_local($passwd_file,'passwd',\&warning);
+        unless (defined $data) { exit 3; }
+        $errors += $data->{errors}; $compat += $data->{compat};
+        for my $u (@{$data->{records}}) {
+            output_row('user', $u->[0], $u->[2], $u->[3], $u->[5], $u->[6], '');
+        }
+    }
+    if ($kind ne 'users') {
+        my $data = read_local($group_file,'group',\&warning);
+        unless (defined $data) { exit 3; }
+        $errors += $data->{errors}; $compat += $data->{compat};
+        for my $g (@{$data->{records}}) {
+            output_row('group', $g->[0], '', $g->[2], '', '', $g->[3]);
+        }
+    }
+} else {
+    if ($kind ne 'groups') {
+        setpwent();
+        while (my @u = getpwent()) {
+            output_row('user', $u[0], $u[2], $u[3], $u[7], $u[8], '');
+        }
+        endpwent();
+    }
+    if ($kind ne 'users') {
+        setgrent();
+        while (my @g = getgrent()) {
+            output_row('group', $g[0], '', $g[2], '', '', $g[3]);
+        }
+        endgrent();
+    }
+    warning('NSS enumeration is not a completeness guarantee (e.g. LDAP/NIS backends)');
+}
+print "Entries: $entries\nInvalid records: $errors\nNIS compatibility records skipped: $compat\n"
+    unless $null;
+exit($errors ? 1 : 0);
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: account-inventory [--source local|nss] [--kind users|groups|both]\n",
+        "       [--passwd-file PATH --group-file PATH] [--null]\n",
+        "       account-inventory --help | --version\n",
+        "Local is the default. NSS enumeration is not guaranteed complete.\n";
+    exit $code;
+}

@@ -1,0 +1,29 @@
+.TH ACCOUNT-MANAGE 8 "2026-10-13" "SASD Freeware" "Unix Administration"
+.SH NAME
+account-manage \- Preview or explicitly perform guarded local Linux account operations
+.SH SYNOPSIS
+\fBaccount-manage\fR --action ACTION --name NAME [--apply --confirm-apply]
+.SH DESCRIPTION
+Only local Linux accounts, not LDAP/NIS. Default behavior is preview-only. Password locking does not revoke SSH keys or active sessions. Apply operations are not transactional and were not live-tested on system accounts.
+.SH OPTIONS
+.TP
+.B --action user-create|group-create|password-lock
+Choose one local account action.
+.TP
+.B --name NAME
+Choose the local account or group.
+.TP
+.B --apply --confirm-apply
+Both flags, effective root privileges and a trusted Linux backend are required to modify state.
+.TP
+.B --help
+Display usage information.
+.TP
+.B --version
+Display program version.
+.SH EXIT STATUS
+0 preview or native backend completed, 2 invalid usage, 3 unsupported/unsafe operation or backend failure.
+.SH SEE ALSO
+passwd(5), group(5), useradd(8), groupadd(8), usermod(8), getent(1)
+.SH AUTHOR
+SASD Freeware contributors.
