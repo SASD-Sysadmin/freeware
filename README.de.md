@@ -115,8 +115,11 @@ Weiterführende Bedienungsanleitungen: [rotate](docs/commands/rotate.de.md), [co
 
 ## Entwicklung und Qualitätssicherung
 
+**Qualitätssicherung:** `make test` führt Offline- und Regressionstests aus. `make integration-test` prüft zusätzlich optional DNS und LDAPS über reale Clients gegen lokale Testdienste. GitHub Actions verlangt beides unter Ubuntu und DNS unter macOS. Siehe [Testanleitung](docs/TESTING.de.md), [Rückgabecodes](docs/EXIT-CODES.de.md) und [Plattformübersicht](docs/PLATFORMS.de.md). Die Testdienste sind keine vollständigen produktiven DNS-/LDAP-Server.
+
 ```sh
 make test
+make integration-test  # optional; dig/ldapsearch ggf. installieren
 bash -n bin/rotate
 ```
 

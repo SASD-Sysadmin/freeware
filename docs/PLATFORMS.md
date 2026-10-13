@@ -37,3 +37,7 @@ make test
 ```
 
 Use native macOS tools such as `dscl` and `sysadminctl` for real local account administration; this repository does not wrap them yet. Never run `--apply` with any manager until separately validated on an isolated, supported test machine. Permission or access failures must not be reinterpreted as zero findings. macOS deployment beneath `/usr/freeware` has not been verified across all System Integrity Protection configurations.
+
+## Integration-test coverage
+
+`make integration-test` uses loopback-only protocol fixtures (Python 3), and invokes native DNS/LDAP clients. In GitHub Actions Ubuntu requires both DNS and LDAPS integration; macOS requires DNS and explicitly skips LDAPS in CI until native client behavior is validated. See [TESTING.md](TESTING.md) for prerequisites and limitations. Passing these tests does **not** certify full DNS or OpenLDAP deployment compatibility.

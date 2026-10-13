@@ -37,3 +37,7 @@ make test
 ```
 
 Für echte lokale macOS-Kontenverwaltung kommen native Werkzeuge wie `dscl` und `sysadminctl` infrage. Diese werden hier noch nicht als Verwaltungsbackend angeboten. Schreibende Programme sollten vor dem Einsatz auf produktiven Systemen isoliert geprüft werden. Zugriffsfehler dürfen nicht als Nullbefunde ausgegeben werden. Die Installation unter `/usr/freeware` wurde noch nicht für sämtliche Varianten des System Integrity Protection geprüft.
+
+## Abdeckung durch Integrationstests
+
+`make integration-test` verwendet lokale Protokoll-Testdienste (Python 3) und echte DNS-/LDAP-Clients. GitHub Actions verlangt unter Ubuntu DNS und LDAPS, unter macOS DNS; LDAPS wird in der macOS-CI zunächst bewusst übersprungen, bis die native Client-Kompatibilität geprüft ist. Näheres unter [TESTING.de.md](TESTING.de.md). Bestandene Tests garantieren **keine** vollständige Kompatibilität mit produktiven DNS- oder OpenLDAP-Diensten.

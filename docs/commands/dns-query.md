@@ -6,15 +6,20 @@ Uses the optional **`dig`** client to query DNS directly, bypassing `/etc/hosts`
 
 Queries can reach external DNS servers. Traditional DNS via `dig` is generally **unencrypted** and this tool **does not validate DNSSEC**. `--timeout` sets the native `dig` timeout; a separate overall safety timeout also applies. Optional `dig` may be absent on a target system or runner. Do not query third-party servers without permission or send private internal hostnames to public resolvers.
 
+The optional `--port 1..65535` selects the destination UDP DNS port (default: 53). This is primarily useful for isolated test servers and controlled DNS environments. It does not alter `/etc/resolv.conf`.
+
 ## Examples
 
 ```sh
+./bin/dns-query --name good.test --server 127.0.0.1 --port 1053  # only when a local DNS fixture is running
 ./bin/dns-query --name example.org --type A
 ./bin/dns-query --name example.org --type MX --server 192.0.2.53
 ./bin/dns-query --name 1.0.0.127.in-addr.arpa --type PTR
 ```
 
 ## Limits and exit codes
+
+See [the shared exit-code contract](../EXIT-CODES.md) and [integration tests](../TESTING.md).
 
 A/AAAA/MX/TXT/NS/PTR/CNAME/SOA/SRV/CAA only; no AXFR or arbitrary dig arguments.
 

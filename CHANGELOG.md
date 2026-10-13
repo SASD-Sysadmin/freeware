@@ -4,6 +4,14 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Tests and quality assurance
+
+- Added opt-in loopback DNS (UDP) and LDAPS (TLS + LDAP) integration fixtures, exercised by native dig and ldapsearch clients when available.
+- CI now requires DNS integration on Ubuntu and macOS, and LDAPS integration on Ubuntu; optional client absence is explicitly reported in local runs.
+- Added a shared, tested 0/1/2/3 return-code convention for read-only name-service diagnostics.
+- Added `dns-query --port 1..65535` for unprivileged local DNS integration without modifying system resolver configuration.
+- Added bilingual integration-test and exit-code documentation.
+
 ### Added
 
 - `nsswitch-audit` for structural, read-only Linux-style NSS source configuration checks.

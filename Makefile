@@ -3,7 +3,7 @@
 PREFIX ?= /usr/freeware
 DESTDIR ?=
 
-.PHONY: all check test install uninstall
+.PHONY: all check test integration-test install uninstall
 all: test
 
 check:
@@ -26,6 +26,12 @@ test: check
 		[ -f "$$suite" ] || continue; \
 		prove -v "$$suite"; \
 	done
+
+# Explicit opt-in: native dig/ldapsearch run against loopback protocol fixtures.
+# Ordinary make test stays offline and requires no optional network clients.
+integration-test: check
+	@command -v prove >/dev/null 2>&1 || { echo "make integration-test: prove is required" >&2; exit 1; }
+	@prove -v tests/integration/name_services.t
 
 install:
 	@set -eu; \
@@ -56,9 +62,9 @@ install:
 			install -d "$(DESTDIR)$(PREFIX)/docs/commands"; \
 			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
 		done; \
-		for doc in docs/PLATFORMS*.md; do \
+		for doc in docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md; do \
 			[ -e "$$doc" ] || continue; \
-			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid platform guide: $$doc" >&2; exit 1; }; \
+			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid top-level guide: $$doc" >&2; exit 1; }; \
 			install -d "$(DESTDIR)$(PREFIX)/docs"; \
 			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
 		done
@@ -75,7 +81,7 @@ uninstall:
 			[ -f "$$module" ] && [ ! -L "$$module" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$module"; \
 		done; \
-		for page in man/man[1-9]/*.[1-9] docs/commands/*.md docs/PLATFORMS*.md; do \
+		for page in man/man[1-9]/*.[1-9] docs/commands/*.md docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md; do \
 			[ -f "$$page" ] && [ ! -L "$$page" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$page"; \
 		done

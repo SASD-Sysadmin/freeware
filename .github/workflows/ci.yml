@@ -20,6 +20,17 @@ jobs:
         uses: actions/checkout@v4
       - name: Run Bash and Perl test suites
         run: make test
+      - name: Install optional integration clients (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dnsutils ldap-utils openssl
+      - name: Run loopback DNS and LDAPS integration checks
+        env:
+          SASD_REQUIRE_DNS_INTEGRATION: '1'
+          SASD_REQUIRE_LDAP_INTEGRATION: ${{ runner.os == 'Linux' && '1' || '0' }}
+          SASD_SKIP_LDAP_INTEGRATION: ${{ runner.os == 'macOS' && '1' || '0' }}
+        run: make integration-test
       - name: Check staged installation and removal
         shell: bash
         run: |
@@ -42,6 +53,10 @@ jobs:
           test -f "$staging/usr/freeware/docs/commands/ldap-probe.de.md"
           test -f "$staging/usr/freeware/docs/PLATFORMS.md"
           test -f "$staging/usr/freeware/docs/PLATFORMS.de.md"
+          test -f "$staging/usr/freeware/docs/TESTING.md"
+          test -f "$staging/usr/freeware/docs/TESTING.de.md"
+          test -f "$staging/usr/freeware/docs/EXIT-CODES.md"
+          test -f "$staging/usr/freeware/docs/EXIT-CODES.de.md"
           test -f "$staging/usr/freeware/man/man8/account-manage.8"
           make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
           test ! -e "$staging/usr/freeware/bin/account-inventory"
@@ -55,3 +70,5 @@ jobs:
           test ! -e "$staging/usr/freeware/docs/commands/dns-query.de.md"
           test ! -e "$staging/usr/freeware/docs/commands/ldap-probe.de.md"
           test ! -e "$staging/usr/freeware/docs/PLATFORMS.md"
+          test ! -e "$staging/usr/freeware/docs/TESTING.md"
+          test ! -e "$staging/usr/freeware/docs/EXIT-CODES.de.md"
