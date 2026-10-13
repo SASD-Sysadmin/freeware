@@ -144,7 +144,7 @@ print "nis-master.example.test\n";
 STUB
 close $f;chmod 0755,$ypwhich;
 my %e=(PATH=>$bin,SASD_DIG_ARGS=>$digargs,SASD_NIS_ARGS=>$nisargs);
-($out,$rc,$err)=run('dns-query',['--name','example.test','--type','a','--server','192.0.2.53','--timeout','2'],\%e);
+($out,$rc,$err)=run('dns-query',['--name','example.test','--type','a','--server','192.0.2.53','--port','1053','--timeout','2'],\%e);
 is($rc,0,'DNS mock query returns success');like($out,qr/DNS status: NOERROR/,'DNS status printed');
 like($out,qr/Answers: 1/,'DNS answer counted');
 open $f,'<',$digargs or die $!;my $raw=do{local $/;<$f>};close $f;
@@ -153,6 +153,8 @@ ok((grep {$_ eq '@192.0.2.53'} @args),'DNS server constrained as numeric IP');
 ok((grep {$_ eq '-q'} @args),'DNS query name passed in a dedicated flag');
 ok((grep {$_ eq '-t'} @args),'DNS type passed in a dedicated flag');
 ok((grep {$_ eq '+time=2'} @args),'DNS native timeout bounded');
+ok((grep {$_ eq '-p'} @args),'DNS port passed as separate native argument');
+ok((grep {$_ eq '1053'} @args),'custom DNS test port retained');
 ($out,$rc)=run('dns-query',['--name','example.test','--server','[2001:db8::1]'],\%e);
 is($rc,0,'DNS accepts bracketed numeric IPv6 server');
 ($out,$rc)=run('dns-query',['--name','example.test'],{%e,SASD_DIG_NXDOMAIN=>1});
@@ -170,7 +172,10 @@ is($rc,0,'control-byte DNS response still parsed');unlike($out,qr/\x1b/,'DNS res
 for my $bad (['--name','-x'],['--name','evil;test'],['--name','example.test','--type','AXFR'],
              ['--name','example.test','--server','evil.example'],
              ['--name','example.test','--server','192.0.2.1;rm'],
-             ['--name','example.test','--timeout','100']) {
+             ['--name','example.test','--timeout','100'],
+             ['--name','example.test','--port','0'],
+             ['--name','example.test','--port','65536'],
+             ['--name','example.test','--port','53;touch']) {
     unlink $digargs;
     ($out,$rc)=run('dns-query',$bad,\%e);
     is($rc,2,'invalid DNS selector rejected');

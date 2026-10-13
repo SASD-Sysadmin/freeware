@@ -17,6 +17,9 @@ A, AAAA, MX, TXT, NS, PTR, CNAME, SOA, SRV, CAA; default A.
 .B --server IP
 Explicit numeric DNS server address, optional.
 .TP
+.B --port 1..65535
+Optional destination port (default 53); intended for authorized servers and loopback tests.
+.TP
 .B --timeout 1..10
 Native query deadline in seconds; overall safety timeout is longer.
 .TP

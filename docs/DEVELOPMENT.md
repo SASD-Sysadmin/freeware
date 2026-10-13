@@ -36,3 +36,5 @@ Perl programs use `strict`, `warnings`, lexical variables, three-argument file o
 Each tool needs offline, repeatable tests of valid inputs, errors, boundary cases and special filenames. `make test` must not alter system accounts, `/etc`, DNS, NIS, or running system services. Test elevated or destructive operations separately on isolated systems. `make install PREFIX=... DESTDIR=...` must support safe staging. Record tested platforms separately from intended portability. Review source differences and executable bits before committing.
 
 No command is considered released merely because it exists in a local ZIP file; its published version must be present in the repository and accompanied by documentation and passing tests.
+
+The opt-in `make integration-test` target tests native DNS and LDAPS clients against loopback-only protocol fixtures. `make test` remains safe and independent of external services; integration requirements are enforced separately in GitHub Actions. Consult [integration testing](TESTING.md) and the [exit-code convention](EXIT-CODES.md).

@@ -115,8 +115,11 @@ For detailed command instructions, see [rotate](docs/commands/rotate.md), [core-
 
 ## Development and verification
 
+**Verification:** `make test` performs offline unit and regression tests. `make integration-test` adds opt-in loopback DNS and LDAPS protocol tests with native clients. GitHub Actions enforces both under Ubuntu and DNS under macOS. See [Testing](docs/TESTING.md), [Return codes](docs/EXIT-CODES.md) and the [platform matrix](docs/PLATFORMS.md). The loopback fixtures are not production DNS/LDAP servers.
+
 ```sh
 make test
+make integration-test  # opt-in; optional native dig/ldapsearch clients
 bash -n bin/rotate
 ```
 

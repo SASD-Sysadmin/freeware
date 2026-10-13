@@ -36,3 +36,5 @@ Perl-Programme verwenden `strict`, `warnings`, lexikalische Variablen und geprü
 Neue Programme erhalten reproduzierbare Offline-Tests für gültige und fehlerhafte Eingaben, Grenzfälle und besondere Dateinamen. `make test` verändert weder Benutzerkonten noch `/etc`, DNS, NIS oder laufende Dienste. Privilegierte und schreibende Operationen werden getrennt auf isolierten Systemen geprüft. `make install PREFIX=... DESTDIR=...` ermöglicht eine Testinstallation ohne Systemveränderung. Getestete Plattformen werden von lediglich vorgesehenen Plattformen unterschieden. Vor dem Commit sind Änderungen und Ausführungsrechte zu kontrollieren.
 
 Eine lokale ZIP-Datei ist kein veröffentlichter Stand. Erst eingecheckte, dokumentierte und erfolgreich getestete Programme können als veröffentlicht bezeichnet werden.
+
+Das optionale Ziel `make integration-test` prüft native DNS- und LDAPS-Clients gegen lokale Protokoll-Testdienste. `make test` bleibt unabhängig von Netzwerkdiensten. GitHub Actions erzwingt die dokumentierten Integrationsvoraussetzungen. Siehe [Integrationstests](TESTING.de.md) und [Rückgabecodes](EXIT-CODES.de.md).
