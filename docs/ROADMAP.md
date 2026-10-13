@@ -1,0 +1,132 @@
+# SASD Freeware – Technical inventory and prioritized roadmap
+
+Repository: https://github.com/SASD-Sysadmin/freeware  
+Analyzed main commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`  
+Assessment date: 2026-10-13
+
+
+> **Status:** Engineering review and planning document, **not committed** to the repository. Based on the repository tree, README, changelog, platform and test guides, CI, Makefile, and selected implementations. Priorities are engineering recommendations; they are not statements that every possible defect has been reproduced.
+
+## 1. Verified inventory
+
+- **30 executable commands:** 28 under `bin/`, two under `sbin/`.
+- **30 manual pages:** 28 section-1 and two section-8 pages.
+- **50 command-guide files:** 25 English and 25 German; some guides cover multiple commands.
+- **Three Perl modules:** `Account.pm`, `External.pm`, and `Walk.pm`.
+- **Testing:** 12 Perl regression suites, one Bash test script, and one opt-in DNS/LDAPS integration suite.
+- **CI:** Mandatory Ubuntu and macOS checks pass at the reviewed merge commit. Ubuntu runs native DNS and LDAPS integration; macOS requires DNS while intentionally skipping LDAPS.
+- **Status:** MIT-licensed; changelog uses `Unreleased`; no GitHub Release entries were returned at the time of review.
+
+### Side-effect legend
+
+`R` locally read-only; `N` read-only probe that may access a network or name service; `W` intentionally writes in a designated mode; `P` privileged write that requires explicit confirmation. This is an operational summary, not an unconditional security guarantee.
+
+## 2. Full command inventory
+
+| Area | Command | Current purpose | Mode |
+|---|---|---|---|
+| Filesystem | [`core-report`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/core-report) | Core-dump-like filenames and sizes | `R` |
+| Filesystem | [`path-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/path-audit) | Audit path lengths | `R` |
+| Filesystem | [`link-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/link-audit) | Broken/cyclic symlinks | `R` |
+| Filesystem | [`owner-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/owner-audit) | Unresolved UID/GID ownership | `R` |
+| Filesystem | [`permission-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/permission-audit) | Find world-writable entries | `R` |
+| Filesystem | [`fs-report`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/fs-report) | Inventory directories and logical sizes | `R` |
+| Filesystem | [`largefiles`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/largefiles) | Discover large files | `R` |
+| Filesystem | [`fs-usage`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/fs-usage) | Filesystem utilization and thresholds | `R` |
+| Filesystem | [`suid-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/suid-audit) | Inventory SUID/SGID files | `R` |
+| Filesystem | [`file-integrity`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/file-integrity) | Create/check SHA-256 baseline | `W*` |
+| Identity | [`account-inventory`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/account-inventory) | Inventory local/NSS identities | `R` |
+| Identity | [`group-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/group-audit) | Validate group records | `R` |
+| Identity | [`home-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/home-audit) | Audit home directory metadata | `R` |
+| Identity | [`account-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/account-audit) | Audit account-file structure | `R` |
+| Identity | [`account-manage`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/sbin/account-manage) | Linux user/group creation, password locking | `P` |
+| Network | [`hosts-lint`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/hosts-lint) | Check hosts-file structure | `R` |
+| Network | [`nss-lookup`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/nss-lookup) | Targeted NSS identity lookups | `R` |
+| Network | [`host-resolve`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/host-resolve) | OS resolver forward/reverse queries | `N` |
+| Network | [`ldap-probe`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/ldap-probe) | Anonymous LDAPS rootDSE query | `N` |
+| Network | [`nsswitch-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/nsswitch-audit) | Check NSS switch syntax | `R` |
+| Network | [`dns-query`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/dns-query) | Direct DNS query via dig | `N` |
+| Network | [`nis-probe`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/nis-probe) | Check local NIS/YP binding | `N` |
+| Network | [`ldap-config-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/ldap-config-audit) | Static OpenLDAP TLS client-config audit | `R` |
+| Network | [`tcp-check`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/tcp-check) | Test TCP reachability | `N` |
+| Quotas | [`quota-report`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/quota-report) | Quota reporting | `R` |
+| Quotas | [`quota-status`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/quota-status) | Read Linux quota state | `R` |
+| Quotas | [`quota-set`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/sbin/quota-set) | Set Linux quota limits | `P` |
+| Logs/SSH | [`log-summary`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/log-summary) | Summarize logs by severity | `R` |
+| Logs/SSH | [`ssh-key-audit`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/ssh-key-audit) | Audit OpenSSH authorized_keys | `R` |
+| Backup | [`rotate`](https://github.com/SASD-Sysadmin/freeware/blob/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb/bin/rotate) | Rotate 10 file snapshots | `W` |
+
+`file-integrity` reads when checking and creates a baseline only with `--init`. `rotate` writes snapshots. `account-manage` and `quota-set` have explicit apply/confirmation controls and must receive additional privileged-operation validation.
+
+## 3. Coverage and remaining gaps
+
+| Area | Current coverage | Gap | Priority |
+|---|---|---|---|
+| Filesystems | Rich read-only inspection, quotas, SHA-256 manifests | Mounts, ACLs, disk health, tamper-resistant baselines | P2 |
+| Accounts | Local and NSS inventories; scoped Linux writes | No recurring realistic privileged integration test | P0 |
+| Networking | DNS, NSS, LDAP, NIS, TCP | Interface/route/firewall reporting, native macOS LDAPS CI | P1/P2 |
+| Processes and services | TCP probe | No process/service inventories | P2 |
+| Logs | Severity counts | No structured journal/syslog adapters or history | P2 |
+| Software lifecycle | Not covered | Package/update status | P3 |
+| Backup | Ten single-file rotation snapshots | No end-to-end backup/restore system; nontransactional rotation | P1/P3 |
+| OS portability | Ubuntu and macOS CI, local Debian/WSL testing | No verified FreeBSD/OpenBSD or true privileged quota/user-management lab | P0/P3 |
+
+## 4. Priority work
+
+### P0 — Safety and truthful support statements
+
+1. **Align CI and documentation.** `docs/TESTING.de.md` suggests optional macOS LDAPS checks can execute when clients exist, while `.github/workflows/ci.yml` explicitly sets `SASD_SKIP_LDAP_INTEGRATION=1`. Correct this mismatch, preserving mandatory TLS certificate verification.
+2. **Design isolated privileged-operation testing.** `account-manage` and `quota-set` need explicit-opt-in throwaway Linux VMs with snapshots, before/after assertions, cleanup/rollback, and audit logs. Never mutate the working WSL instance or an everyday development host for this validation.
+3. **Improve documented security boundaries.** Cover the two privileged tools in `SECURITY.md` and document exit code exceptions, including Nagios mode.
+4. **Never silently skip required tests.** Keep required CI dependencies explicit; optional skips must remain visible.
+
+**Done:** Accurate per-platform requirements; validated documentation references; reviewed VM test design; no unreported required-test skips; safe defaults unchanged.
+
+### P1 — CLI consistency, packaging, release discipline
+
+1. Audit `--help`, `--version`, stderr, exit status, NUL/machine-readable formats. Earlier tools such as `rotate`, `file-integrity`, and `ssh-key-audit` do not follow all newer conventions; preserve compatibility deliberately.
+2. Add a version-aware install manifest. The current Makefile removes files based on the present checkout, potentially leaving previously installed files that were removed upstream. Test upgrades, staged installs, and uninstall idempotence.
+3. Add ShellCheck for shell sources and narrowly scoped contract/link/dependency checks, without turning optional runtime dependencies into global hard requirements.
+4. Plan a reproducible source release, consistent version strings, release checklist and a possible first `v0.1.0` tag once the scope and gates are agreed.
+
+**Done:** Regression, integration, documentation, install/uninstall, and contract checks pass; package contents and platform limits are recorded.
+
+### P2 — Read-only feature expansion only after the base is stable
+
+Recommended order, **not implementation authorization**: (1) host/process inventory; (2) service-state reporting with systemd detection and honest WSL fallback; (3) mounts/filesystems; (4) network interfaces and routes; (5) structured log inspection with bounded output and privacy controls. Require a written purpose, boundary, dependency list, DE/EN guide, manpage, negative/positive tests, exit-code design and side-effect assessment for each command.
+
+### P3 — Later, separate commitments
+
+FreeBSD/OpenBSD backend and CI work; package/update health; SMART/RAID monitoring; restorable and off-host backups; write-capable networking/firewall features only with an independent security model.
+
+## 5. Proposed milestones and acceptance criteria
+
+| Order | Milestone | Scope | Done when |
+|---|---|---|---|
+| M0 | Inventory | This review | 30 tools and risks mapped |
+| M1 | `quality-contracts` | CLI contracts, documentation, platform matrix, CI skips | New contract tests green; EN/DE consistent |
+| M2 | `privileged-safety` | VM safety test design and explicit apply regression | Snapshot/rollback documented; no production-host mutation |
+| M3 | `release-engineering` | Install/version manifest, upgrade behavior, release checklist | Reproducible staged install and remove; RC feasible |
+| M4 | `host-observability` | One or two targeted read-only commands | Cross-platform behavior and tests explicit |
+| M5 | `bsd-platforms` | FreeBSD/OpenBSD matrix as runners/VMs allow | Supported features individually verified |
+
+This sequence is risk-driven rather than calendar-based. M0 is complete with this report. M1 is the recommended next coding milestone.
+
+## 6. Explicit non-claims
+
+- Green CI does **not** establish safe real-world account/quota modifications.
+- The local LDAP fixture is not a full OpenLDAP server.
+- FreeBSD, OpenBSD, and Solaris support remains unverified.
+- `file-integrity` does not implement tamper-proof integrity attestation.
+- An `Unreleased` changelog is not a versioned product release.
+
+## 7. Immediate next action
+
+Scope M1 into a small, reviewable `feat/quality-contracts` branch without modifying `main` before user acceptance. Maintain compatibility and keep required Ubuntu/macOS CI green before merging.
+
+## 8. Audited sources
+
+- [Repository tree](https://github.com/SASD-Sysadmin/freeware/tree/f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb)
+- [README]({prefix}README.md), [Changelog]({prefix}CHANGELOG.md), [Development]({prefix}docs/DEVELOPMENT.md), [Platforms]({prefix}docs/PLATFORMS.md), [Testing]({prefix}docs/TESTING.md), [Exit codes]({prefix}docs/EXIT-CODES.md)
+- [Makefile]({prefix}Makefile), [CI]({prefix}.github/workflows/ci.yml), [Security]({prefix}SECURITY.md)
+- [Verified main CI run #13](https://github.com/SASD-Sysadmin/freeware/actions/runs/38394032369)
