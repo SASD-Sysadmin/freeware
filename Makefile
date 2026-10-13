@@ -55,6 +55,12 @@ install:
 			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid guide: $$doc" >&2; exit 1; }; \
 			install -d "$(DESTDIR)$(PREFIX)/docs/commands"; \
 			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
+		done; \
+		for doc in docs/PLATFORMS*.md; do \
+			[ -e "$$doc" ] || continue; \
+			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid platform guide: $$doc" >&2; exit 1; }; \
+			install -d "$(DESTDIR)$(PREFIX)/docs"; \
+			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
 		done
 
 uninstall:
@@ -69,7 +75,7 @@ uninstall:
 			[ -f "$$module" ] && [ ! -L "$$module" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$module"; \
 		done; \
-		for page in man/man[1-9]/*.[1-9] docs/commands/*.md; do \
+		for page in man/man[1-9]/*.[1-9] docs/commands/*.md docs/PLATFORMS*.md; do \
 			[ -f "$$page" ] && [ ! -L "$$page" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$page"; \
 		done

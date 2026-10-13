@@ -82,6 +82,9 @@ unlike($out,qr/TYPE\tNAME/,'NUL output has no human header');
 ($out,$rc) = run('account-inventory','--source','nss','--kind','users');
 is($rc,0,'NSS enumeration interface succeeds on current host');
 like($out,qr/^TYPE\tNAME/m,'NSS inventory displays header');
+($out,$rc) = run('account-inventory','--kind','users');
+is($rc,0,'platform-specific default source succeeds');
+like($out,qr/^TYPE\tNAME/m,'default source displays expected header');
 ($out,$rc) = run('account-inventory','--source','oops');
 is($rc,2,'invalid inventory source is rejected');
 ($out,$rc) = run('account-inventory','--kind','users','--passwd-file',"$root/missing");
@@ -120,15 +123,31 @@ unlike($out,qr/wrong-owner/,'UID filtering excludes lower UID accounts');
 is($rc,2,'invalid UID interval refused');
 ($out,$rc) = run('home-audit','--file',"$root/missing");
 is($rc,3,'missing passwd file is reported');
+($out,$rc) = run('home-audit','--source','nss','--file',$passwd);
+is($rc,2,'NSS home audit forbids local passwd fixture');
+($out,$rc) = run('home-audit','--source','nss','--min-uid','4294967295',
+    '--max-uid','4294967295');
+is($rc,0,'NSS home audit supports a read-only, empty UID selection');
+like($out,qr/^ISSUE\tUSER\tUID\tHOME/m,'NSS home audit has columns');
 
 my $newname = 'sasd_unittest_24918';
-($out,$rc) = run('account-manage','--action','user-create','--name',$newname);
-is($rc,0,'user-create preview succeeds');
-like($out,qr/Mode: dry-run \(no changes\)/,'preview is explicit');
-like($out,qr/Planned command: useradd -m -- /,'user-create uses native backend with home creation');
-($out,$rc) = run('account-manage','--action','group-create','--name',$newname);
-is($rc,0,'group-create preview succeeds');
-like($out,qr/Planned command: groupadd -- /,'group-create backend explicitly shown');
+if ($^O eq 'linux') {
+    ($out,$rc) = run('account-manage','--action','user-create','--name',$newname);
+    is($rc,0,'Linux user-create preview succeeds');
+    like($out,qr/Mode: dry-run \(no changes\)/,'Linux preview is explicit');
+    like($out,qr/Planned command: useradd -m -- /,'Linux user-create displays backend');
+    ($out,$rc) = run('account-manage','--action','group-create','--name',$newname);
+    is($rc,0,'Linux group-create preview succeeds');
+    like($out,qr/Planned command: groupadd -- /,'Linux group-create displays backend');
+} else {
+    ($out,$rc,$err) = run('account-manage','--action','user-create','--name',$newname);
+    is($rc,3,'non-Linux user-create preview refused');
+    like($err,qr/Linux-only/,'non-Linux user-create has actionable diagnostic');
+    unlike($out,qr/Planned command/,'non-Linux never offers invalid Linux preview');
+    ($out,$rc,$err) = run('account-manage','--action','group-create','--name',$newname);
+    is($rc,3,'non-Linux group-create preview refused');
+    like($err,qr/Linux-only/,'non-Linux group-create has actionable diagnostic');
+}
 ($out,$rc) = run('account-manage','--action','password-lock','--name','root');
 is($rc,2,'root password locking is refused');
 ($out,$rc) = run('account-manage','--action','password-lock','--name',$newname);

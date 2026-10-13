@@ -1,6 +1,6 @@
 # SASD Freeware
 
-[English](README.md) | **Deutsch** · [MIT-Lizenz](LICENSE) · [Mitwirkung](CONTRIBUTING.md) · [Änderungsprotokoll](CHANGELOG.md)
+[English](README.md) | **Deutsch** · [MIT-Lizenz](LICENSE) · [Mitwirkung](CONTRIBUTING.md) · [Änderungsprotokoll](CHANGELOG.md) · [Plattformunterstützung](docs/PLATFORMS.de.md)
 
 SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die Systemadministration unter Linux und Unix bereit. Die Werkzeuge sind für einen zuverlässigen Betrieb, die unkomplizierte Integration in bestehende Umgebungen und eine langfristige Wartbarkeit ausgelegt. Zu jedem Programm gehören Dokumentation, praktische Anwendungsbeispiele und automatisierte Tests.
 
@@ -23,7 +23,7 @@ SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die 
 | `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Syntaxprüfung der Hosts-Datei. | [Perl-Anleitung](docs/commands/perl-tools.de.md) · [Manpage](man/man1/hosts-lint.1) |
 | `account-inventory` | [`bin/account-inventory`](bin/account-inventory) | Lokale Konten oder über NSS aufgezählte Identitäten erfassen. | [Anleitung](docs/commands/account-inventory.de.md) · [English](docs/commands/account-inventory.md) · [Manpage](man/man1/account-inventory.1) |
 | `group-audit` | [`bin/group-audit`](bin/group-audit) | Lokale Gruppenstruktur und Mitgliedschaft prüfen. | [Anleitung](docs/commands/group-audit.de.md) · [English](docs/commands/group-audit.md) · [Manpage](man/man1/group-audit.1) |
-| `home-audit` | [`bin/home-audit`](bin/home-audit) | Metadaten lokaler Home-Verzeichnisse prüfen. | [Anleitung](docs/commands/home-audit.de.md) · [English](docs/commands/home-audit.md) · [Manpage](man/man1/home-audit.1) |
+| `home-audit` | [`bin/home-audit`](bin/home-audit) | Metadaten von Home-Verzeichnissen über lokale Konten/NSS prüfen. | [Anleitung](docs/commands/home-audit.de.md) · [English](docs/commands/home-audit.md) · [Manpage](man/man1/home-audit.1) |
 | `account-manage` | [`sbin/account-manage`](sbin/account-manage) | Lokale Linux-Konten mit Vorschau und Bestätigung verwalten. | [Anleitung](docs/commands/account-manage.de.md) · [English](docs/commands/account-manage.md) · [Manpage](man/man8/account-manage.8) |
 | `account-audit` | [`bin/account-audit`](bin/account-audit) | Strukturanalyse einer Unix-Kontodatei. | [Perl-Anleitung](docs/commands/perl-tools.de.md) · [Manpage](man/man1/account-audit.1) |
 | `log-summary` | [`bin/log-summary`](bin/log-summary) | Logmeldungen nach Schweregrad zählen. | [Perl-Anleitung](docs/commands/perl-tools.de.md) · [Manpage](man/man1/log-summary.1) |

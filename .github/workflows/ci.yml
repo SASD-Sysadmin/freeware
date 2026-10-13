@@ -20,3 +20,18 @@ jobs:
         uses: actions/checkout@v4
       - name: Run Bash and Perl test suites
         run: make test
+      - name: Check staged installation and removal
+        shell: bash
+        run: |
+          set -euo pipefail
+          staging="$(mktemp -d)"
+          trap 'rm -rf "$staging"' EXIT
+          make install DESTDIR="$staging" PREFIX=/usr/freeware
+          test -x "$staging/usr/freeware/bin/account-inventory"
+          test -x "$staging/usr/freeware/bin/home-audit"
+          test -f "$staging/usr/freeware/docs/PLATFORMS.md"
+          test -f "$staging/usr/freeware/docs/PLATFORMS.de.md"
+          test -f "$staging/usr/freeware/man/man8/account-manage.8"
+          make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
+          test ! -e "$staging/usr/freeware/bin/account-inventory"
+          test ! -e "$staging/usr/freeware/docs/PLATFORMS.md"

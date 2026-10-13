@@ -1,6 +1,6 @@
 # SASD Freeware
 
-**English** | [Deutsch](README.de.md) · [MIT License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+**English** | [Deutsch](README.de.md) · [MIT License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md) · [Platform support](docs/PLATFORMS.md)
 
 SASD Freeware provides a collection of command-line utilities, scripts, and libraries for Linux and Unix system administration. The tools are designed for reliable operation, straightforward integration into existing environments, and long-term maintainability. Each utility includes documentation, practical usage examples, and automated tests.
 
@@ -23,7 +23,7 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 | `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Validate hosts-file syntax without changes. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/hosts-lint.1) |
 | `account-inventory` | [`bin/account-inventory`](bin/account-inventory) | Inventory local passwd/group data or NSS-enumerated identities. | [Guide](docs/commands/account-inventory.md) · [Deutsch](docs/commands/account-inventory.de.md) · [Manpage](man/man1/account-inventory.1) |
 | `group-audit` | [`bin/group-audit`](bin/group-audit) | Read-only local group-file structure and membership audit. | [Guide](docs/commands/group-audit.md) · [Deutsch](docs/commands/group-audit.de.md) · [Manpage](man/man1/group-audit.1) |
-| `home-audit` | [`bin/home-audit`](bin/home-audit) | Check local users’ home directory metadata. | [Guide](docs/commands/home-audit.md) · [Deutsch](docs/commands/home-audit.de.md) · [Manpage](man/man1/home-audit.1) |
+| `home-audit` | [`bin/home-audit`](bin/home-audit) | Check home directory metadata from local/NSS identities. | [Guide](docs/commands/home-audit.md) · [Deutsch](docs/commands/home-audit.de.md) · [Manpage](man/man1/home-audit.1) |
 | `account-manage` | [`sbin/account-manage`](sbin/account-manage) | Guarded, preview-first local Linux account operations. | [Guide](docs/commands/account-manage.md) · [Deutsch](docs/commands/account-manage.de.md) · [Manpage](man/man8/account-manage.8) |
 | `account-audit` | [`bin/account-audit`](bin/account-audit) | Structural audit of a Unix passwd file. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/account-audit.1) |
 | `log-summary` | [`bin/log-summary`](bin/log-summary) | Count log entries by severity markers. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/log-summary.1) |

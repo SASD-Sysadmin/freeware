@@ -2,7 +2,7 @@
 
 [English](account-manage.md) · [Projekt](../../README.de.md)
 
-`account-manage` ist eine bewusst eng begrenzte Verwaltung **lokaler Linux-Konten**. Standardmäßig wird ausschließlich eine Vorschau erzeugt. Änderungen brauchen **beide** Schalter `--apply --confirm-apply` und Root-Rechte. **NIS, NIS+, LDAP, FreeIPA und Active Directory werden nicht verwaltet.**
+`account-manage` ist eine bewusst eng begrenzte Verwaltung **lokaler Linux-Konten**. **Unter macOS und anderen Nicht-Linux-Systemen wird auch die Vorschau ausdrücklich verweigert (Exitstatus 3)**, statt nicht anwendbare Linux-Befehle für Directory-Services-Konten vorzuschlagen. Standardmäßig wird ausschließlich eine Vorschau erzeugt. Änderungen brauchen **beide** Schalter `--apply --confirm-apply` und Root-Rechte. **NIS, NIS+, LDAP, FreeIPA und Active Directory werden nicht verwaltet.**
 
 ## Aktionen und Beispiele
 
