@@ -28,3 +28,7 @@ Die Ausgabe des Systemprogramms beschreibt unter anderem Soft- und Hard-Limits, 
 ## Installation
 
 `make test && make install PREFIX=/usr/freeware`. Die Installation richtet keine Betriebssystem-Quotas ein. Für Benutzerabfragen sind normalerweise keine Root-Rechte notwendig.
+
+## Verwandte Befehle
+
+Unter Linux zeigt `quota-status --all` den Quota-Aktivierungszustand an, ohne ihn zu verändern. `quota-set` bereitet vollständige Grenzen zunächst als Vorschau vor und übernimmt diese erst nach ausdrücklicher Bestätigung. Siehe [quota-status](quota-status.de.md) und [quota-set](quota-set.de.md).

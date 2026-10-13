@@ -4,7 +4,7 @@
 
 SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die Systemadministration unter Linux und Unix bereit. Die Werkzeuge sind für einen zuverlässigen Betrieb, die unkomplizierte Integration in bestehende Umgebungen und eine langfristige Wartbarkeit ausgelegt. Zu jedem Programm gehören Dokumentation, praktische Anwendungsbeispiele und automatisierte Tests.
 
-## Enthaltenes Werkzeug
+## Enthaltene Werkzeuge
 
 | Befehl | Pfad | Funktion | Dokumentation |
 | --- | --- | --- | --- |
@@ -15,6 +15,8 @@ SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die 
 | `largefiles` | [`bin/largefiles`](bin/largefiles) | Große reguläre Dateien ermitteln. | [Anleitung](docu/largefiles.de.md) · [English](docu/largefiles.md) · [Manpage](man/man1/largefiles.1) |
 | `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Dateisystembelegung per df prüfen. | [Anleitung](docu/fs-usage.de.md) · [English](docu/fs-usage.md) · [Manpage](man/man1/fs-usage.1) |
 | `quota-report` | [`bin/quota-report`](bin/quota-report) | Benutzer-, Gruppen- und Dateisystem-Quotas abfragen. | [Anleitung](docu/quota-report.de.md) · [English](docu/quota-report.md) · [Manpage](man/man1/quota-report.1) |
+| `quota-status` | [`bin/quota-status`](bin/quota-status) | Aktivierungszustand von Linux-Quotas über `quotaon -p` anzeigen. | [Anleitung](docu/quota-status.de.md) · [English](docu/quota-status.md) · [Manpage](man/man1/quota-status.1) |
+| `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Vollständige Linux-Quotas vorbereiten oder ausdrücklich bestätigt anwenden. | [Anleitung](docu/quota-set.de.md) · [English](docu/quota-set.md) · [Manpage](man/man8/quota-set.8) |
 | `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Syntaxprüfung der Hosts-Datei. | [Perl-Anleitung](docu/perl-tools.de.md) · [Manpage](man/man1/hosts-lint.1) |
 | `account-audit` | [`bin/account-audit`](bin/account-audit) | Strukturanalyse einer Unix-Kontodatei. | [Perl-Anleitung](docu/perl-tools.de.md) · [Manpage](man/man1/account-audit.1) |
 | `log-summary` | [`bin/log-summary`](bin/log-summary) | Logmeldungen nach Schweregrad zählen. | [Perl-Anleitung](docu/perl-tools.de.md) · [Manpage](man/man1/log-summary.1) |
@@ -30,11 +32,12 @@ Beispiel: `rotate /etc/hosts` erstellt `/etc/hosts.0`, während `/etc/hosts` unv
 ```text
 /usr/freeware/
 ├── bin/               Benutzerprogramme (rotate und Perl-Werkzeuge)
-├── sbin/              Administrationsprogramme (reserviert)
+├── sbin/              Administrationsprogramme (quota-set)
 ├── lib/               Architekturunabhängige Bibliotheken
 ├── lib64/             64-Bit-Bibliotheken (reserviert)
 ├── man/
-│   └── man1/          Handbuchseiten für alle Programme
+│   ├── man1/          Handbuchseiten für Benutzerprogramme
+│   └── man8/          Handbuchseiten für Administrationsprogramme
 ├── docu/              Englische und deutsche Bedienungsanleitungen
 ├── tests/             Automatisierte Tests im Git-Checkout
 ├── .github/workflows/ CI-Konfiguration im Git-Checkout
@@ -51,7 +54,7 @@ Die Verzeichnisnamen orientieren sich bewusst an der geplanten Installation. `li
 - Unix-artiges System mit **Bash** und den Standardwerkzeugen `cp`, `mv`, `rm`, `mkdir`, `rmdir` und `mktemp` (lokale Tests unter Linux; CI für Ubuntu und macOS konfiguriert).
 - Schreibrechte im Verzeichnis der Datei, die gesichert werden soll.
 - `git` zum Klonen sowie optional `make` und `install` für die Installation.
-- Für `rotate` wird Bash benötigt, nicht Perl. Die Perl-Programme benötigen Perl ab Version 5.8 sowie die mitgelieferten Bibliotheken aus `lib/`. Für `fs-usage` wird zusätzlich ein POSIX-kompatibles `df` benötigt, für `quota-report` die systemeigenen Programme `quota` oder `repquota`. Zusätzliche CPAN-Module sind nicht erforderlich.
+- Für `rotate` wird Bash benötigt, nicht Perl. Die Perl-Programme benötigen Perl ab Version 5.8 sowie die mitgelieferten Bibliotheken aus `lib/`. Für `fs-usage` wird zusätzlich ein POSIX-kompatibles `df` benötigt, für `quota-report` die systemeigenen Programme `quota` oder `repquota`. Unter Linux benötigt `quota-status` ein `quotaon` mit `-p`, das Anwenden mit `quota-set` außerdem `setquota` und aktivierte Quotas. Zusätzliche CPAN-Module sind nicht erforderlich.
 
 ## Installation
 

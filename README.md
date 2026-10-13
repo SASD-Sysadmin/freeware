@@ -4,7 +4,7 @@
 
 SASD Freeware provides a collection of command-line utilities, scripts, and libraries for Linux and Unix system administration. The tools are designed for reliable operation, straightforward integration into existing environments, and long-term maintainability. Each utility includes documentation, practical usage examples, and automated tests.
 
-## Included utility
+## Included utilities
 
 | Command | Location | Purpose | Documentation |
 | --- | --- | --- | --- |
@@ -15,6 +15,8 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 | `largefiles` | [`bin/largefiles`](bin/largefiles) | Find large regular files. | [Guide](docu/largefiles.md) · [Deutsch](docu/largefiles.de.md) · [Manpage](man/man1/largefiles.1) |
 | `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Check mounted filesystem capacity using df. | [Guide](docu/fs-usage.md) · [Deutsch](docu/fs-usage.de.md) · [Manpage](man/man1/fs-usage.1) |
 | `quota-report` | [`bin/quota-report`](bin/quota-report) | Query user, group, and filesystem quota reports. | [Guide](docu/quota-report.md) · [Deutsch](docu/quota-report.de.md) · [Manpage](man/man1/quota-report.1) |
+| `quota-status` | [`bin/quota-status`](bin/quota-status) | Show Linux quota activation status using native `quotaon -p`. | [Guide](docu/quota-status.md) · [Deutsch](docu/quota-status.de.md) · [Manpage](man/man1/quota-status.1) |
+| `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Preview or explicitly apply complete Linux user/group quotas. | [Guide](docu/quota-set.md) · [Deutsch](docu/quota-set.de.md) · [Manpage](man/man8/quota-set.8) |
 | `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Validate hosts-file syntax without changes. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/hosts-lint.1) |
 | `account-audit` | [`bin/account-audit`](bin/account-audit) | Structural audit of a Unix passwd file. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/account-audit.1) |
 | `log-summary` | [`bin/log-summary`](bin/log-summary) | Count log entries by severity markers. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/log-summary.1) |
@@ -30,11 +32,12 @@ Example: `rotate /etc/hosts` creates `/etc/hosts.0` without modifying `/etc/host
 ```text
 /usr/freeware/
 ├── bin/               User commands (rotate and Perl tools)
-├── sbin/              Administrative commands (reserved)
+├── sbin/              Administrative commands (quota-set)
 ├── lib/               Architecture-independent libraries
 ├── lib64/             64-bit libraries (reserved)
 ├── man/
-│   └── man1/          Manual pages for each command
+│   ├── man1/          User-command manual pages
+│   └── man8/          Administrative-command manual pages
 ├── docu/              English and German command guides
 ├── tests/             Automated command tests (repository checkout)
 ├── .github/workflows/ CI tests (repository checkout)
@@ -51,7 +54,7 @@ The top-level directory names intentionally follow the planned `/usr/freeware` i
 - Unix-like operating system with **Bash**, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, and `mktemp` (Linux is tested locally; CI is configured for Ubuntu and macOS).
 - Write permission in the directory of the file to be rotated.
 - `git` for cloning; `make` and `install` for optional staged deployment.
-- `rotate` needs Bash, not Perl. The Perl tools require Perl 5.8 or later and their bundled modules in `lib/`. `fs-usage` additionally requires a POSIX-compatible `df`; `quota-report` requires native `quota` or `repquota` utilities. No CPAN downloads are required.
+- `rotate` needs Bash, not Perl. The Perl tools require Perl 5.8 or later and their bundled modules in `lib/`. `fs-usage` additionally requires a POSIX-compatible `df`; `quota-report` requires native `quota` or `repquota`; on Linux, `quota-status` requires `quotaon` with `-p` and applying limits with `quota-set` requires `setquota` and an active quota configuration. No CPAN downloads are required.
 
 ## Installation
 

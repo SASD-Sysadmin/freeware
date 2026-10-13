@@ -6,6 +6,16 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ### Added
 
+- `quota-status` for non-mutating Linux quota activation status via native `quotaon -p`.
+- `quota-set` for explicit, validated Linux user/group quota limits with read-only preview, separate apply confirmation, unlimited-value acknowledgment and mountpoint checks.
+- English/German command guides, section 1/8 manual pages and isolated regression tests for quota administration.
+
+### Changed
+
+- `make check` now syntax-checks executable Perl commands from both `bin/` and `sbin/`.
+
+### Added
+
 - `largefiles` for bounded largest-file lists or complete streamed scans, including unambiguous NUL-delimited pathname records.
 - `fs-usage` for read-only portable `df` reports and utilization thresholds.
 - `quota-report` for read-only user, group and administrative quota reports via native Unix utilities.
