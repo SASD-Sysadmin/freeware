@@ -8,7 +8,7 @@ all: test
 
 check:
 	@command -v perl >/dev/null 2>&1 || { echo "make check: Perl is required (Perl 5)" >&2; exit 1; }
-	@set -eu; for script in bin/*; do \
+	@set -eu; for script in bin/* sbin/*; do \
 		[ -f "$$script" ] && [ -x "$$script" ] || continue; \
 		case "$$(head -n 1 "$$script")" in *perl*) perl -c "$$script" ;; esac; \
 	done

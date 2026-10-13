@@ -28,3 +28,7 @@ The quota utility's own output describes any soft limits, hard limits, block/ino
 ## Installation
 
 `make test && make install PREFIX=/usr/freeware`. The tool does not install or configure operating-system quota software. Do not elevate privileges for ordinary user reports unless host policy requires it.
+
+## Related commands
+
+On Linux, `quota-status --all` displays activation status without changing it. `quota-set` previews complete limit values and changes them only after explicit confirmation. See [quota-status](quota-status.md) and [quota-set](quota-set.md).

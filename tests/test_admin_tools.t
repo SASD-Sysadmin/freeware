@@ -10,7 +10,7 @@ use IO::Socket::INET;
 
 my $root = File::Spec->catdir($FindBin::Bin, '..');
 my $bin = File::Spec->catdir($root, 'bin');
-my $tmp = tempdir('sasd-book-tools-XXXXXXXX', TMPDIR => 1, CLEANUP => 1);
+my $tmp = tempdir('sasd-admin-tools-XXXXXXXX', TMPDIR => 1, CLEANUP => 1);
 sub path { File::Spec->catfile($tmp, @_) }
 sub write_file {
     my ($name, $data) = @_;

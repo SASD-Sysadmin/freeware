@@ -1,0 +1,58 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Read-only Linux quota activation status using quotaon -p.
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::External; 1 }) {
+        print STDERR "quota-status: required Perl module SASD::Freeware::External is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use Getopt::Long qw(GetOptions);
+use Cwd qw(realpath);
+use File::Spec;
+use SASD::Freeware::External qw(find_program);
+my $VERSION = '0.1.0';
+my ($help, $version, $all, $filesystem) = (0, 0, 0, undef);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version, 'all' => \$all,
+           'filesystem=s' => \$filesystem) or usage(2);
+usage(0) if $help;
+if ($version) { print "quota-status $VERSION\n"; exit 0; }
+usage(2) if @ARGV || ($all && defined($filesystem)) || (!$all && !defined($filesystem));
+$^O eq 'linux' or fail('quota-status supports Linux quotaon -p only', 3);
+my @args = ('-p');
+if ($all) {
+    push @args, '-a';
+} else {
+    File::Spec->file_name_is_absolute($filesystem) && $filesystem !~ /[\x00-\x1f\x7f]/
+        or fail('filesystem must be an absolute path without control characters', 2);
+    -d $filesystem && !-l $filesystem
+        or fail("filesystem is not an existing real directory: $filesystem", 2);
+    my $canonical = realpath($filesystem);
+    defined($canonical) or fail("cannot resolve filesystem path: $!", 3);
+    push @args, $canonical;
+}
+my $exe = find_program('quotaon');
+defined($exe)
+    or fail("required command 'quotaon' was not found in PATH; install the host quota utilities", 3);
+my $rc = system { $exe } $exe, @args;
+if ($rc == -1) { fail("cannot execute quotaon: $!", 3); }
+if ($rc & 127) { fail('quotaon terminated by signal ' . ($rc & 127), 3); }
+if (($rc >> 8) != 0) {
+    fail('quotaon -p exited with status ' . ($rc >> 8) .
+         '; check support for -p, permissions and filesystem quota configuration', 3);
+}
+exit 0;
+sub fail { my ($message, $code) = @_; print STDERR "quota-status: $message\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: quota-status (--all | --filesystem MOUNTPOINT)\n",
+        "       quota-status --help | --version\n",
+        "Linux only; invokes quotaon -p for read-only status (never enables quotas).\n";
+    exit $code;
+}

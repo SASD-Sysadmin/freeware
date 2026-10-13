@@ -1,0 +1,83 @@
+.TH QUOTA-SET 8 "October 2026" "SASD Freeware" "System Administration"
+.SH NAME
+quota-set \- preview or apply complete Linux disk quota limits
+.SH SYNOPSIS
+.B quota-set
+.RB ( --user " NAME | " --group " NAME )"
+.B --filesystem
+.I MOUNTPOINT
+.B --block-soft
+.I N
+.B --block-hard
+.I N
+.B --inode-soft
+.I N
+.B --inode-hard
+.I N
+.RB [ --dry-run " | " --apply " " --confirm-apply " [" --allow-unlimited "]]"
+.br
+.B quota-set
+.RB [ --help " | " --version ]
+.SH DESCRIPTION
+Previews a complete user/group quota record by default. Only
+.B --apply --confirm-apply
+runs Linux
+.BR setquota (8).
+All four limits are mandatory. Block limits are in 1024-byte units; inode limits count files.
+Zero means unlimited. To apply any zero limit, pass
+.BR --allow-unlimited .
+A positive soft limit may not exceed a positive hard limit. Missing fields are not inferred from existing quotas.
+.SH OPTIONS
+.TP
+.B --user NAME
+Select a user resolvable through the system name service.
+.TP
+.B --group NAME
+Select a group instead of a user.
+.TP
+.B --filesystem MOUNTPOINT
+Absolute mountpoint directory; exact entry in /proc/self/mounts required for changes.
+.TP
+.B --block-soft N
+Soft limit in KiB.
+.TP
+.B --block-hard N
+Hard limit in KiB.
+.TP
+.B --inode-soft N
+Soft file count.
+.TP
+.B --inode-hard N
+Hard file count.
+.TP
+.B --dry-run
+Show the proposed operation without changes (default).
+.TP
+.B --apply
+Request execution of setquota. Requires --confirm-apply.
+.TP
+.B --confirm-apply
+Mandatory separate approval for --apply.
+.TP
+.B --allow-unlimited
+Acknowledge zero values meaning unlimited.
+.TP
+.BR --help , " --version"
+Show usage or version.
+.SH EXAMPLES
+.nf
+quota-set --user alice --filesystem /home \\
+  --block-soft 100000 --block-hard 120000 \\
+  --inode-soft 20000 --inode-hard 25000
+.fi
+.SH SECURITY
+An effective-root invocation rejects backend paths that are not root-owned and protected against group/other writing. The tool does not invoke a shell or install required quota utilities. It does not enable quotas, change grace periods, automatically restore earlier settings, or verify the resulting values. Review the current settings before use; run
+.BR quota-report (1)
+afterwards.
+.SH EXIT STATUS
+0 on successful preview or successful backend exit; 2 for invalid input/authorization; 3 for prerequisites, unsupported systems, untrusted backend, or native failures.
+.SH SEE ALSO
+.BR setquota (8),
+.BR quota (1),
+.BR quota-report (1),
+.BR quota-status (1)

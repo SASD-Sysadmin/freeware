@@ -1,0 +1,31 @@
+.TH QUOTA-STATUS 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+quota-status \- print Linux quota activation status without modifying it
+.SH SYNOPSIS
+.B quota-status
+.RB ( --all " | " --filesystem " MOUNTPOINT )"
+.br
+.B quota-status
+.RB [ --help " | " --version ]
+.SH DESCRIPTION
+Runs the native Linux quotaon program with
+.B -p
+(print-only status). The standard output of the native program is forwarded unchanged. This utility does not enable or disable quota accounting.
+.SH OPTIONS
+.TP
+.B --all
+Execute quotaon -p -a.
+.TP
+.B --filesystem MOUNTPOINT
+Execute quotaon -p MOUNTPOINT using a canonical absolute directory path.
+.TP
+.BR --help , " --version"
+Show usage or version.
+.SH DEPENDENCIES
+Linux, Perl 5 and the operating-system's quotaon command with -p support. Unavailable commands or unsupported options produce an error.
+.SH EXIT STATUS
+0 if quotaon exited normally; 2 for invalid input; 3 for unsupported platforms or prerequisite/native-command failures.
+.SH SEE ALSO
+.BR quotaon (8),
+.BR quota-report (1),
+.BR quota-set (8)

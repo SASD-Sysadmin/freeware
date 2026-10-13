@@ -1,0 +1,167 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Apply a complete Linux disk quota record after explicit operator approval.
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::External; 1 }) {
+        print STDERR "quota-set: required Perl module SASD::Freeware::External is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use Getopt::Long qw(GetOptions);
+use Cwd qw(realpath);
+use File::Spec;
+use SASD::Freeware::External qw(find_program);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $user, $group, $filesystem);
+my ($block_soft, $block_hard, $inode_soft, $inode_hard);
+my ($dry_run, $apply, $confirm, $allow_unlimited) = (0, 0, 0, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h' => \$help, 'version' => \$version,
+    'user=s' => \$user, 'group=s' => \$group, 'filesystem=s' => \$filesystem,
+    'block-soft=s' => \$block_soft, 'block-hard=s' => \$block_hard,
+    'inode-soft=s' => \$inode_soft, 'inode-hard=s' => \$inode_hard,
+    'dry-run' => \$dry_run, 'apply' => \$apply,
+    'confirm-apply' => \$confirm,
+    'allow-unlimited' => \$allow_unlimited,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "quota-set $VERSION\n"; exit 0; }
+usage(2) if @ARGV || (defined($user) == defined($group)) ||
+    !defined($filesystem) || $dry_run && $apply || $confirm && !$apply ||
+    !defined($block_soft) || !defined($block_hard) ||
+    !defined($inode_soft) || !defined($inode_hard);
+
+my $kind = defined($user) ? 'user' : 'group';
+my $account = defined($user) ? $user : $group;
+$account =~ /\A[A-Za-z_][A-Za-z0-9_.-]*\$?\z/ && $account !~ /\A-/
+    or fail('invalid user/group name; use an ordinary Unix account name', 2);
+
+# Keep quota values as decimal strings: no floating-point rounding on 32-bit Perl.
+my @limits = (\$block_soft, \$block_hard, \$inode_soft, \$inode_hard);
+for my $limit (@limits) {
+    defined($$limit) && $$limit =~ /\A[0-9]{1,19}\z/
+        or fail('limits must be unsigned decimal integers (no suffixes)', 2);
+    $$limit =~ s/\A0+(?=[0-9])//;
+    cmp_decimal($$limit, '9223372036854775807') <= 0
+        or fail('quota limit exceeds the supported 64-bit integer range', 2);
+}
+for my $pair ([$block_soft, $block_hard, 'blocks'],
+              [$inode_soft, $inode_hard, 'inodes']) {
+    my ($soft, $hard, $name) = @$pair;
+    if ($soft ne '0' && $hard ne '0' && cmp_decimal($soft, $hard) > 0) {
+        fail("$name soft limit exceeds hard limit", 2);
+    }
+}
+File::Spec->file_name_is_absolute($filesystem)
+    or fail('filesystem must be an absolute mount-point path', 2);
+$filesystem !~ /[\x00-\x1f\x7f]/
+    or fail('filesystem path contains control characters', 2);
+-d $filesystem && !-l $filesystem
+    or fail("filesystem is not an existing real directory: $filesystem", 2);
+my $canonical = realpath($filesystem);
+defined($canonical)
+    or fail("cannot resolve filesystem path $filesystem: $!", 3);
+
+# Numeric IDs are intentionally not supported: resolve the selected identity via NSS.
+my $exists = $kind eq 'user' ? getpwnam($account) : getgrnam($account);
+defined($exists)
+    or fail("$kind '$account' is not known to the local name service", 3);
+
+if (!$apply) {
+    print "Mode: dry-run (no changes)\n",
+          "Account type: $kind\nAccount: $account\n",
+          "Filesystem: $canonical\n",
+          "Block soft (KiB): $block_soft\nBlock hard (KiB): $block_hard\n",
+          "Inode soft: $inode_soft\nInode hard: $inode_hard\n";
+    print "Warning: zero limits are unlimited; applying these values requires --allow-unlimited.\n"
+        if grep { $_ eq '0' } ($block_soft, $block_hard, $inode_soft, $inode_hard);
+    print "Backend: setquota (Linux); no backend was executed.\n";
+    exit 0;
+}
+
+$confirm or fail('--apply also requires --confirm-apply', 2);
+if ((grep { $_ eq '0' } ($block_soft, $block_hard, $inode_soft, $inode_hard)) && !$allow_unlimited) {
+    fail('a zero quota limit means unlimited; supply --allow-unlimited to acknowledge', 2);
+}
+$^O eq 'linux' or fail('--apply is supported only on Linux with setquota', 3);
+mount_exists($canonical)
+    or fail("filesystem is not an exact mount point in /proc/self/mounts: $canonical", 3);
+
+# Executables resolved to absolute paths; system() never invokes a shell.
+my $exe = find_program('setquota');
+defined($exe) or fail("required command 'setquota' was not found in PATH; install the host quota utilities", 3);
+if ($> == 0 && !trusted_program_path($exe)) {
+    fail("setquota executable is not in a root-owned, non-writable directory chain: $exe", 3);
+}
+my @args = ($kind eq 'user' ? '-u' : '-g', $account,
+            $block_soft, $block_hard, $inode_soft, $inode_hard, $canonical);
+print STDERR "quota-set: applying $kind quota for '$account' on '$canonical'\n";
+my $rc = system { $exe } $exe, @args;
+if ($rc == -1) { fail("cannot execute setquota: $!", 3); }
+if ($rc & 127) { fail('setquota terminated by signal ' . ($rc & 127), 3); }
+if (($rc >> 8) != 0) {
+    fail('setquota exited with status ' . ($rc >> 8) .
+         '; check quota activation, permissions, filesystem support and limits', 3);
+}
+print "quota-set: setquota completed successfully; check the effective values with quota-report.\n";
+exit 0;
+
+sub mount_exists {
+    my ($wanted) = @_;
+    open my $mounts, '<', '/proc/self/mounts'
+        or fail("cannot read Linux mount table /proc/self/mounts: $!", 3);
+    my $found = 0;
+    while (my $line = <$mounts>) {
+        my @fields = split /\s+/, $line;
+        next if @fields < 2;
+        my $mounted = $fields[1];
+        $mounted =~ s/\\([0-7]{3})/chr(oct($1))/ge;
+        my $resolved = realpath($mounted);
+        if (defined($resolved) && $resolved eq $wanted) { $found = 1; last; }
+    }
+    close $mounts or fail("cannot close Linux mount table: $!", 3);
+    return $found;
+}
+
+# A privileged invocation must not execute an attacker-provided PATH entry.
+# Inspect every ancestor of both the selected path and its resolved target.
+sub trusted_program_path {
+    my ($path) = @_;
+    my $resolved = realpath($path);
+    return 0 unless defined($resolved) && File::Spec->file_name_is_absolute($resolved);
+    for my $start ($path, $resolved) {
+        my $current = $start;
+        while (1) {
+            my @info = lstat($current);
+            return 0 unless @info && $info[4] == 0;
+            return 0 if !-l _ && ($info[2] & 0022);
+            last if $current eq '/';
+            $current =~ s{/+[^/]+/?$}{};
+            $current = '/' if $current eq '';
+        }
+    }
+    return 1;
+}
+
+sub cmp_decimal {
+    my ($left, $right) = @_;
+    return length($left) <=> length($right) || ($left cmp $right);
+}
+sub fail { my ($message, $code) = @_; print STDERR "quota-set: $message\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: quota-set (--user NAME | --group NAME) --filesystem MOUNTPOINT\n",
+        "           --block-soft N --block-hard N --inode-soft N --inode-hard N\n",
+        "           [--dry-run | --apply --confirm-apply [--allow-unlimited]]\n",
+        "       quota-set --help | --version\n",
+        "Default is dry-run; values are integers, block units are KiB.\n",
+        "Set all four limits; zero means unlimited. Linux setquota backend.\n";
+    exit $code;
+}
