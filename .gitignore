@@ -1,0 +1,94 @@
+# SASD Freeware - generated files only; source code and build scripts stay tracked.
+
+# Editors and IDEs
+*~
+*.swp
+*.swo
+*.swn
+*.orig
+*.rej
+.vscode/
+.idea/
+*.code-workspace
+
+# Linux, macOS, Windows filesystem metadata
+.DS_Store
+.AppleDouble/
+.LSOverride
+._*
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
+.directory
+.Trash-*/
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.venv/
+venv/
+ENV/
+*.egg-info/
+.eggs/
+.pyre/
+.pytype/
+.coverage
+.coverage.*
+htmlcov/
+
+# Perl / CPAN build artifacts
+blib/
+_build/
+Build
+Build.bat
+MYMETA.yml
+MYMETA.json
+pm_to_blib
+Makefile.old
+*.bs
+local/lib/perl5/
+
+# Bash, POSIX shell, tcsh, and other interactive shell artifacts
+.bash_history
+.sh_history
+.tcsh_history
+.history
+.zsh_history
+.lesshst
+
+# Temporary files, tests, and generated output
+*.tmp
+*.temp
+*.bak
+*.log
+*.core
+core
+core.*
+build/
+dist/
+coverage/
+
+# Secrets / machine-local settings (do not commit credentials)
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+
+# Note: do NOT ignore bin/, sbin/, lib/, lib64/, man/, or *.1.

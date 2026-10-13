@@ -1,0 +1,26 @@
+.TH SSH\-KEY\-AUDIT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+ssh-key-audit \- review a local OpenSSH authorized_keys file
+.SH SYNOPSIS
+\fBssh-key-audit\fR [\fB--file\fR \fIPATH\fR] [\fB--help\fR]
+.SH DESCRIPTION
+Reads a local authorized_keys file (default: $HOME/.ssh/authorized_keys). Reports malformed or unrecognized key lines, duplicate blobs, DSA keys, and writable file or directory modes. Never modifies the file. This is a best-effort text audit, not a complete SSH parser or server policy analysis.
+.SH OPTIONS
+.TP
+\fB\-\-file PATH\fR
+Read an explicit authorized_keys file.
+.TP
+\fB\-\-help\fR
+Display usage information.
+.SH EXAMPLE
+.PP
+\fBssh\-key\-audit \-\-file ~/.ssh/authorized_keys\fR
+.SH EXIT STATUS
+0 no warnings; 1 warnings; other nonzero values indicate an error.
+.SH NOTES
+This tool is an original SASD implementation inspired by administrative topics in Nate Campi and Kirk Bauer, Automating Linux and Unix System Administration (Second Edition, 2009). No book source code is included.
+.SH SEE ALSO
+.BR perl (1),
+.BR rotate (1)
+.SH LICENSE
+MIT License, see LICENSE in the repository.

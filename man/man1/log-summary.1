@@ -1,0 +1,28 @@
+.TH LOG-SUMMARY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+log-summary \- count log lines by apparent severity
+.SH SYNOPSIS
+.B log-summary
+.RB [ --match " LITERAL]"
+.RI [ LOGFILE | - ]
+.SH DESCRIPTION
+Reads a text log file or standard input (default). Counts lines
+bearing common severity tokens (CRITICAL, ERROR, WARNING, NOTICE,
+INFO, DEBUG, TRACE) or OTHER. Does not print log message contents.
+.SH OPTIONS
+.TP
+.BI --match " LITERAL"
+Keep lines containing LITERAL, ignoring case. Not a regular expression.
+.TP
+.BR -h , " --help"
+Show usage.
+.SH EXAMPLES
+.B log-summary /var/log/syslog
+.br
+.B journalctl --no-pager -n 1000 | log-summary -
+.SH NOTES
+Keyword-based heuristic, not a syslog or structured log parser.
+If multiple severity words occur, higher severity wins.
+The program reads to EOF; it does not follow a growing file.
+.SH LICENSE
+MIT. An original SASD implementation.

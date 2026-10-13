@@ -1,0 +1,54 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Show quotas using the host's quota/repquota program. Does not set quotas.
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::External; 1 }) {
+        print STDERR "quota-report: required Perl module SASD::Freeware::External is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use Getopt::Long qw(GetOptions);
+use SASD::Freeware::External qw(find_program);
+my $VERSION = '0.1.0';
+my ($help, $version, $all, $user, $group) = (0, 0, 0, undef, undef);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'all' => \$all, 'user=s' => \$user, 'group=s' => \$group) or usage(2);
+usage(0) if $help;
+if ($version) { print "quota-report $VERSION\n"; exit 0; }
+usage(2) if @ARGV || ($all && (defined($user) || defined($group))) ||
+            (defined($user) && defined($group));
+for my $account ($user, $group) {
+    next unless defined $account;
+    $account =~ /\A[A-Za-z0-9_][A-Za-z0-9_.\@-]*\$?\z/
+        or fail('invalid account or group name (use a simple Unix account name)', 2);
+}
+my $program = $all ? 'repquota' : 'quota';
+my $exe = find_program($program);
+defined($exe) or fail("required command '$program' was not found in PATH; install the host quota utilities", 3);
+my @arguments = $all ? ('-a') : ('-v');
+if (defined($group)) { push @arguments, '-g', $group; }
+elsif (defined($user)) { push @arguments, $user; }
+# No shell, no elevated privileges, no changes to filesystem settings.
+my $rc = system { $exe } $exe, @arguments;
+if ($rc == -1) { fail("cannot execute $program: $!", 3); }
+if ($rc & 127) { fail("$program terminated by signal " . ($rc & 127), 3); }
+if (($rc >> 8) != 0) {
+    fail("$program exited with status " . ($rc >> 8) .
+         "; check permissions, quota configuration and filesystem support", 3);
+}
+exit 0;
+sub fail { my ($m, $c) = @_; print STDERR "quota-report: $m\n"; exit $c; }
+sub usage {
+    my ($c) = @_;
+    my $f = $c ? *STDERR : *STDOUT;
+    print {$f} "Usage: quota-report [--user NAME | --group NAME | --all]\n",
+               "       quota-report --help | --version\n",
+               "Without options, runs quota -v for the current user.\n",
+               "--all runs repquota -a and may require administrative permissions.\n";
+    exit $c;
+}

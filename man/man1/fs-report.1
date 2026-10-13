@@ -1,0 +1,39 @@
+.TH FS-REPORT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+fs-report \- report directory entry counts and logical file sizes
+.SH SYNOPSIS
+.B fs-report
+.RB [ --top " N" ]
+.RB [ --min-size " SIZE" ]
+.RB [ --one-file-system ]
+.I DIRECTORY
+.SH DESCRIPTION
+Recursively enumerate a directory tree without changing files or following symbolic links.
+Report regular files, directories, symlinks, other entries, total logical bytes,
+and the largest files.
+Hard-linked pathnames contribute separately to logical byte totals.
+.SH OPTIONS
+.TP
+.BI --top " N"
+Show at most N largest files (0 to 1000, default 10).
+.TP
+.BI --min-size " SIZE"
+Only include files at or above this size in the largest-file list.
+SIZE is bytes with optional binary K, M, G, or T suffix.
+.TP
+.B --one-file-system
+Skip entries with a different device ID from the starting directory.
+.TP
+.B --help
+Show usage.
+.TP
+.B --version
+Show version.
+.SH EXIT STATUS
+0 complete; 1 traversal errors and potentially incomplete report;
+2 invalid arguments; 3 invalid or inaccessible root.
+.SH SEE ALSO
+.BR largefiles (1),
+.BR fs-usage (1),
+.BR find (1),
+.BR du (1)

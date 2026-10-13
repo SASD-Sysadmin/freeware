@@ -2,15 +2,26 @@
 
 **English** | [Deutsch](README.de.md) · [MIT License](LICENSE) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
-Small, practical command-line utilities and system-administration tools maintained by **SASD-SysAdmin**. The repository is organized to be deployable under `/usr/freeware` without mixing its files with distribution-managed `/usr/bin` and `/usr/lib` paths. It is intended to grow into a collection of Bash, Perl, Python, (t)csh, and other Unix-like system tools.
-
-> **Status:** Early-stage project. `rotate` is the first included utility. Empty directories reserve space for future components; they are not promises of available functionality.
+SASD Freeware provides a collection of command-line utilities, scripts, and libraries for Linux and Unix system administration. The tools are designed for reliable operation, straightforward integration into existing environments, and long-term maintainability. Each utility includes documentation, practical usage examples, and automated tests.
 
 ## Included utility
 
 | Command | Location | Purpose | Documentation |
 | --- | --- | --- | --- |
+| `core-report` | [`bin/core-report`](bin/core-report) | Inventory files with core-dump-style names, including logical sizes. | [Guide](docu/core-report.md) · [Deutsch](docu/core-report.de.md) · [Manpage](man/man1/core-report.1) |
+| `path-audit` | [`bin/path-audit`](bin/path-audit) | Identify pathnames exceeding configured byte limits. | [Guide](docu/path-audit.md) · [Deutsch](docu/path-audit.de.md) · [Manpage](man/man1/path-audit.1) |
 | `rotate` | [`bin/rotate`](bin/rotate) | Preserve up to ten generations of a regular file (`.0` newest, `.9` oldest). | [Guide](docu/rotate.md) · [Deutsch](docu/rotate.de.md) · [Manpage](man/man1/rotate.1) |
+| `fs-report` | [`bin/fs-report`](bin/fs-report) | Directory inventory and logical file sizes. | [Guide](docu/fs-report.md) · [Deutsch](docu/fs-report.de.md) · [Manpage](man/man1/fs-report.1) |
+| `largefiles` | [`bin/largefiles`](bin/largefiles) | Find large regular files. | [Guide](docu/largefiles.md) · [Deutsch](docu/largefiles.de.md) · [Manpage](man/man1/largefiles.1) |
+| `fs-usage` | [`bin/fs-usage`](bin/fs-usage) | Check mounted filesystem capacity using df. | [Guide](docu/fs-usage.md) · [Deutsch](docu/fs-usage.de.md) · [Manpage](man/man1/fs-usage.1) |
+| `quota-report` | [`bin/quota-report`](bin/quota-report) | Query user, group, and filesystem quota reports. | [Guide](docu/quota-report.md) · [Deutsch](docu/quota-report.de.md) · [Manpage](man/man1/quota-report.1) |
+| `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Validate hosts-file syntax without changes. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/hosts-lint.1) |
+| `account-audit` | [`bin/account-audit`](bin/account-audit) | Structural audit of a Unix passwd file. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/account-audit.1) |
+| `log-summary` | [`bin/log-summary`](bin/log-summary) | Count log entries by severity markers. | [Perl guide](docu/perl-tools.md) · [Manpage](man/man1/log-summary.1) |
+| `ssh-key-audit` | [`bin/ssh-key-audit`](bin/ssh-key-audit) | Read-only OpenSSH authorized_keys review. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/ssh-key-audit.1) |
+| `file-integrity` | [`bin/file-integrity`](bin/file-integrity) | Explicit SHA-256 baseline creation and comparison. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/file-integrity.1) |
+| `suid-audit` | [`bin/suid-audit`](bin/suid-audit) | SUID/SGID permissions inventory. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/suid-audit.1) |
+| `tcp-check` | [`bin/tcp-check`](bin/tcp-check) | Single TCP endpoint test; optional Nagios exit codes. | [Automation guide](docu/automation-tools.md) · [Manpage](man/man1/tcp-check.1) |
 
 Example: `rotate /etc/hosts` creates `/etc/hosts.0` without modifying `/etc/hosts`; running it again moves the previous `.0` to `.1` and creates a new `.0`. The oldest `.9` is removed on subsequent rotations. `rotate` is a **file snapshot helper**, not a replacement for scheduled log rotation, version control, or a complete backup strategy.
 
@@ -18,16 +29,17 @@ Example: `rotate /etc/hosts` creates `/etc/hosts.0` without modifying `/etc/host
 
 ```text
 /usr/freeware/
-├── bin/               User commands (rotate)
+├── bin/               User commands (rotate and Perl tools)
 ├── sbin/              Administrative commands (reserved)
-├── lib/               Architecture-independent libraries (reserved)
+├── lib/               Architecture-independent libraries
 ├── lib64/             64-bit libraries (reserved)
 ├── man/
-│   └── man1/          Manual pages (rotate.1)
-├── docu/              Detailed English and German guides
+│   └── man1/          Manual pages for each command
+├── docu/              English and German command guides
 ├── tests/             Automated command tests (repository checkout)
 ├── .github/workflows/ CI tests (repository checkout)
-├── Makefile           Simple test/install/uninstall targets
+├── docs/              Development and maintenance information
+├── Makefile           Test/install/uninstall targets
 ├── README.md          English project documentation
 └── README.de.md       German project documentation
 ```
@@ -39,7 +51,7 @@ The top-level directory names intentionally follow the planned `/usr/freeware` i
 - Unix-like operating system with **Bash**, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, and `mktemp` (Linux is tested locally; CI is configured for Ubuntu and macOS).
 - Write permission in the directory of the file to be rotated.
 - `git` for cloning; `make` and `install` for optional staged deployment.
-- No Python, Perl, or third-party packages are needed for `rotate`.
+- `rotate` needs Bash, not Perl. The Perl tools require Perl 5.8 or later and their bundled modules in `lib/`. `fs-usage` additionally requires a POSIX-compatible `df`; `quota-report` requires native `quota` or `repquota` utilities. No CPAN downloads are required.
 
 ## Installation
 
@@ -52,7 +64,7 @@ make test
 sudo make install PREFIX=/usr/freeware
 ```
 
-This installs **only** `bin/rotate` and `man/man1/rotate.1`, leaving the checkout and development files outside the system installation. Set `DESTDIR` for packaging or staging, for example `make install DESTDIR=/tmp/package PREFIX=/usr/freeware`.
+This installs the executable commands, their manual pages, and user guides under `docu/`. Tests and Git metadata remain in the checkout. Set `DESTDIR` for packaging or staging, for example `make install DESTDIR=/tmp/package PREFIX=/usr/freeware`.
 
 ### Alternative: use a checkout directly from /usr/freeware
 
@@ -81,7 +93,7 @@ man -M /usr/freeware/man rotate
 
 A short-lived directory named `FILE.rotate.lock` prevents concurrent cooperating rotations. If a process is forcibly terminated, inspect the directory before deleting a stale lock. Rotations are **not transactionally atomic**: interruption during renames can leave gaps; always check critical backups. Copied file permissions and timestamps are preserved by `cp -p`, subject to OS and user privileges. Backup files may contain secrets; secure their parent directory.
 
-For details, restoration instructions, and failure handling, read [the full rotate guide](docu/rotate.md).
+For detailed command instructions, see [rotate](docu/rotate.md), [core-report](docu/core-report.md), [path-audit](docu/path-audit.md), [filesystem and account tools](docu/perl-tools.md), and [SSH, integrity and monitoring tools](docu/automation-tools.md). Development and maintenance guidelines are available in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Development and verification
 
@@ -90,7 +102,7 @@ make test
 bash -n bin/rotate
 ```
 
-The test suite covers the ten-version limit, old-version cleanup, filenames with spaces, binary content, invalid inputs, locks, and backup-slot conflicts. GitHub Actions is configured to run `make test` on Ubuntu and macOS for pushes and pull requests; this does not imply a successful CI run until GitHub reports one.
+The automated test suites cover backup rotation, filesystem inventories, path audits, hosts, accounts, log summaries, SSH key checks, SHA-256 integrity tracking, privileged file inventory, TCP checks, and failure cases. GitHub Actions is configured to run `make test` on Ubuntu and macOS for pushes and pull requests; this does not imply a successful CI run until GitHub reports one.
 
 ## Contributing, licensing, and security
 

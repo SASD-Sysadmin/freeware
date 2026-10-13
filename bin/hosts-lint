@@ -1,0 +1,81 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Read-only hosts(5) syntax validation. Never rewrites the source file.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use Socket qw(AF_INET6 inet_pton);
+
+my ($help, $file) = (0, '/etc/hosts');
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'file=s' => \$file) or usage(2);
+usage(0) if $help;
+usage(2) if @ARGV;
+open my $in, '<', $file or die "hosts-lint: cannot read $file: $!\n";
+
+my %name_ip;
+my ($entries, $errors, $warnings, $number) = (0, 0, 0, 0);
+while (my $line = <$in>) {
+    ++$number;
+    $line =~ s/#.*//;
+    $line =~ s/^\s+|\s+$//g;
+    next if $line eq '';
+    my @fields = split /\s+/, $line;
+    my $ip = shift @fields;
+    if (!valid_ip($ip)) {
+        print STDERR "$file:$number: error: invalid IPv4/IPv6 address: $ip\n";
+        ++$errors;
+        next;
+    }
+    if (!@fields) {
+        print STDERR "$file:$number: error: missing hostname\n";
+        ++$errors;
+        next;
+    }
+    ++$entries;
+    for my $name (@fields) {
+        unless (valid_hostname($name)) {
+            print STDERR "$file:$number: error: invalid hostname: $name\n";
+            ++$errors;
+            next;
+        }
+        my $key = lc $name;
+        if (exists($name_ip{$key}) && $name_ip{$key} ne $ip) {
+            print STDERR "$file:$number: warning: $name mapped to both $name_ip{$key} and $ip\n";
+            ++$warnings;
+        } else {
+            $name_ip{$key} = $ip;
+        }
+    }
+}
+close $in or die "hosts-lint: cannot close $file: $!\n";
+print "Entries: $entries\nUnique names: ", scalar(keys %name_ip), "\n";
+print "Warnings: $warnings\nErrors: $errors\n";
+exit($errors ? 1 : 0);
+
+sub valid_ip {
+    my ($address) = @_;
+    if ($address =~ /:/) {
+        return defined(inet_pton(AF_INET6, $address)) ? 1 : 0;
+    }
+    my @parts = split /\./, $address, -1;
+    return 0 unless @parts == 4;
+    for my $part (@parts) {
+        return 0 unless $part =~ /\A(?:0|[1-9][0-9]{0,2})\z/ && $part <= 255;
+    }
+    return 1;
+}
+sub valid_hostname {
+    my ($name) = @_;
+    $name =~ s/\.$//; # Allow fully-qualified names ending in a dot.
+    return 0 if $name eq '' || length($name) > 253;
+    for my $label (split /\./, $name, -1) {
+        return 0 unless $label =~ /\A[A-Za-z0-9_](?:[A-Za-z0-9_-]{0,61}[A-Za-z0-9_])?\z/;
+    }
+    return 1;
+}
+sub usage {
+    my ($status) = @_;
+    print STDERR "Usage: hosts-lint [--file PATH]   (default: /etc/hosts)\n";
+    exit $status;
+}

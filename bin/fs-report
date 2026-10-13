@@ -1,0 +1,66 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Report directory contents without following symlinks or changing files.
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::Walk; 1 }) {
+        print STDERR "fs-report: required Perl module SASD::Freeware::Walk is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use Getopt::Long qw(GetOptions);
+use Fcntl qw(S_ISREG S_ISDIR S_ISLNK);
+use SASD::Freeware::Walk qw(walk_tree display_path parse_bytes directory_root);
+
+my $VERSION = '0.2.0';
+my ($help, $version, $one_fs) = (0, 0, 0);
+my ($top, $minimum) = ('10', '0');
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'top=s' => \$top, 'min-size=s' => \$minimum,
+           'one-file-system' => \$one_fs) or usage(2);
+usage(0) if $help;
+if ($version) { print "fs-report $VERSION\n"; exit 0; }
+usage(2) unless @ARGV == 1 && $top =~ /\A[0-9]{1,4}\z/ && $top <= 1000;
+my $min_bytes = parse_bytes($minimum);
+defined($min_bytes) or fail("invalid --min-size '$minimum' (expected nonnegative BYTES or K/M/G/T)", 2);
+my $root = $ARGV[0];
+my $reason = directory_root($root);
+$reason eq '' or fail($reason, 3);
+my ($files, $dirs, $links, $other, $bytes) = (0, 0, 0, 0, 0);
+my @largest;
+my $errors = walk_tree($root, $one_fs, sub {
+    my ($path, $st) = @_;
+    my ($mode, $size) = ($st->[2], $st->[7]);
+    if (S_ISDIR($mode)) { ++$dirs; return; }
+    if (S_ISLNK($mode)) { ++$links; return; }
+    if (!S_ISREG($mode)) { ++$other; return; }
+    ++$files;
+    $bytes += $size;   # Logical bytes; hard links are counted once per path.
+    return if !$top || $size < $min_bytes;
+    push @largest, { path => $path, size => $size };
+    @largest = sort { $b->{size} <=> $a->{size} || $a->{path} cmp $b->{path} } @largest;
+    pop @largest if @largest > $top;
+}, sub {
+    my ($path, $detail) = @_;
+    warn 'fs-report: ', display_path($path), ": $detail\n";
+});
+print "Root: ", display_path($root), "\n";
+print "Directories: $dirs\nRegular files: $files\nSymbolic links: $links\nOther entries: $other\n";
+print "File bytes (logical): $bytes\nLargest files (minimum $min_bytes bytes):\n";
+for my $entry (@largest) { print "$entry->{size}\t", display_path($entry->{path}), "\n"; }
+print "Traversal errors: $errors\n";
+exit($errors ? 1 : 0);
+
+sub fail { my ($message, $code) = @_; print STDERR "fs-report: $message\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $f = $code ? *STDERR : *STDOUT;
+    print {$f} "Usage: fs-report [--top 0..1000] [--min-size SIZE] [--one-file-system] DIRECTORY\n",
+               "       fs-report --help | --version\n",
+               "SIZE is bytes or a binary K/M/G/T suffix; the scan never modifies files.\n";
+    exit $code;
+}

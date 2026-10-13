@@ -1,0 +1,29 @@
+.TH HOSTS-LINT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+hosts-lint \- perform basic syntax checks on a hosts file
+.SH SYNOPSIS
+.B hosts-lint
+.RB [ --file " PATH]"
+.SH DESCRIPTION
+Checks IPv4 and IPv6 addresses, hostnames, and aliases in a hosts(5)
+style file without modifying it. Prints counts of parsed entries,
+unique names, warnings and errors. Conflicting address mappings for
+the same name are reported as warnings and may be intentional.
+.SH OPTIONS
+.TP
+.BI --file " PATH"
+Input path (default /etc/hosts).
+.TP
+.BR -h , " --help"
+Show usage.
+.SH EXIT STATUS
+0 for successful syntax validation (including warnings),
+1 for malformed entries, 2 for incorrect usage, and nonzero on I/O failures.
+.SH EXAMPLE
+.B hosts-lint --file ./hosts.candidate
+.SH NOTES
+Not a DNS query tool or a full parser for platform-specific extensions.
+.SH SEE ALSO
+.BR hosts (5)
+.SH LICENSE
+MIT. An original SASD implementation.

@@ -1,0 +1,52 @@
+.TH PATH-AUDIT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+path-audit \- report pathnames exceeding configurable byte thresholds
+.SH SYNOPSIS
+.B path-audit
+.RI [ OPTIONS ] " DIRECTORY"
+.SH DESCRIPTION
+.B path-audit
+scans directory entries and prints those with a basename component or
+full pathname longer than the selected byte thresholds. It does not
+rename or otherwise modify files and does not follow symbolic links.
+.SH OPTIONS
+.TP
+.BI "--component-limit " N
+Maximum accepted component byte length (default 240).
+.TP
+.BI "--path-limit " N
+Maximum accepted pathname byte length (default 1024).
+.TP
+.B --one-file-system
+Skip entries on filesystems other than that of the scan root.
+.TP
+.B --null
+Print four NUL-terminated fields: REASON, COMPONENT_BYTES, PATH_BYTES, PATH.
+.TP
+.BR --help ", " -h
+Display usage.
+.TP
+.B --version
+Display version.
+.SH EXAMPLES
+.TP
+.B path-audit /srv/data
+Apply default audit thresholds.
+.TP
+.B path-audit --component-limit 200 --path-limit 900 /home
+Apply custom thresholds.
+.SH OUTPUT
+In text mode the report includes REASON (component, path or both), byte
+counts and path, followed by the number of findings and errors. Control
+characters in names are escaped. With --null all fields use NUL delimiters.
+.SH EXIT STATUS
+0 scan completed; 1 filesystem failure; 2 invalid arguments.
+.SH NOTES
+Limits are configurable audit values, not assertions about operating-system
+NAME_MAX or PATH_MAX. The reported path includes the argument spelling;
+relative and absolute roots may yield different path lengths.
+.SH SEE ALSO
+.BR find (1),
+.BR stat (1)
+.SH LICENSE
+MIT License; see the repository LICENSE file.

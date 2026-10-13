@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Small TCP service availability check; no shell and no port scanning.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use IO::Socket::INET;
+use Time::HiRes qw(time);
+
+my ($host,$port,$timeout,$nagios,$help) = (undef,undef,3,0,0);
+GetOptions('host=s' => \$host, 'port=i' => \$port, 'timeout=i' => \$timeout,
+           'nagios' => \$nagios, 'help' => \$help) or usage(2);
+usage(0) if $help;
+usage(2) if @ARGV || !defined($host) || $host eq '' || !defined($port)
+    || $port < 1 || $port > 65535 || $timeout < 1 || $timeout > 30;
+my $start = time();
+my $socket = IO::Socket::INET->new(
+    PeerHost => $host, PeerPort => $port, Proto => 'tcp', Timeout => $timeout);
+if ($socket) {
+    close $socket;
+    printf "OK: %s:%d TCP connection succeeded in %.3f s\n", $host,$port,time()-$start;
+    exit 0;
+}
+my $error = $! || 'connection failed';
+printf "CRITICAL: %s:%d TCP connection failed (%s)\n", $host,$port,$error;
+exit($nagios ? 2 : 1);
+
+sub usage {
+    my ($code) = @_;
+    print {$code ? *STDERR : *STDOUT}
+        "Usage: tcp-check --host HOST --port PORT [--timeout 1..30] [--nagios] [--help]\n";
+    exit($code ? ($nagios ? 3 : 2) : 0);
+}

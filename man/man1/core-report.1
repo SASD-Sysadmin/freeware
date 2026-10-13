@@ -1,0 +1,53 @@
+.TH CORE-REPORT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+core-report \- inventory possible core dump files in a directory tree
+.SH SYNOPSIS
+.B core-report
+.RI [ OPTIONS ] " DIRECTORY"
+.SH DESCRIPTION
+.B core-report
+lists regular files named
+.B core
+or beginning with
+.BR core. .
+Candidates are reported by name, not by inspecting their contents.
+The original files are neither deleted nor changed.
+Symbolic links are not followed.
+.SH OPTIONS
+.TP
+.BI "--min-size " BYTES
+Only list candidates of at least this many logical bytes.
+.TP
+.B --one-file-system
+Skip entries on filesystems other than that of the scan root.
+.TP
+.B --null
+Emit BYTES and PATH as successive NUL-terminated fields without summary.
+.TP
+.BR --help ", " -h
+Display usage.
+.TP
+.B --version
+Display version.
+.SH EXAMPLES
+.TP
+.B core-report /var/tmp
+Report matching regular files under /var/tmp.
+.TP
+.B core-report --min-size 1048576 /srv
+List matching files of at least one mebibyte.
+.SH OUTPUT
+In text mode the first line contains BYTES and PATH, followed by candidates
+and summary counts. Control characters are escaped in displayed paths.
+In NUL mode all fields are delimited with NUL bytes.
+.SH EXIT STATUS
+0 scan completed; 1 filesystem failure; 2 invalid arguments.
+.SH NOTES
+Reported files may not be actual core dumps. The scan may be inconsistent
+if other processes change the directory tree during traversal. File sizes
+are logical bytes, not allocated disk blocks.
+.SH SEE ALSO
+.BR find (1),
+.BR stat (1)
+.SH LICENSE
+MIT License; see the repository LICENSE file.

@@ -1,0 +1,73 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Locate large regular files; bounded result memory by default.
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::Walk; 1 }) {
+        print STDERR "largefiles: required Perl module SASD::Freeware::Walk is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use Getopt::Long qw(GetOptions);
+use Fcntl qw(S_ISREG);
+use SASD::Freeware::Walk qw(walk_tree display_path parse_bytes directory_root);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $one_fs, $null, $all) = (0, 0, 0, 0, 0);
+my ($min, $top) = ('100M', '50');
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'min-size=s' => \$min, 'top=s' => \$top,
+           'one-file-system' => \$one_fs, 'null' => \$null, 'all' => \$all) or usage(2);
+usage(0) if $help;
+if ($version) { print "largefiles $VERSION\n"; exit 0; }
+usage(2) unless @ARGV == 1 && $top =~ /\A[0-9]{1,5}\z/ && $top > 0 && $top <= 10000;
+if ($all && $null == 0) {
+    # --all deliberately outputs in traversal order rather than using unbounded memory.
+}
+my $threshold = parse_bytes($min);
+defined($threshold) or fail("invalid --min-size '$min' (expected nonnegative BYTES or K/M/G/T)", 2);
+my $root = $ARGV[0];
+my $reason = directory_root($root);
+$reason eq '' or fail($reason, 3);
+my ($matches, $bytes) = (0, 0);
+my @largest;
+print "BYTES\tPATH\n" if $all && !$null;
+my $errors = walk_tree($root, $one_fs, sub {
+    my ($path, $st) = @_;
+    return unless S_ISREG($st->[2]) && $st->[7] >= $threshold;
+    my $size = $st->[7];
+    ++$matches; $bytes += $size;
+    if ($all) { emit($size, $path); return; }
+    push @largest, { path => $path, size => $size };
+    @largest = sort { $b->{size} <=> $a->{size} || $a->{path} cmp $b->{path} } @largest;
+    pop @largest if @largest > $top;
+}, sub {
+    my ($path, $detail) = @_;
+    warn 'largefiles: ', display_path($path), ": $detail\n";
+});
+if (!$all) {
+    print "BYTES\tPATH\n" unless $null;
+    for my $item (@largest) { emit($item->{size}, $item->{path}); }
+}
+print "Matches: $matches\nLogical bytes: $bytes\nTraversal errors: $errors\n" unless $null;
+exit($errors ? 1 : 0);
+
+sub emit {
+    my ($size, $path) = @_;
+    if ($null) { print $size, "\0", $path, "\0"; }
+    else { print $size, "\t", display_path($path), "\n"; }
+}
+sub fail { my ($message, $code) = @_; print STDERR "largefiles: $message\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $f = $code ? *STDERR : *STDOUT;
+    print {$f} "Usage: largefiles [--min-size SIZE] [--top 1..10000] [--all] [--null]\n",
+               "                  [--one-file-system] DIRECTORY\n",
+               "       largefiles --help | --version\n",
+               "Defaults: 100M, top 50. --all streams every match. --null separates size/path fields with NUL.\n";
+    exit $code;
+}
