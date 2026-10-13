@@ -1,6 +1,6 @@
 # path-audit — Prüfung von Dateinamen und Pfadlängen
 
-[English](path-audit.md) · [Manpage](../man/man1/path-audit.1)
+[English](path-audit.md) · [Manpage](../../man/man1/path-audit.1)
 
 ## Zusammenfassung
 

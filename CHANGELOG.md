@@ -12,6 +12,8 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ### Changed
 
+- Consolidated command guides under `docs/commands/`; installation now places guides under `PREFIX/docs/commands/`.
+- Updated documentation links and maintenance guidelines to match the new layout.
 - `make check` now syntax-checks executable Perl commands from both `bin/` and `sbin/`.
 
 ### Added

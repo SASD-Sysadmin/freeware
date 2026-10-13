@@ -29,7 +29,7 @@ Perl programs use `strict`, `warnings`, lexical variables, three-argument file o
 
 ## Repository layout
 
-`bin/` contains ordinary commands; `sbin/` contains administration-oriented commands; `lib/` and `lib64/` contain supporting libraries. User guides are kept in `docu/` in English and German; manpages are under `man/man1/` or `man/man8/`; tests are in `tests/`; project maintenance information belongs in `docs/`.
+`bin/` contains ordinary commands; `sbin/` contains administration-oriented commands; `lib/` and `lib64/` contain supporting libraries. User guides are kept in `docs/commands/` in English and German; manpages are under `man/man1/` or `man/man8/`; tests are in `tests/`; development and maintenance guidelines belong in `docs/`.
 
 ## Testing and release
 

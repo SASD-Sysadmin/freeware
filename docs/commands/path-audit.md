@@ -1,6 +1,6 @@
 # path-audit — Path length audit
 
-[Deutsch](path-audit.de.md) · [Manual page](../man/man1/path-audit.1)
+[Deutsch](path-audit.de.md) · [Manual page](../../man/man1/path-audit.1)
 
 ## Summary
 

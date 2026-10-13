@@ -1,6 +1,6 @@
 # Automatisierungswerkzeuge in Perl (Deutsch)
 
-[English](automation-tools.md) | **Deutsch** · [Projekt-README](../README.de.md) · [Bisherige Perl-Werkzeuge](perl-tools.de.md)
+[English](automation-tools.md) | **Deutsch** · [Projekt-README](../../README.de.md) · [Bisherige Perl-Werkzeuge](perl-tools.de.md)
 
 ## Zusammenfassung
 

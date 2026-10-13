@@ -1,6 +1,6 @@
 # core-report — Core dump candidate inventory
 
-[Deutsch](core-report.de.md) · [Manual page](../man/man1/core-report.1)
+[Deutsch](core-report.de.md) · [Manual page](../../man/man1/core-report.1)
 
 ## Summary
 

@@ -1,6 +1,6 @@
 # core-report — Übersicht möglicher Core-Dump-Dateien
 
-[English](core-report.md) · [Manpage](../man/man1/core-report.1)
+[English](core-report.md) · [Manpage](../../man/man1/core-report.1)
 
 ## Zusammenfassung
 

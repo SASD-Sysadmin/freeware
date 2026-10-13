@@ -1,6 +1,6 @@
 # SSH, Integrity and Monitoring Utilities
 
-[Deutsch](automation-tools.de.md) | **English** · [Project README](../README.md) · [Previous Perl tools](perl-tools.md)
+[Deutsch](automation-tools.de.md) | **English** · [Project README](../../README.md) · [Previous Perl tools](perl-tools.md)
 
 ## Summary
 

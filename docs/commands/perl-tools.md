@@ -1,6 +1,6 @@
 # Perl administration utilities
 
-[English](perl-tools.md) | [Deutsch](perl-tools.de.md) · [Project](../README.md)
+[English](perl-tools.md) | [Deutsch](perl-tools.de.md) · [Project](../../README.md)
 
 ## Summary
 
