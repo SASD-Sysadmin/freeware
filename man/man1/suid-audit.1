@@ -1,0 +1,26 @@
+.TH SUID\-AUDIT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+suid-audit \- list setuid and setgid regular files
+.SH SYNOPSIS
+\fBsuid-audit\fR \fB--root\fR \fIDIR\fR [\fB--help\fR]
+.SH DESCRIPTION
+Recursively scans a directory without following symlinks, listing regular files with setuid or setgid permissions. Reports octal mode and numeric ownership. This read-only inventory does not establish whether a listed executable is vulnerable.
+.SH OPTIONS
+.TP
+\fB\-\-root DIR\fR
+Directory to inspect.
+.TP
+\fB\-\-help\fR
+Display usage information.
+.SH EXAMPLE
+.PP
+\fBsuid\-audit \-\-root /usr/bin\fR
+.SH EXIT STATUS
+0 successful inventory (even if privileged files are found); nonzero for errors.
+.SH NOTES
+This tool is an original SASD implementation inspired by administrative topics in Nate Campi and Kirk Bauer, Automating Linux and Unix System Administration (Second Edition, 2009). No book source code is included.
+.SH SEE ALSO
+.BR perl (1),
+.BR rotate (1)
+.SH LICENSE
+MIT License, see LICENSE in the repository.

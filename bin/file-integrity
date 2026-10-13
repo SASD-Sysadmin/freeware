@@ -1,0 +1,99 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Check SHA-256 file contents against a deliberately initialized local baseline.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use Cwd qw(abs_path);
+use File::Basename qw(dirname basename);
+use File::Find;
+use File::Spec;
+use Fcntl qw(O_WRONLY O_CREAT O_EXCL);
+use Digest::SHA;
+use JSON::PP;
+
+my ($root_arg, $manifest, $initialize, $check, $help);
+GetOptions('root=s' => \$root_arg, 'manifest=s' => \$manifest,
+    'init' => \$initialize, 'check' => \$check, 'help' => \$help) or usage(2);
+usage(0) if $help;
+usage(2) if @ARGV || !defined($root_arg) || !defined($manifest)
+    || ($initialize && $check);
+-l $root_arg and fail("root cannot be a symbolic link: $root_arg");
+my $root = abs_path($root_arg);
+defined $root && -d $root or fail("root is not a directory: $root_arg");
+my $manifest_parent = abs_path(dirname($manifest));
+defined $manifest_parent && -d $manifest_parent or fail("manifest parent not accessible: $manifest");
+my $manifest_abs = File::Spec->catfile($manifest_parent, basename($manifest));
+-l $manifest_abs and fail('refusing symbolic link for manifest');
+my $root_prefix = $root eq '/' ? '/' : "$root/";
+index($manifest_abs, $root_prefix) != 0 && $manifest_abs ne $root
+    or fail('manifest must be outside monitored directory');
+
+my %files;
+my $scanned = 0;
+find({ no_chdir => 1, follow => 0, wanted => sub {
+    my $path = $File::Find::name;
+    return if -l $path || !-f $path;
+    my $relative = File::Spec->abs2rel($path, $root);
+    my $sha = Digest::SHA->new(256);
+    open my $fh, '<', $path or fail("cannot read $path: $!");
+    binmode($fh) or fail("cannot set binary mode for $path: $!");
+    $sha->addfile($fh);
+    close $fh or fail("cannot finish reading $path: $!");
+    $files{$relative} = $sha->hexdigest;
+    $scanned++;
+}}, $root);
+
+if ($initialize) {
+    sysopen(my $out, $manifest_abs, O_WRONLY | O_CREAT | O_EXCL, 0600)
+        or fail("cannot create new manifest $manifest_abs (will not overwrite): $!");
+    my $json = JSON::PP->new->canonical->pretty->encode({
+        format => 'sasd-integrity-v1', root => $root, sha256 => \%files
+    });
+    print {$out} $json or do { close $out; unlink $manifest_abs; fail('cannot write manifest'); };
+    close $out or fail("cannot close manifest: $!");
+    print "BASELINE: files=$scanned manifest=$manifest_abs\n";
+    exit 0;
+}
+
+open my $in, '<', $manifest_abs or fail("cannot open manifest: $!");
+local $/;
+my $json = <$in>;
+close $in or fail("cannot read manifest: $!");
+my $data = eval { JSON::PP::decode_json($json) };
+ref($data) eq 'HASH' && ($data->{format} // '') eq 'sasd-integrity-v1'
+    && ($data->{root} // '') eq $root && ref($data->{sha256}) eq 'HASH'
+    or fail('invalid manifest or root mismatch');
+my $old = $data->{sha256};
+for my $path (keys %$old) {
+    $path ne '' && $path !~ m{\A/} && $path !~ m{(?:\A|/)\.\.(?:/|\z)}
+        && defined($old->{$path}) && !ref($old->{$path})
+        && $old->{$path} =~ /\A[0-9a-f]{64}\z/
+        or fail('invalid path or digest in manifest');
+}
+my ($changed, $added, $missing) = (0,0,0);
+for my $path (sort keys %files) {
+    if (!exists $old->{$path}) {
+        print "ADDED: $path\n";
+        $added++;
+    } elsif ($old->{$path} ne $files{$path}) {
+        print "CHANGED: $path\n";
+        $changed++;
+    }
+}
+for my $path (sort keys %$old) {
+    if (!exists $files{$path}) {
+        print "MISSING: $path\n";
+        $missing++;
+    }
+}
+print "SUMMARY: files=$scanned changed=$changed added=$added missing=$missing\n";
+exit(($changed || $added || $missing) ? 1 : 0);
+
+sub fail { die "file-integrity: $_[0]\n" }
+sub usage {
+    my ($code) = @_;
+    print {$code ? *STDERR : *STDOUT}
+        "Usage: file-integrity --root DIR --manifest FILE [--init | --check] [--help]\n";
+    exit $code;
+}

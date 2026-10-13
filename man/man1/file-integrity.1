@@ -1,0 +1,35 @@
+.TH FILE\-INTEGRITY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+file-integrity \- create or verify a local SHA-256 file-content baseline
+.SH SYNOPSIS
+\fBfile-integrity\fR \fB--root\fR \fIDIR\fR \fB--manifest\fR \fIFILE\fR [\fB--init\fR | \fB--check\fR]
+.SH DESCRIPTION
+Recursively hashes regular files under an existing directory. --init creates a new JSON manifest outside the tree and refuses overwriting an existing one. --check (default) reports ADDED, CHANGED and MISSING paths. Symlinks and non-regular files are skipped. Only content hashes are compared: modes, ownership, ACLs, security labels and timestamps are excluded. The absolute root must match the original baseline.
+.SH OPTIONS
+.TP
+\fB\-\-root DIR\fR
+Directory to check.
+.TP
+\fB\-\-manifest FILE\fR
+Baseline JSON stored outside DIR.
+.TP
+\fB\-\-init\fR
+Create a new baseline; fail if it exists.
+.TP
+\fB\-\-check\fR
+Compare current files with baseline (default).
+.TP
+\fB\-\-help\fR
+Display usage information.
+.SH EXAMPLE
+.PP
+\fBfile\-integrity \-\-root /etc/ssh \-\-manifest /secure/ssh.json \-\-check\fR
+.SH EXIT STATUS
+0 no differences or initialized; 1 differences; other nonzero values indicate errors. Do not trust an attacker-writable baseline.
+.SH NOTES
+This tool is an original SASD implementation inspired by administrative topics in Nate Campi and Kirk Bauer, Automating Linux and Unix System Administration (Second Edition, 2009). No book source code is included.
+.SH SEE ALSO
+.BR perl (1),
+.BR rotate (1)
+.SH LICENSE
+MIT License, see LICENSE in the repository.

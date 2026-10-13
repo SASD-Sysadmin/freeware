@@ -1,0 +1,31 @@
+.TH ACCOUNT-AUDIT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+account-audit \- read-only structural audit of a Unix passwd file
+.SH SYNOPSIS
+.B account-audit
+.RB [ --file " PATH]"
+.SH DESCRIPTION
+Examines seven-field Unix-style passwd records for invalid fields,
+duplicate usernames, shared UIDs, additional UID-0 accounts and empty
+shells. Legacy NIS compatibility entries are skipped with warnings.
+Does not change user accounts or read shadow passwords.
+.SH OPTIONS
+.TP
+.BI --file " PATH"
+Input file (default /etc/passwd).
+.TP
+.BR -h , " --help"
+Show usage.
+.SH EXIT STATUS
+0 if no malformed entries (warnings may exist), 1 for malformed
+entries, 2 for bad usage, and nonzero on input failures.
+.SH EXAMPLE
+.B account-audit --file /etc/passwd
+.SH NOTES
+Does not inspect PAM, LDAP/NSS, shadow passwords, or password quality.
+The output can disclose account names. Shared UIDs are not always errors.
+.SH SEE ALSO
+.BR passwd (5),
+.BR getent (1)
+.SH LICENSE
+MIT. An original SASD implementation.

@@ -23,3 +23,7 @@ Thank you for improving this collection. Contributions are welcome through GitHu
 - Include an SPDX identifier or appropriate license notice in newly added code where sensible. By contributing, you agree that your contribution is distributed under the repository's existing MIT License.
 
 For vulnerabilities, do **not** open a public issue first; see [SECURITY.md](SECURITY.md).
+
+## External learning materials
+
+Do not include third-party source code or configuration samples without verifying redistribution rights and applicable license conditions. All contributions require tests and maintenance documentation.

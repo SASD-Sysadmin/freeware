@@ -1,0 +1,47 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Streaming, read-only log severity counter; never echoes log contents.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my ($help, $needle) = (0, undef);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'match=s' => \$needle) or usage(2);
+usage(0) if $help;
+usage(2) if @ARGV > 1;
+my $path = @ARGV ? $ARGV[0] : '-';
+my $fh;
+if ($path eq '-') { $fh = *STDIN; }
+else { open $fh, '<', $path or die "log-summary: cannot read $path: $!\n"; }
+
+my $all = 0;
+my $selected = 0;
+my %count = map { $_ => 0 } qw(CRITICAL ERROR WARNING NOTICE INFO DEBUG TRACE OTHER);
+my $match = defined($needle) ? lc($needle) : undef;
+while (my $line = <$fh>) {
+    ++$all;
+    next if defined($match) && index(lc($line), $match) < 0;
+    ++$selected;
+    my $level = 'OTHER';
+    if ($line =~ /\b(?:EMERG(?:ENCY)?|ALERT|CRIT(?:ICAL)?|FATAL)\b/i) { $level = 'CRITICAL'; }
+    elsif ($line =~ /\b(?:ERR(?:OR)?)\b/i) { $level = 'ERROR'; }
+    elsif ($line =~ /\bWARN(?:ING)?\b/i) { $level = 'WARNING'; }
+    elsif ($line =~ /\bNOTICE\b/i) { $level = 'NOTICE'; }
+    elsif ($line =~ /\bINFO\b/i) { $level = 'INFO'; }
+    elsif ($line =~ /\bDEBUG\b/i) { $level = 'DEBUG'; }
+    elsif ($line =~ /\bTRACE\b/i) { $level = 'TRACE'; }
+    ++$count{$level};
+}
+if ($path ne '-') { close $fh or die "log-summary: close failed: $!\n"; }
+print "Lines read: $all\nLines matched: $selected\n";
+for my $level (qw(CRITICAL ERROR WARNING NOTICE INFO DEBUG TRACE OTHER)) {
+    print "$level: $count{$level}\n";
+}
+exit 0;
+
+sub usage {
+    my ($status) = @_;
+    print STDERR "Usage: log-summary [--match LITERAL] [LOGFILE|-]\n";
+    exit $status;
+}

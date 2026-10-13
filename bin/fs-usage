@@ -1,0 +1,80 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Report mounted filesystem utilization using the POSIX df command.
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::Walk; 1 }) {
+        print STDERR "fs-usage: required Perl module SASD::Freeware::Walk is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+    unless (eval { require SASD::Freeware::External; 1 }) {
+        print STDERR "fs-usage: required Perl module SASD::Freeware::External is unavailable; reinstall SASD Freeware with its lib/ directory: $@";
+        exit 3;
+    }
+}
+use Getopt::Long qw(GetOptions);
+use File::Spec;
+use SASD::Freeware::Walk qw(display_path);
+use SASD::Freeware::External qw(find_program);
+my $VERSION = '0.1.0';
+my ($help, $version) = (0, 0);
+my ($warn_at, $critical_at);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'warn=s' => \$warn_at, 'critical=s' => \$critical_at) or usage(2);
+usage(0) if $help;
+if ($version) { print "fs-usage $VERSION\n"; exit 0; }
+@ARGV or usage(2);
+for my $value ($warn_at, $critical_at) {
+    next unless defined $value;
+    $value =~ /\A(?:100|[0-9]{1,2})\z/ or fail('thresholds must be whole percentages from 0 to 100', 2);
+}
+if (defined($warn_at) && defined($critical_at) && $critical_at < $warn_at) {
+    fail('--critical must not be lower than --warn', 2);
+}
+my $df = find_program('df');
+defined($df) or fail("required command 'df' was not found in PATH; install the operating system's filesystem utilities", 3);
+my $status = 0;
+print "STATUS\tUSE%\tUSED_KiB\tAVAIL_KiB\tSIZE_KiB\tFILESYSTEM\tMOUNT\tQUERY\n";
+for my $arg (@ARGV) {
+    my $path = File::Spec->rel2abs($arg);
+    if (!-e $path) { warn "fs-usage: path does not exist: ", display_path($arg), "\n"; $status = 3; next; }
+    my $fh;
+    if (!open($fh, '-|', $df, '-P', '-k', $path)) {
+        warn "fs-usage: failed to run df: $!\n"; $status = 3; next;
+    }
+    my @lines = <$fh>;
+    my $ok = close($fh);
+    if (!$ok) {
+        warn "fs-usage: df failed for ", display_path($arg), " (exit status ", ($? >> 8), ")\n";
+        $status = 3; next;
+    }
+    # POSIX -P -k: header + one line per filesystem. Filesystems with long
+    # device names may contain spaces, so avoid simplistic split on all whitespace.
+    my @rows = grep { /\S/ } @lines;
+    if (@rows != 2 || $rows[1] !~ /\A\s*(.+?)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)%\s+(.+?)\s*\z/) {
+        warn "fs-usage: unexpected df -P -k output for ", display_path($arg),
+             "; the installed df may not support POSIX output\n";
+        $status = 3; next;
+    }
+    my ($filesystem, $size, $used, $avail, $percentage, $mount) = ($1, $2, $3, $4, $5, $6);
+    my $level = 'OK';
+    if (defined($critical_at) && $percentage >= $critical_at) { $level = 'CRITICAL'; }
+    elsif (defined($warn_at) && $percentage >= $warn_at) { $level = 'WARNING'; }
+    $status = 1 if $level ne 'OK' && $status == 0;
+    print join("\t", $level, $percentage, $used, $avail, $size,
+               display_path($filesystem), display_path($mount), display_path($arg)), "\n";
+}
+exit $status;
+sub fail { my ($m, $c) = @_; print STDERR "fs-usage: $m\n"; exit $c; }
+sub usage {
+    my ($c) = @_;
+    my $f = $c ? *STDERR : *STDOUT;
+    print {$f} "Usage: fs-usage [--warn PERCENT] [--critical PERCENT] PATH [PATH ...]\n",
+               "       fs-usage --help | --version\n",
+               "Uses df -P -k; displays allocated filesystem usage in 1024-byte units.\n";
+    exit $c;
+}

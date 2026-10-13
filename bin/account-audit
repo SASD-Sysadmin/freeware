@@ -1,0 +1,69 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Read-only structural audit of Unix-style passwd files (not shadow passwords).
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my ($help, $file) = (0, '/etc/passwd');
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'file=s' => \$file) or usage(2);
+usage(0) if $help;
+usage(2) if @ARGV;
+open my $in, '<', $file or die "account-audit: cannot read $file: $!\n";
+my (%uids, %users);
+my ($records, $errors, $warnings, $line_no) = (0, 0, 0, 0);
+while (my $line = <$in>) {
+    ++$line_no;
+    chomp $line;
+    $line =~ s/\r$//;
+    next if $line eq '' || $line =~ /^\s*#/;
+    if ($line =~ /^[+-]/) {
+        print STDERR "$file:$line_no: warning: legacy NIS compatibility entry skipped\n";
+        ++$warnings;
+        next;
+    }
+    my @fields = split /:/, $line, -1;
+    if (@fields != 7) {
+        print STDERR "$file:$line_no: error: expected 7 colon-separated fields\n";
+        ++$errors;
+        next;
+    }
+    my ($user, $password, $uid, $gid, $gecos, $home, $shell) = @fields;
+    if ($user !~ /\A[a-zA-Z_][a-zA-Z0-9_.-]*\$?\z/ ||
+        $uid !~ /\A\d+\z/ || $gid !~ /\A\d+\z/ ||
+        $home eq '' || $home !~ m{\A/} ) {
+        print STDERR "$file:$line_no: error: invalid name, ID, or home directory\n";
+        ++$errors;
+        next;
+    }
+    ++$records;
+    if ($users{$user}++) {
+        print STDERR "$file:$line_no: warning: duplicate username: $user\n";
+        ++$warnings;
+    }
+    if (exists($uids{$uid}) && $uids{$uid} ne $user) {
+        print STDERR "$file:$line_no: warning: shared UID $uid ($uids{$uid}, $user)\n";
+        ++$warnings;
+    } else {
+        $uids{$uid} = $user;
+    }
+    if ($uid == 0 && $user ne 'root') {
+        print STDERR "$file:$line_no: warning: non-root account has UID 0: $user\n";
+        ++$warnings;
+    }
+    if ($shell eq '') {
+        print STDERR "$file:$line_no: warning: empty login shell: $user\n";
+        ++$warnings;
+    }
+}
+close $in or die "account-audit: cannot close $file: $!\n";
+print "Accounts: $records\nDistinct UIDs: ", scalar(keys %uids), "\n";
+print "Warnings: $warnings\nErrors: $errors\n";
+exit($errors ? 1 : 0);
+
+sub usage {
+    my ($status) = @_;
+    print STDERR "Usage: account-audit [--file PATH]   (default: /etc/passwd)\n";
+    exit $status;
+}

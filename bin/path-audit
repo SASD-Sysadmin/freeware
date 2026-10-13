@@ -1,0 +1,106 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Report pathname components and full paths exceeding configured byte limits.
+use strict;
+use warnings;
+use bytes;
+use Getopt::Long qw(GetOptions);
+use File::Spec;
+use File::Basename qw(basename);
+use Fcntl qw(S_ISDIR S_ISLNK);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $one_fs, $null) = (0, 0, 0, 0);
+my ($component_limit, $path_limit) = (240, 1024);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h'             => \$help,
+    'version'            => \$version,
+    'component-limit=s'  => \$component_limit,
+    'path-limit=s'       => \$path_limit,
+    'one-file-system'    => \$one_fs,
+    'null'               => \$null,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "path-audit $VERSION\n"; exit 0; }
+usage(2) unless @ARGV == 1 && $component_limit =~ /\A[0-9]+\z/
+    && $path_limit =~ /\A[0-9]+\z/ && $component_limit > 0 && $path_limit > 0;
+my $root = shift @ARGV;
+$root =~ s{/+\z}{} unless $root =~ m{\A/+\z};
+my @root_stat = lstat($root);
+if (!@root_stat || !S_ISDIR($root_stat[2]) || S_ISLNK($root_stat[2])) {
+    print STDERR "path-audit: root must be an existing directory, not a symlink: $root\n";
+    exit 1;
+}
+my $root_device = $root_stat[0];
+my ($count, $errors) = (0, 0);
+my @pending = ($root);
+print "REASON\tCOMPONENT_BYTES\tPATH_BYTES\tPATH\n" unless $null;
+while (@pending) {
+    my $path = pop @pending;
+    my @st = lstat($path);
+    if (!@st) { warn "path-audit: lstat failed: ", display($path), ": $!\n"; ++$errors; next; }
+    next if $one_fs && $st[0] != $root_device;
+    my $component_bytes = length(basename($path));
+    my $path_bytes = length($path);
+    my $component_bad = $component_bytes > $component_limit;
+    my $path_bad = $path_bytes > $path_limit;
+    if ($component_bad || $path_bad) {
+        my $reason = $component_bad && $path_bad ? 'both'
+                   : $component_bad ? 'component' : 'path';
+        ++$count;
+        if ($null) {
+            print join("\0", $reason, $component_bytes, $path_bytes, $path), "\0";
+        } else {
+            print join("\t", $reason, $component_bytes, $path_bytes, display($path)), "\n";
+        }
+    }
+    next if S_ISLNK($st[2]);
+    next unless S_ISDIR($st[2]);
+    my $dh;
+    if (!opendir($dh, $path)) {
+        warn "path-audit: cannot read directory: ", display($path), ": $!\n";
+        ++$errors;
+        next;
+    }
+    my @opened = stat($dh);
+    if (!@opened || $opened[0] != $st[0] || $opened[1] != $st[1]
+        || !S_ISDIR($opened[2])) {
+        warn "path-audit: directory changed during traversal: ", display($path), "\n";
+        ++$errors;
+        closedir($dh);
+        next;
+    }
+    my @names = sort grep { $_ ne '.' && $_ ne '..' } readdir($dh);
+    if (!closedir($dh)) {
+        warn "path-audit: cannot close directory: ", display($path), ": $!\n";
+        ++$errors;
+    }
+    push @pending, reverse map { File::Spec->catfile($path, $_) } @names;
+}
+print "Findings: $count\nErrors: $errors\n" unless $null;
+exit($errors ? 1 : 0);
+
+sub display {
+    my ($value) = @_;
+    $value =~ s/\\/\\\\/g;
+    $value =~ s/\n/\\n/g;
+    $value =~ s/\r/\\r/g;
+    $value =~ s/\t/\\t/g;
+    return $value;
+}
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: path-audit [--component-limit N] [--path-limit N]
+                  [--one-file-system] [--null] DIRECTORY
+       path-audit --help | --version
+Report path components and paths exceeding byte thresholds.
+--component-limit N  Maximum component length in bytes (default: 240).
+--path-limit N       Maximum full path length in bytes (default: 1024).
+--one-file-system    Do not traverse entries on another filesystem.
+--null               Emit NUL-separated REASON, COMPONENT_BYTES, PATH_BYTES, PATH fields.
+HELP
+    exit($code);
+}

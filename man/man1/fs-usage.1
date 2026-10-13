@@ -1,0 +1,34 @@
+.TH FS-USAGE 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+fs-usage \- display filesystem capacity and check use thresholds
+.SH SYNOPSIS
+.B fs-usage
+.RB [ --warn " PERCENT" ]
+.RB [ --critical " PERCENT" ]
+.I PATH [PATH ...]
+.SH DESCRIPTION
+Run the POSIX df command with -P and -k for each path and display
+filesystem size, usage, available capacity and percent utilized.
+Sizes are 1024-byte units. Output is tab-separated and read-only.
+.SH OPTIONS
+.TP
+.BI --warn " PERCENT"
+Report WARNING at or above this whole percentage.
+.TP
+.BI --critical " PERCENT"
+Report CRITICAL at or above this whole percentage; must not be below --warn.
+.TP
+.B --help
+Show usage.
+.TP
+.B --version
+Show version.
+.SH REQUIREMENTS
+Perl 5.8 or newer; a df command supporting POSIX -P and -k.
+.SH EXIT STATUS
+0 success; 1 utilization threshold reached; 2 usage error;
+3 missing df, failed df or incompatible result.
+.SH SEE ALSO
+.BR df (1),
+.BR fs-report (1),
+.BR quota-report (1)

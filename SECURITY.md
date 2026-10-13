@@ -14,3 +14,9 @@ A useful report includes the affected tool and revision, steps to reproduce with
 - It is not atomic across the entire rotation and is not a replacement for transactional or off-host backups.
 - Audit a checkout before installing/updating and avoid running an unreviewed Git working tree as root.
 - Use the provided tests as a check, not as a substitute for a security review.
+
+## Perl automation-tool precautions
+
+- `file-integrity --init` deliberately writes a new baseline; no existing baseline is overwritten. Protect manifests outside the monitored tree.
+- `tcp-check` makes an actual network connection. Test only endpoints that you are authorized to probe.
+- `ssh-key-audit` and `suid-audit` are heuristic inventories, not proof of a secure configuration.

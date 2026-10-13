@@ -1,0 +1,35 @@
+.TH TCP\-CHECK 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+tcp-check \- check one IPv4 TCP service endpoint
+.SH SYNOPSIS
+\fBtcp-check\fR \fB--host\fR \fIHOST\fR \fB--port\fR \fIPORT\fR [\fB--timeout\fR \fISECONDS\fR] [\fB--nagios\fR]
+.SH DESCRIPTION
+Attempts one IPv4 TCP connection and reports connection-level status. A successful TCP connect does not verify TLS certificates or application health. Use only on authorized hosts.
+.SH OPTIONS
+.TP
+\fB\-\-host HOST\fR
+Target DNS name or IPv4 address.
+.TP
+\fB\-\-port PORT\fR
+TCP port from 1 to 65535.
+.TP
+\fB\-\-timeout SEC\fR
+Connection timeout 1..30 seconds, default 3.
+.TP
+\fB\-\-nagios\fR
+Nagios-compatible exit codes.
+.TP
+\fB\-\-help\fR
+Display usage information.
+.SH EXAMPLE
+.PP
+\fBtcp\-check \-\-host 127.0.0.1 \-\-port 22 \-\-timeout 3 \-\-nagios\fR
+.SH EXIT STATUS
+Default: 0 success, 1 failed connection, 2 invalid usage. With --nagios: 0 OK, 2 CRITICAL, 3 UNKNOWN usage.
+.SH NOTES
+This tool is an original SASD implementation inspired by administrative topics in Nate Campi and Kirk Bauer, Automating Linux and Unix System Administration (Second Edition, 2009). No book source code is included.
+.SH SEE ALSO
+.BR perl (1),
+.BR rotate (1)
+.SH LICENSE
+MIT License, see LICENSE in the repository.

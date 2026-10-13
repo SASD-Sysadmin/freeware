@@ -1,0 +1,39 @@
+.TH QUOTA-REPORT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+quota-report \- query system filesystem quota utilities
+.SH SYNOPSIS
+.B quota-report
+.RB [ --user " NAME" |
+.BI --group " NAME" |
+.BR --all ]
+.SH DESCRIPTION
+Display the system quota report without modifying any quotas. With no option,
+run quota -v for the current user. --user selects quota -v NAME,
+--group selects quota -v -g NAME, and --all runs repquota -a.
+Output is supplied by the native tool and remains platform-specific.
+.SH OPTIONS
+.TP
+.BI --user " NAME"
+Show quota for a named user.
+.TP
+.BI --group " NAME"
+Show group quota, where supported by the system quota utility.
+.TP
+.B --all
+Show the administrative report for all supported filesystems.
+.TP
+.B --help
+Show usage.
+.TP
+.B --version
+Show version.
+.SH REQUIREMENTS
+Perl 5.8 or newer and the system quota or repquota command.
+The relevant filesystems must have quota support configured.
+.SH EXIT STATUS
+0 native command succeeded; 2 invalid options;
+3 required command missing or command execution failed.
+.SH SEE ALSO
+.BR quota (1),
+.BR repquota (8),
+.BR fs-usage (1)

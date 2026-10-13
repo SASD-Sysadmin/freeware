@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Examine OpenSSH authorized_keys entries and file permissions.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use File::Basename qw(dirname);
+use File::Spec;
+
+my ($file, $help);
+GetOptions('file=s' => \$file, 'help' => \$help) or usage(2);
+usage(0) if $help;
+usage(2) if @ARGV;
+$file //= File::Spec->catfile($ENV{HOME} // '.', '.ssh', 'authorized_keys');
+
+-l $file and die "ssh-key-audit: refusing symbolic link: $file\n";
+-f $file or die "ssh-key-audit: expected a regular file: $file\n";
+open my $fh, '<', $file or die "ssh-key-audit: cannot open $file: $!\n";
+my ($entries, $warnings) = (0, 0);
+for my $target ($file, dirname($file)) {
+    next if !-e $target;
+    my @st = stat($target);
+    next unless @st;
+    if ($st[2] & 0002) {
+        print "WARN: world-writable path: $target\n";
+        $warnings++;
+    }
+    if ($st[2] & 0020) {
+        print "WARN: group-writable path: $target (check SSH StrictModes)\n";
+        $warnings++;
+    }
+}
+my %seen;
+my $line_no = 0;
+while (my $line = <$fh>) {
+    $line_no++;
+    $line =~ s/\r?\n\z//;
+    next if $line =~ /^\s*(?:#|\z)/;
+    # Only read recognized OpenSSH key forms; key options may contain spaces.
+    if ($line !~ /(?:^|\s)(ssh-ed25519|ssh-rsa|ssh-dss|ecdsa-sha2-[\w-]+|sk-ssh-ed25519\@openssh\.com|sk-ecdsa-sha2-nistp256\@openssh\.com)\s+([A-Za-z0-9+\/=]+)(?:\s|$)/) {
+        print "WARN: line $line_no: unrecognized or malformed public key\n";
+        $warnings++;
+        next;
+    }
+    my ($kind, $blob) = ($1, $2);
+    $entries++;
+    if ($kind eq 'ssh-dss') {
+        print "WARN: line $line_no: legacy DSA public key\n";
+        $warnings++;
+    }
+    if ($seen{$blob}++) {
+        print "WARN: line $line_no: duplicate public key\n";
+        $warnings++;
+    }
+}
+close $fh or die "ssh-key-audit: reading $file failed: $!\n";
+print "SUMMARY: keys=$entries warnings=$warnings\n";
+exit($warnings ? 1 : 0);
+
+sub usage {
+    my ($code) = @_;
+    print {$code ? *STDERR : *STDOUT} "Usage: ssh-key-audit [--file authorized_keys] [--help]\n";
+    exit $code;
+}

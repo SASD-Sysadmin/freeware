@@ -1,0 +1,43 @@
+.TH LARGEFILES 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+largefiles \- locate large regular files in a directory tree
+.SH SYNOPSIS
+.B largefiles
+.RB [ --min-size " SIZE" ]
+.RB [ --top " N" ]
+.RB [ --all ]
+.RB [ --null ]
+.RB [ --one-file-system ]
+.I DIRECTORY
+.SH DESCRIPTION
+Scan a directory tree without following symbolic links. By default report the
+50 largest regular files of at least 100 MiB. All matching files are counted.
+Text output escapes control characters in filenames.
+.SH OPTIONS
+.TP
+.BI --min-size " SIZE"
+Minimum file size in bytes or binary K/M/G/T suffix, inclusive.
+.TP
+.BI --top " N"
+Keep at most N largest results (1 to 10000; default 50).
+.TP
+.B --all
+Stream all matching files, unsorted.
+.TP
+.B --null
+Output NUL-separated pairs of size and raw pathname, without header or totals.
+.TP
+.B --one-file-system
+Skip entries on other device IDs.
+.TP
+.B --help
+Show usage.
+.TP
+.B --version
+Show version.
+.SH EXIT STATUS
+0 complete; 1 traversal errors; 2 invalid options; 3 invalid root directory.
+.SH SEE ALSO
+.BR fs-report (1),
+.BR find (1),
+.BR du (1)

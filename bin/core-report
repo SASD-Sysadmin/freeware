@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Inventory regular files whose names are commonly used for core dumps.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use File::Spec;
+use Fcntl qw(S_ISDIR S_ISREG S_ISLNK);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $one_fs, $null) = (0, 0, 0, 0);
+my $min_size = 0;
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h'           => \$help,
+    'version'          => \$version,
+    'min-size=s'       => \$min_size,
+    'one-file-system'  => \$one_fs,
+    'null'             => \$null,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "core-report $VERSION\n"; exit 0; }
+usage(2) unless @ARGV == 1 && $min_size =~ /\A[0-9]+\z/;
+
+my $root = shift @ARGV;
+# Trailing separators are immaterial (apart from the filesystem root).
+$root =~ s{/+\z}{} unless $root =~ m{\A/+\z};
+my @root_stat = lstat($root);
+if (!@root_stat || !S_ISDIR($root_stat[2]) || S_ISLNK($root_stat[2])) {
+    print STDERR "core-report: root must be an existing directory, not a symlink: $root\n";
+    exit 1;
+}
+my $root_device = $root_stat[0];
+my ($count, $bytes, $errors) = (0, 0, 0);
+my @pending = ($root);
+print "BYTES\tPATH\n" unless $null;
+
+while (@pending) {
+    my $path = pop @pending;
+    my @st = lstat($path);
+    if (!@st) { warn "core-report: lstat failed: ", display($path), ": $!\n"; ++$errors; next; }
+    next if $one_fs && $st[0] != $root_device;
+    my $mode = $st[2];
+    next if S_ISLNK($mode);
+    if (S_ISDIR($mode)) {
+        my $dh;
+        if (!opendir($dh, $path)) {
+            warn "core-report: cannot read directory: ", display($path), ": $!\n";
+            ++$errors;
+            next;
+        }
+        my @opened = stat($dh);
+        if (!@opened || $opened[0] != $st[0] || $opened[1] != $st[1]
+            || !S_ISDIR($opened[2])) {
+            warn "core-report: directory changed during traversal: ", display($path), "\n";
+            ++$errors;
+            closedir($dh);
+            next;
+        }
+        my @names = sort grep { $_ ne '.' && $_ ne '..' } readdir($dh);
+        if (!closedir($dh)) {
+            warn "core-report: cannot close directory: ", display($path), ": $!\n";
+            ++$errors;
+        }
+        push @pending, reverse map { File::Spec->catfile($path, $_) } @names;
+        next;
+    }
+    next unless S_ISREG($mode);
+    my ($name) = $path =~ m{([^/]+)\z};
+    next unless defined $name && ($name eq 'core' || $name =~ /\Acore\..+\z/);
+    my $size = $st[7];
+    next if $size < $min_size;
+    ++$count;
+    $bytes += $size;
+    if ($null) {
+        print $size, "\0", $path, "\0";
+    } else {
+        print $size, "\t", display($path), "\n";
+    }
+}
+print "Candidates: $count\nLogical bytes: $bytes\nErrors: $errors\n" unless $null;
+exit($errors ? 1 : 0);
+
+sub display {
+    my ($value) = @_;
+    $value =~ s/\\/\\\\/g;
+    $value =~ s/\n/\\n/g;
+    $value =~ s/\r/\\r/g;
+    $value =~ s/\t/\\t/g;
+    return $value;
+}
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: core-report [--min-size BYTES] [--one-file-system] [--null] DIRECTORY
+       core-report --help | --version
+Inventory regular files named 'core' or 'core.*' without changing them.
+--min-size BYTES   Report only files of at least this many bytes (default: 0).
+--one-file-system Do not traverse entries on another filesystem.
+--null            Emit NUL-separated BYTES, PATH fields without header/summary.
+HELP
+    exit($code);
+}
