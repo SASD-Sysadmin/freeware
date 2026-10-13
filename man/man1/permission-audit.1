@@ -1,0 +1,36 @@
+.TH PERMISSION-AUDIT 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+permission-audit \- list filesystem objects writable by all users
+.SH SYNOPSIS
+.B permission-audit
+.RB [ --include-sticky ]
+.RB [ --one-file-system ]
+.RB [ --null ]
+.I DIRECTORY
+.br
+.B permission-audit
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Reports entries with the other-write mode bit set. Symbolic links are not
+followed or reported. World-writable directories with the sticky bit are
+excluded unless explicitly requested. Does not inspect ACLs and never
+changes permissions.
+.SH OPTIONS
+.TP
+.B --include-sticky
+Also list sticky world-writable directories as sticky-directory.
+.TP
+.B --one-file-system
+Do not descend into other devices.
+.TP
+.B --null
+Emit NUL-terminated TYPE, MODE, PATH fields without summary.
+.TP
+.BR --help , --version
+Display help or version.
+.SH EXIT STATUS
+0 scan completed; 1 incomplete scan; 2 usage error; 3 required library missing.
+.SH SEE ALSO
+.BR find (1),
+.BR chmod (1),
+.BR stat (1)

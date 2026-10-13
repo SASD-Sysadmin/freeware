@@ -10,6 +10,9 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 | --- | --- | --- | --- |
 | `core-report` | [`bin/core-report`](bin/core-report) | Inventory files with core-dump-style names, including logical sizes. | [Guide](docs/commands/core-report.md) · [Deutsch](docs/commands/core-report.de.md) · [Manpage](man/man1/core-report.1) |
 | `path-audit` | [`bin/path-audit`](bin/path-audit) | Identify pathnames exceeding configured byte limits. | [Guide](docs/commands/path-audit.md) · [Deutsch](docs/commands/path-audit.de.md) · [Manpage](man/man1/path-audit.1) |
+| `link-audit` | [`bin/link-audit`](bin/link-audit) | Inventory dangling, looping and unresolved symbolic links. | [Guide](docs/commands/link-audit.md) · [Deutsch](docs/commands/link-audit.de.md) · [Manpage](man/man1/link-audit.1) |
+| `owner-audit` | [`bin/owner-audit`](bin/owner-audit) | Report file UIDs/GIDs not resolved by the host name service. | [Guide](docs/commands/owner-audit.md) · [Deutsch](docs/commands/owner-audit.de.md) · [Manpage](man/man1/owner-audit.1) |
+| `permission-audit` | [`bin/permission-audit`](bin/permission-audit) | Report world-writable filesystem entries. | [Guide](docs/commands/permission-audit.md) · [Deutsch](docs/commands/permission-audit.de.md) · [Manpage](man/man1/permission-audit.1) |
 | `rotate` | [`bin/rotate`](bin/rotate) | Preserve up to ten generations of a regular file (`.0` newest, `.9` oldest). | [Guide](docs/commands/rotate.md) · [Deutsch](docs/commands/rotate.de.md) · [Manpage](man/man1/rotate.1) |
 | `fs-report` | [`bin/fs-report`](bin/fs-report) | Directory inventory and logical file sizes. | [Guide](docs/commands/fs-report.md) · [Deutsch](docs/commands/fs-report.de.md) · [Manpage](man/man1/fs-report.1) |
 | `largefiles` | [`bin/largefiles`](bin/largefiles) | Find large regular files. | [Guide](docs/commands/largefiles.md) · [Deutsch](docs/commands/largefiles.de.md) · [Manpage](man/man1/largefiles.1) |

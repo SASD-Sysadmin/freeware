@@ -6,6 +6,14 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ### Added
 
+- `link-audit` inventories dangling, looping and unresolved symbolic links without following directory links.
+- `owner-audit` reports file UID/GID identifiers unresolved by the current system name service.
+- `permission-audit` inventories world-writable entries, distinguishing sticky directories.
+- English and German command guides, section 1 manual pages and isolated filesystem regression tests.
+
+
+### Added
+
 - `quota-status` for non-mutating Linux quota activation status via native `quotaon -p`.
 - `quota-set` for explicit, validated Linux user/group quota limits with read-only preview, separate apply confirmation, unlimited-value acknowledgment and mountpoint checks.
 - English/German command guides, section 1/8 manual pages and isolated regression tests for quota administration.
