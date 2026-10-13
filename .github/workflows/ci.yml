@@ -29,9 +29,18 @@ jobs:
           make install DESTDIR="$staging" PREFIX=/usr/freeware
           test -x "$staging/usr/freeware/bin/account-inventory"
           test -x "$staging/usr/freeware/bin/home-audit"
+          test -x "$staging/usr/freeware/bin/nss-lookup"
+          test -x "$staging/usr/freeware/bin/host-resolve"
+          test -x "$staging/usr/freeware/bin/ldap-probe"
+          test -f "$staging/usr/freeware/man/man1/nss-lookup.1"
+          test -f "$staging/usr/freeware/docs/commands/ldap-probe.de.md"
           test -f "$staging/usr/freeware/docs/PLATFORMS.md"
           test -f "$staging/usr/freeware/docs/PLATFORMS.de.md"
           test -f "$staging/usr/freeware/man/man8/account-manage.8"
           make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
           test ! -e "$staging/usr/freeware/bin/account-inventory"
+          test ! -e "$staging/usr/freeware/bin/nss-lookup"
+          test ! -e "$staging/usr/freeware/bin/host-resolve"
+          test ! -e "$staging/usr/freeware/bin/ldap-probe"
+          test ! -e "$staging/usr/freeware/docs/commands/ldap-probe.de.md"
           test ! -e "$staging/usr/freeware/docs/PLATFORMS.md"

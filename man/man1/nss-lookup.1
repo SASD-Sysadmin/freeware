@@ -1,0 +1,41 @@
+.TH NSS-LOOKUP 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+nss-lookup \- targeted libc/NSS user and group lookup
+.SH SYNOPSIS
+.B nss-lookup
+.RB ( --user " NAME | " --uid " N | " --group " NAME | " --gid " N) [" --null ]
+.br
+.B nss-lookup
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Resolve one user or group from the host's configured libc name service.
+Does not enumerate NSS, change identities, or report which backend answered.
+A successful result does not prove LDAP/NIS enumeration completeness.
+.SH OPTIONS
+.TP
+.BI --user " NAME"
+Lookup user by name.
+.TP
+.BI --uid " N"
+Lookup user by decimal UID.
+.TP
+.BI --group " NAME"
+Lookup group by name.
+.TP
+.BI --gid " N"
+Lookup group by decimal GID.
+.TP
+.B --null
+Seven raw NUL-separated TYPE, NAME, UID, GID, HOME, SHELL, MEMBERS fields.
+.TP
+.B --help
+Display help.
+.TP
+.B --version
+Display version.
+.SH OUTPUT
+Human output is tab-delimited with control characters escaped.
+.SH EXIT STATUS
+0 found; 1 not found (may include backend failure not distinguished by libc); 2 usage error.
+.SH SEE ALSO
+getpwnam(3), getgrnam(3), nsswitch.conf(5)
