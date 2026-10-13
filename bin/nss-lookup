@@ -1,0 +1,65 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Targeted libc/NSS account and group lookups (never enumerate or modify).
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my ($help,$version,$user,$uid,$group,$gid,$null) = (0,0,undef,undef,undef,undef,0);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,
+           'user=s'=>\$user,'uid=s'=>\$uid,
+           'group=s'=>\$group,'gid=s'=>\$gid,'null'=>\$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "nss-lookup $VERSION\n"; exit 0; }
+my @queries = grep { defined $_ } ($user,$uid,$group,$gid);
+usage(2) if @ARGV || @queries != 1;
+my ($type,$key,$query);
+if (defined($user))   { ($type,$key,$query) = ('user','name',$user); }
+elsif (defined($uid)) { ($type,$key,$query) = ('user','uid',$uid); }
+elsif (defined($group)) { ($type,$key,$query) = ('group','name',$group); }
+else { ($type,$key,$query) = ('group','gid',$gid); }
+if ($key eq 'name') {
+    # NSS names can be richer than local Linux useradd names; no command is executed.
+    length($query) >= 1 && length($query) <= 255 && $query !~ /[\x00-\x1f\x7f]/
+        or fail('name must contain 1..255 bytes without control characters',2);
+} else {
+    $query =~ /\A[0-9]{1,10}\z/ && $query <= 4294967295
+        or fail('UID/GID must be an unsigned 32-bit decimal identifier',2);
+}
+my @entry = $type eq 'user'
+    ? ($key eq 'name' ? getpwnam($query) : getpwuid($query + 0))
+    : ($key eq 'name' ? getgrnam($query) : getgrgid($query + 0));
+if (!@entry) {
+    warn "nss-lookup: no $type found for $key ", printable($query), " (NSS lookup; not a directory enumeration)\n";
+    exit 1;
+}
+my @fields = $type eq 'user'
+    ? ('user',$entry[0],$entry[2],$entry[3],$entry[7],$entry[8],'')
+    : ('group',$entry[0],'',$entry[2],'','',($entry[3] // ''));
+if ($null) { print join("\0", map { $_ // '' } @fields), "\0"; }
+else {
+    print "TYPE\tNAME\tUID\tGID\tHOME\tSHELL\tMEMBERS\n";
+    print join("\t", map { printable($_ // '') } @fields), "\n";
+}
+exit 0;
+sub printable {
+    my ($s)=@_;
+    $s =~ s/([\\\x00-\x1f\x7f])/sprintf('\\x%02X',ord($1))/ge;
+    return $s;
+}
+sub fail { my($why,$status)=@_;warn "nss-lookup: $why\n";exit $status; }
+sub usage {
+    my($status)=@_;
+    my $out=$status ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: nss-lookup (--user NAME | --uid N | --group NAME | --gid N) [--null]
+       nss-lookup --help | --version
+Query exactly one user or group through the host's configured libc name service.
+This is a direct lookup, not an exhaustive NSS/LDAP/NIS inventory.
+--null  Emit seven raw NUL-separated fields (TYPE NAME UID GID HOME SHELL MEMBERS).
+Exit 0 = found, 1 = not found, 2 = usage error.
+HELP
+    exit $status;
+}

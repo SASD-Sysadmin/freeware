@@ -10,6 +10,9 @@ SASD Freeware wird mit GitHub Actions unter Ubuntu Linux und macOS getestet. **B
 | `rotate`, Dateiintegrität, SSH/Hosts, TCP und Logs | Automatisierte Tests | Automatisierte Tests | Pfade, Rechte und native Werkzeuge am Zielsystem prüfen. |
 | `fs-usage`, `quota-report` | Systembefehle erforderlich | Systembefehle erforderlich | `df`, `quota` und `repquota` unterscheiden sich nach Betriebssystem. |
 | `account-inventory` | Standardmäßig lokale Dateien; NSS wählbar | Standardmäßig NSS; lokale Textdateien wählbar | NSS-Aufzählung ist nicht zwingend vollständig; Einzelauflösung kann funktionieren, obwohl Konten in der Liste fehlen. |
+| `nss-lookup` | Direkte libc-/NSS-Abfrage | Direkte libc-/Directory-Services-Abfrage | Keine sichere Unterscheidung zwischen fehlendem Eintrag und Fehler des NSS-Backends; keine vollständige Aufzählung. |
+| `host-resolve` | System-Resolver | System-Resolver | `/etc/hosts`, mDNS, Caches und DNS können beteiligt sein; kein DNS-Protokolltester. Perl Socket mit `getaddrinfo`/`getnameinfo` erforderlich. |
+| `ldap-probe` | Optional `ldapsearch` | Optional `ldapsearch` | Nur anonyme LDAPS-Root-DSE-Abfrage; keine vollständige LDAP- oder NSS-Integrationsprüfung. Zertifikatsprüfung bleibt verpflichtend. |
 | `home-audit` | Standardmäßig lokale Dateien; UID ab 1000 | Standardmäßig NSS; UID ab 500 | UID-Bereiche sind Richtlinien. macOS-ACLs und Datenschutzregeln werden nicht berücksichtigt. |
 | `group-audit` / `account-audit` | Unix-Textdateien | Nur Unix-Textdateien | `/etc/passwd` und `/etc/group` sind unter macOS keine vollständige Open-Directory-Datenbank. |
 | `account-manage` | Nur Linux; standardmäßig Vorschau und abgesicherte Änderungen | Nicht unterstützt, auch keine Vorschau | Keine direkte Verwaltung von Directory Services/LDAP/NIS. |
@@ -22,6 +25,8 @@ make test
 ./bin/account-inventory --kind users
 ./bin/account-inventory --source nss --kind groups
 ./bin/home-audit
+./bin/nss-lookup --user root
+./bin/host-resolve --name localhost
 ./bin/link-audit "$HOME"
 ./bin/permission-audit "$HOME"
 ./sbin/account-manage --action group-create --name example_group  # Exit 3: Linux-only

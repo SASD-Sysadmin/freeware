@@ -1,0 +1,37 @@
+.TH HOST-RESOLVE 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+host-resolve \- system host resolver forward and reverse checks
+.SH SYNOPSIS
+.B host-resolve
+.RB ( --name " HOST [" --family " any|ipv4|ipv6] | " --address " IP) [" --null ]
+.br
+.B host-resolve
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Use the host's getaddrinfo/getnameinfo interfaces. Results can come from
+hosts files, caches, mDNS or DNS. Not a direct DNS protocol check.
+.SH OPTIONS
+.TP
+.BI --name " HOST"
+Resolve a hostname to one or more numeric addresses.
+.TP
+.BI --address " IP"
+Resolve numeric IPv4/IPv6 address to a hostname, without numeric fallback.
+.TP
+.BI --family " any|ipv4|ipv6"
+Address family for forward resolution only. Default any.
+.TP
+.B --null
+Emit four NUL-separated DIRECTION, FAMILY, ADDRESS, NAME fields per result.
+.TP
+.B --help
+Display usage information.
+.TP
+.B --version
+Display version.
+.SH EXIT STATUS
+0 resolved; 1 unsuccessful; 2 invalid options; 3 internal conversion failure.
+.SH REQUIREMENTS
+Perl Socket with getaddrinfo/getnameinfo (typically Perl 5.14 or newer).
+.SH SEE ALSO
+getaddrinfo(3), getnameinfo(3), hosts(5)

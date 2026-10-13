@@ -1,0 +1,73 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# libc system-resolver diagnostics: NSS/hosts/cache/DNS, not DNS-wire validation.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use Socket qw(AF_UNSPEC AF_INET AF_INET6 SOCK_STREAM AI_NUMERICHOST
+              NI_NUMERICHOST NI_NAMEREQD getaddrinfo getnameinfo);
+
+my $VERSION = '0.1.0';
+my ($help,$version,$name,$address,$family,$null) = (0,0,undef,undef,'any',0);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,
+           'name=s'=>\$name,'address=s'=>\$address,
+           'family=s'=>\$family,'null'=>\$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "host-resolve $VERSION\n"; exit 0; }
+usage(2) if @ARGV || (!!defined($name) == !!defined($address)) ||
+            $family !~ /\A(?:any|ipv4|ipv6)\z/ || (defined($address) && $family ne 'any');
+my $query = defined($name) ? $name : $address;
+length($query) >= 1 && length($query) <= 253 && $query !~ /[\x00-\x20\x7f]/
+    or fail('query must be 1..253 bytes without whitespace or control characters',2);
+# On many OSes getaddrinfo's socktype selection suppresses duplicate protocol rows.
+my %hints = (socktype=>SOCK_STREAM,
+             family=>$family eq 'ipv4' ? AF_INET : $family eq 'ipv6' ? AF_INET6 : AF_UNSPEC);
+$hints{flags} = AI_NUMERICHOST if defined($address); # rejects hostnames in reverse mode
+my ($error,@results) = getaddrinfo($query,undef,\%hints);
+if ($error || !@results) {
+    warn "host-resolve: ", defined($address) ? 'invalid numeric address or unsupported family' : 'lookup unsuccessful',
+         ": ", safe($query), ($error ? ": $error" : ''), "\n";
+    exit 1;
+}
+my %found;
+my @rows;
+for my $entry (@results) {
+    my ($numeric_err,$numeric)=getnameinfo($entry->{addr},NI_NUMERICHOST);
+    if ($numeric_err) { warn "host-resolve: numeric address conversion failed: $numeric_err\n"; exit 3; }
+    my $fam=$entry->{family}==AF_INET ? 'ipv4' : $entry->{family}==AF_INET6 ? 'ipv6' : 'other';
+    if (defined($name)) {
+        my $key=join("\0",$fam,$numeric);
+        next if $found{$key}++;
+        push @rows,['forward',$fam,$numeric,$query];
+    } else {
+        my ($reverse_err,$reverse)=getnameinfo($entry->{addr},NI_NAMEREQD);
+        if ($reverse_err) { warn "host-resolve: no reverse name for ",safe($numeric),": $reverse_err\n"; next; }
+        my $key=join("\0",$fam,$numeric,$reverse);
+        next if $found{$key}++;
+        push @rows,['reverse',$fam,$numeric,$reverse];
+    }
+}
+if (!@rows) { warn "host-resolve: no resolved records for ",safe($query),"\n"; exit 1; }
+if ($null) { for my $row (@rows) { print join("\0",@$row),"\0"; } }
+else {
+    print "DIRECTION\tFAMILY\tADDRESS\tNAME\n";
+    for my $row (@rows) { print join("\t",map { safe($_) } @$row),"\n"; }
+    print "Records: ",scalar(@rows),"\n";
+}
+exit 0;
+sub safe { my($s)=@_;$s =~ s/([\\\x00-\x1f\x7f])/sprintf('\\x%02X',ord($1))/ge;return $s; }
+sub fail { my($msg,$code)=@_;warn "host-resolve: $msg\n";exit $code; }
+sub usage {
+    my($code)=@_;my $out=$code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: host-resolve (--name HOST [--family any|ipv4|ipv6] | --address IP) [--null]
+       host-resolve --help | --version
+Resolve via libc getaddrinfo/getnameinfo (may use /etc/hosts or DNS).
+--name     Forward resolution of a hostname through the system resolver.
+--address  Reverse resolution of a numeric IPv4/IPv6 address (requires a name).
+--null     Emit NUL-separated DIRECTION FAMILY ADDRESS NAME fields per record.
+Exit 0 = resolved, 1 = not resolved, 2 = usage error, 3 = internal failure.
+HELP
+    exit $code;
+}

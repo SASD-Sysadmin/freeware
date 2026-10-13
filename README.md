@@ -21,6 +21,9 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 | `quota-status` | [`bin/quota-status`](bin/quota-status) | Show Linux quota activation status using native `quotaon -p`. | [Guide](docs/commands/quota-status.md) · [Deutsch](docs/commands/quota-status.de.md) · [Manpage](man/man1/quota-status.1) |
 | `quota-set` | [`sbin/quota-set`](sbin/quota-set) | Preview or explicitly apply complete Linux user/group quotas. | [Guide](docs/commands/quota-set.md) · [Deutsch](docs/commands/quota-set.de.md) · [Manpage](man/man8/quota-set.8) |
 | `hosts-lint` | [`bin/hosts-lint`](bin/hosts-lint) | Validate hosts-file syntax without changes. | [Perl guide](docs/commands/perl-tools.md) · [Manpage](man/man1/hosts-lint.1) |
+| `nss-lookup` | [`bin/nss-lookup`](bin/nss-lookup) | Resolve a targeted user/group through libc/NSS. | [Guide](docs/commands/nss-lookup.md) · [Deutsch](docs/commands/nss-lookup.de.md) · [Manpage](man/man1/nss-lookup.1) |
+| `host-resolve` | [`bin/host-resolve`](bin/host-resolve) | Forward/reverse host resolution via the OS resolver (not DNS-specific). | [Guide](docs/commands/host-resolve.md) · [Deutsch](docs/commands/host-resolve.de.md) · [Manpage](man/man1/host-resolve.1) |
+| `ldap-probe` | [`bin/ldap-probe`](bin/ldap-probe) | Anonymous LDAPS rootDSE probe via optional ldapsearch client. | [Guide](docs/commands/ldap-probe.md) · [Deutsch](docs/commands/ldap-probe.de.md) · [Manpage](man/man1/ldap-probe.1) |
 | `account-inventory` | [`bin/account-inventory`](bin/account-inventory) | Inventory local passwd/group data or NSS-enumerated identities. | [Guide](docs/commands/account-inventory.md) · [Deutsch](docs/commands/account-inventory.de.md) · [Manpage](man/man1/account-inventory.1) |
 | `group-audit` | [`bin/group-audit`](bin/group-audit) | Read-only local group-file structure and membership audit. | [Guide](docs/commands/group-audit.md) · [Deutsch](docs/commands/group-audit.de.md) · [Manpage](man/man1/group-audit.1) |
 | `home-audit` | [`bin/home-audit`](bin/home-audit) | Check home directory metadata from local/NSS identities. | [Guide](docs/commands/home-audit.md) · [Deutsch](docs/commands/home-audit.de.md) · [Manpage](man/man1/home-audit.1) |
@@ -62,7 +65,7 @@ Installed commands and guides use matching paths below the chosen `PREFIX`. Test
 - Unix-like operating system with **Bash**, `cp`, `mv`, `rm`, `mkdir`, `rmdir`, and `mktemp` (Linux is tested locally; CI is configured for Ubuntu and macOS).
 - Write permission in the directory of the file to be rotated.
 - `git` for cloning; `make` and `install` for optional staged deployment.
-- `rotate` needs Bash, not Perl. The Perl tools require Perl 5.8 or later and their bundled modules in `lib/`. `fs-usage` additionally requires a POSIX-compatible `df`; `quota-report` requires native `quota` or `repquota`; on Linux, `quota-status` requires `quotaon` with `-p` and applying limits with `quota-set` requires `setquota` and an active quota configuration. No CPAN downloads are required.
+- `rotate` needs Bash, not Perl. The Perl tools require Perl 5.8 or later and their bundled modules in `lib/`. `fs-usage` additionally requires a POSIX-compatible `df`; `quota-report` requires native `quota` or `repquota`; on Linux, `quota-status` requires `quotaon` with `-p` and applying limits with `quota-set` requires `setquota` and an active quota configuration. No CPAN downloads are required. `host-resolve` requires the Socket getaddrinfo/getnameinfo APIs (typically Perl 5.14+), and `ldap-probe` optionally requires an installed OpenLDAP `ldapsearch` client. Name-service probes are read-only but can generate network traffic.
 
 ## Installation
 

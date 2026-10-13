@@ -1,0 +1,37 @@
+.TH LDAP-PROBE 1 "2026-10-13" "SASD Freeware" "User Commands"
+.SH NAME
+ldap-probe \- anonymous LDAPS rootDSE diagnostic
+.SH SYNOPSIS
+.B ldap-probe
+.BI --uri " ldaps://HOST[:PORT]"
+.RB [ --timeout " 1..10]"
+.br
+.B ldap-probe
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Runs an optional ldapsearch binary (without a shell), with an anonymous
+LDAPv3 bind and rootDSE base-scope query. Requests supportedLDAPVersion,
+namingContexts and defaultNamingContext; never modifies directory entries.
+A successful query is not proof that NSS LDAP lookups work.
+.SH OPTIONS
+.TP
+.BI --uri " LDAPS-URI"
+Only ldaps://HOST[:PORT] or bracketed IPv6 is allowed; no credentials,
+ldap://, free LDAP filters or URL query components.
+.TP
+.BI --timeout " 1..10"
+Native LDAP client network timeout in seconds; default 5.
+.TP
+.B --help
+Display usage.
+.TP
+.B --version
+Display version.
+.SH SECURITY
+For OpenLDAP, forces LDAPTLS_REQCERT=demand. Do not bypass certificate
+validation. Only probe authorized servers. Output is unverified remote LDIF.
+.SH EXIT STATUS
+0 client query succeeded; 1 query failed; 2 bad arguments; 3 missing client
+or other prerequisite/internal failure.
+.SH SEE ALSO
+ldapsearch(1), ldap.conf(5)

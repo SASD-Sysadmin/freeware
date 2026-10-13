@@ -4,6 +4,13 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Added
+
+- Read-only `nss-lookup` for targeted libc name-service user/group queries (without claiming complete enumeration).
+- `host-resolve` for system resolver forward/reverse IPv4/IPv6 diagnosis (distinct from direct DNS protocol testing).
+- `ldap-probe` for anonymous LDAPS rootDSE metadata checks using an optional native ldapsearch client with certificate verification enforcement.
+- Bilingual command documentation, manpages and isolated tests that require no external name-service server.
+
 ### Changed
 
 - macOS now defaults to NSS enumeration for `account-inventory` and `home-audit`, avoiding false completeness from `/etc/passwd`; explicit local-file fixtures remain supported.

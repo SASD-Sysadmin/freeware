@@ -1,0 +1,101 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Read-only anonymous LDAPS rootDSE query via optional native ldapsearch client.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+BEGIN {
+    unless (eval { require SASD::Freeware::External; 1 }) {
+        print STDERR "ldap-probe: bundled Perl module unavailable: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::External qw(find_program);
+
+my $VERSION='0.1.0';
+my ($help,$version,$uri,$timeout)=(0,0,undef,5);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,
+           'uri=s'=>\$uri,'timeout=s'=>\$timeout) or usage(2);
+usage(0) if $help;
+if ($version) { print "ldap-probe $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($uri) || $timeout !~ /\A(?:[1-9]|10)\z/;
+# Do not accept ldap://, StartTLS downgrade, credentials, base DNs, URL filters,
+# percent-escapes, IPv6 scope IDs, arbitrary query or user-supplied LDAP options.
+# A URI beginning with '-' is impossible; argv is never passed via a shell.
+my $host = qr/(?:[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?|\[[0-9A-Fa-f:.]+\])/;
+$uri =~ /\Aldaps:\/\/$host(?::(?:[1-9][0-9]{0,4}))?\/?\z/
+    or fail('URI must be ldaps://HOST[:PORT] or ldaps://[IPv6][:PORT]; no credentials or URL options',2);
+# Verify decimal port range if present. No alternate protocols or query escapes.
+my $authority=$uri; $authority =~ s{\Aldaps://}{}; $authority =~ s{/$}{};
+if ($authority =~ /\](?::([0-9]+))?\z/ || $authority =~ /\A[^\[\]:]+:([0-9]+)\z/) {
+    if (defined($1) && $1 > 65535) { fail('port must be in 1..65535',2); }
+}
+my $program=find_program('ldapsearch');
+defined($program) or fail("ldapsearch not found in PATH; install an OpenLDAP client before probing",3);
+# LDAPv3, anonymous bind, LDAPS only. Search rootDSE base, never enumerate
+# people, credentials or directory contents. Native TLS cert policy applies.
+my @args=('-x','-H',$uri,'-LLL','-o',"nettimeout=$timeout",'-s','base',
+          '-b','','(objectClass=*)',
+          'supportedLDAPVersion','namingContexts','defaultNamingContext');
+# OpenLDAP will not accept an untrusted server certificate, even if the
+# caller has weakened the default client policy via its environment.
+local $ENV{LDAPTLS_REQCERT}='demand';
+my $pid=open(my $fh,'-|',$program,@args);
+defined($pid) or fail("could not start ldapsearch: $!",3);
+my ($total,$limit)=(0,1024*1024);
+my $output='';
+# Protect against both a backend hanging beyond its advertised network timeout
+# and an untrusted server returning excessive data or a giant unterminated line.
+my $completed=eval {
+    local $SIG{ALRM}=sub { die "LDAP client exceeded overall timeout\n"; };
+    alarm($timeout+15);
+    while (1) {
+        my $bytes=read($fh,my $chunk,8192);
+        defined($bytes) or die "cannot read LDAP response: $!\n";
+        last if $bytes==0;
+        $total+=$bytes;
+        die "LDAP rootDSE response exceeds 1 MiB\n" if $total>$limit;
+        $output.=$chunk;
+    }
+    alarm(0);
+    1;
+};
+if (!$completed) {
+    my $reason=$@ || 'unknown backend read error';
+    alarm(0);
+    kill 'KILL',$pid if $pid > 0; # one direct child; no shell/interpreter process group
+    close($fh);
+    $reason =~ s/\s+\z//;
+    fail("$reason; query result discarded",3);
+}
+my $ok=close($fh);
+if (!$ok) {
+    my $status=$?;
+    fail("ldapsearch rootDSE query failed (status " . ($status == -1 ? 'unknown' : ($status >> 8)) .
+         "); check TLS trust, anonymity, DNS and connectivity",1);
+}
+# ldapsearch can return exit 0 with no matching entry; do not label that
+# empty result a successful rootDSE inspection.
+$output =~ /^dn:\s*$/m or fail('ldapsearch succeeded but returned no rootDSE entry',1);
+# Preserve LDIF records, but escape terminal-control bytes from remote data.
+$output =~ s/([\x00-\x08\x0b-\x1f\x7f])/sprintf('\\x%02X',ord($1))/ge;
+print "LDAP URI: $uri\nQuery: anonymous LDAPS rootDSE (base scope)\n";
+print $output;
+exit 0;
+sub fail { my($message,$code)=@_;warn "ldap-probe: $message\n";exit $code; }
+sub usage {
+    my($code)=@_;my$out=$code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: ldap-probe --uri ldaps://HOST[:PORT] [--timeout 1..10]
+       ldap-probe --help | --version
+Query only the LDAP rootDSE anonymously using an installed ldapsearch client.
+TLS certificate checks are governed by the native client configuration.
+No ldap://, bind credentials, StartTLS downgrades or directory enumeration.
+Exit 0 = client query succeeded, 1 = query failed, 2 = usage error,
+     3 = missing prerequisite or unexpected failure.
+HELP
+    exit $code;
+}

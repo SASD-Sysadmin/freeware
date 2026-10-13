@@ -10,6 +10,9 @@ SASD Freeware is tested with GitHub Actions on Ubuntu Linux and macOS. **Passing
 | `rotate`, file integrity, SSH/host syntax, TCP and logs | Automated tests | Automated tests | Review paths, permissions and the installed native utilities on the target host. |
 | `fs-usage`, `quota-report` | Host-dependent native commands | Host-dependent native commands | `df`, `quota`, `repquota` syntax and availability vary. No native quota compatibility guarantee. |
 | `account-inventory` | Local files default; NSS selectable | NSS default; local text explicitly selectable | NSS enumeration need not include every directory identity; direct lookups can succeed when enumeration omits entries. |
+| `nss-lookup` | libc/NSS point lookup | libc/Directory Services point lookup | Missing identities and NSS backend failures may be indistinguishable; not enumeration. |
+| `host-resolve` | OS system resolver | OS system resolver | May use hosts files, mDNS, caches or DNS. Not a direct DNS protocol test. Requires Socket getaddrinfo/getnameinfo. |
+| `ldap-probe` | Optional ldapsearch | Optional ldapsearch | Anonymous LDAPS rootDSE only; does not validate full LDAP/NSS integration. Certificate checks remain mandatory. |
 | `home-audit` | Local files default; UID >= 1000 | NSS default; UID >= 500 | UID thresholds are policies, not identities; macOS ACLs and privacy controls are out of scope. |
 | `group-audit` / `account-audit` | Unix-format text files | Unix-format text files only | On macOS `/etc/passwd` and `/etc/group` are not an authoritative Open Directory inventory. |
 | `account-manage` | Linux only; dry-run by default and guarded writes | Unsupported, including previews | Never administers Directory Services / LDAP / NIS directly. |
@@ -22,6 +25,8 @@ make test
 ./bin/account-inventory --kind users
 ./bin/account-inventory --source nss --kind groups
 ./bin/home-audit
+./bin/nss-lookup --user root
+./bin/host-resolve --name localhost
 ./bin/link-audit "$HOME"
 ./bin/permission-audit "$HOME"
 ./sbin/account-manage --action group-create --name example_group  # exits 3: Linux-only
