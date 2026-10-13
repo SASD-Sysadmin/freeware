@@ -6,6 +6,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ### Added
 
+- `account-inventory`: source-explicit local or NSS account/group inventory with unambiguous NUL output and NIS compatibility handling.
+- `group-audit`: structural validation of local groups, shared IDs, duplicated members, and malformed entries.
+- `home-audit`: local account home-directory metadata review with configurable UID selection.
+- `account-manage`: preview-first, confirm-to-apply Linux local user/group creation and password locking; no remote directory writes.
+- Bundled `SASD::Freeware::Account` parser, English/German usage guides, section 1/8 manpages, and isolated tests.
+
+
+### Added
+
 - `link-audit` inventories dangling, looping and unresolved symbolic links without following directory links.
 - `owner-audit` reports file UID/GID identifiers unresolved by the current system name service.
 - `permission-audit` inventories world-writable entries, distinguishing sticky directories.

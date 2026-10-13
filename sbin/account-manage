@@ -1,0 +1,134 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Guarded local Linux account actions. Never modify NSS, NIS, LDAP or remote directories.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Cwd qw(realpath);
+use File::Spec;
+BEGIN {
+    unless (eval { require SASD::Freeware::Account; require SASD::Freeware::External; 1 }) {
+        print STDERR "account-manage: required bundled Perl library is unavailable: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::Account qw(read_local valid_name);
+use SASD::Freeware::External qw(find_program);
+my $VERSION = '0.1.0';
+my ($help, $version, $action, $name, $apply, $confirm) = (0,0,undef,undef,0,0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'action=s'=>\$action,
+           'name=s'=>\$name,'apply'=>\$apply,'confirm-apply'=>\$confirm) or usage(2);
+usage(0) if $help;
+if ($version) { print "account-manage $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($action) || !defined($name) ||
+    $action !~ /\A(?:user-create|group-create|password-lock)\z/ || ($confirm && !$apply);
+valid_name($name) && $name =~ /\A[a-z_][a-z0-9_-]{0,31}\z/
+    or fail('invalid local name: use 1..32 lowercase letters, digits, _ and -; start with letter/_',2);
+$name ne 'root' or fail('refusing to manage root account or group',2);
+
+# Read local files rather than using NSS to determine whether an account is local.
+# The NSS check is separate; remote identities are not mutation targets.
+sub diagnostic { warn "account-manage: $_[0]\n"; }
+my $kind = $action eq 'group-create' ? 'group' : 'passwd';
+my $local_file = $kind eq 'group' ? '/etc/group' : '/etc/passwd';
+my $data = read_local($local_file, $kind, \&diagnostic);
+defined($data) or exit 3;
+# Native Linux account tools can update both databases. Refuse writes if
+# either database is not a plain, structurally sound local file.
+my $other_kind = $kind eq 'passwd' ? 'group' : 'passwd';
+my $other_file = $other_kind eq 'passwd' ? '/etc/passwd' : '/etc/group';
+my $other = read_local($other_file, $other_kind, \&diagnostic);
+defined($other) or exit 3;
+$data->{errors} == 0 && $data->{compat} == 0 &&
+    $other->{errors} == 0 && $other->{compat} == 0
+    or fail('local identity databases have malformed or NIS compatibility records; refusing automated changes',3);
+my @matches = grep { $_->[0] eq $name } @{$data->{records}};
+@matches <= 1 or fail("duplicate local identity: $name",3);
+
+if ($action eq 'password-lock') {
+    @matches == 1 or fail("account '$name' is not defined in local /etc/passwd",3);
+    my $uid = $matches[0]->[2];
+    $uid >= 1000 && $uid != 65534
+        or fail('refusing to lock a system account (UID below 1000 or nobody)',3);
+    my @nss = getpwnam($name);
+    @nss && $nss[2] == $uid
+        or fail('NSS identity does not match the local account; refusing change',3);
+} elsif ($action eq 'user-create') {
+    @matches == 0 or fail("local user '$name' already exists",3);
+    defined(scalar(getpwnam($name))) and fail("NSS user '$name' already exists",3);
+} else {
+    @matches == 0 or fail("local group '$name' already exists",3);
+    defined(scalar(getgrnam($name))) and fail("NSS group '$name' already exists",3);
+}
+my %programs = ('user-create'=>'useradd', 'group-create'=>'groupadd',
+                'password-lock'=>'usermod');
+my $program = $programs{$action};
+my @args = $action eq 'user-create' ? ('-m','--',$name)
+         : $action eq 'group-create' ? ('--',$name)
+         : ('-L','--',$name);
+
+unless ($apply) {
+    print "Mode: dry-run (no changes)\n", "Action: $action\n", "Identity: $name\n",
+          "Scope: local Linux account database only\n",
+          "Planned command: $program ", join(' ',@args), "\n",
+          "Backend not executed. Apply requires --apply --confirm-apply and root privileges.\n";
+    print "Warning: password-lock only locks password authentication; it does not revoke SSH keys or sessions.\n"
+        if $action eq 'password-lock';
+    exit 0;
+}
+$confirm or fail('applying changes requires --confirm-apply in addition to --apply',2);
+$^O eq 'linux' or fail('applying changes is currently supported only on Linux',3);
+$> == 0 or fail('applying changes requires effective UID 0 (root)',3);
+# These paths are checked for the privileged operation, not the default preview.
+for my $db ('/etc/passwd','/etc/group') {
+    my @st = lstat($db);
+    @st && -f _ && !-l _ && $st[4] == 0 && !($st[2] & 0022)
+        or fail("local identity database is missing or not a regular root-owned protected file: $db",3);
+}
+my $exe = find_program($program);
+defined($exe) or fail("required Linux command '$program' is missing in PATH",3);
+trusted_program_path($exe)
+    or fail("$program executable does not have a trusted root-owned path: $exe",3);
+print STDERR "account-manage: explicitly applying $action for local identity '$name'\n";
+my $rc = system { $exe } $exe, @args;
+$rc != -1 or fail("cannot execute $program: $!",3);
+!($rc & 127) or fail("$program terminated by signal " . ($rc & 127),3);
+($rc >> 8) == 0 or fail("$program exited with status " . ($rc >> 8),3);
+print "account-manage: backend finished successfully; independently verify effective local account state.\n";
+exit 0;
+
+# Reject any group/world writable component, non-root owner, or symlink in
+# the original PATH as well as in the fully resolved executable path.
+sub trusted_program_path {
+    my ($path) = @_;
+    my $real = realpath($path);
+    return 0 unless defined($real) && File::Spec->file_name_is_absolute($real);
+    for my $target ($path, $real) {
+        my $dir = $target;
+        while (1) {
+            my @st = lstat($dir);
+            return 0 unless @st && $st[4] == 0 && !($st[2] & 0022);
+            # Reject symlinks even if their resolved targets are trusted.
+            return 0 if -l _;
+            return 0 unless $dir eq $target ? -f _ && -x _ : -d _;
+            last if $dir eq '/';
+            $dir =~ s{/+[^/]+/?\z}{};
+            $dir = '/' if $dir eq '';
+        }
+    }
+    return 1;
+}
+sub fail { my ($message,$status) = @_; warn "account-manage: $message\n"; exit $status; }
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: account-manage --action user-create|group-create|password-lock --name NAME\n",
+        "                      [--apply --confirm-apply]\n",
+        "       account-manage --help | --version\n",
+        "Default is a read-only preview. Apply is Linux-only and requires root.\n",
+        "password-lock does not disable SSH key authentication or running sessions.\n";
+    exit $code;
+}

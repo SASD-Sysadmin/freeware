@@ -1,0 +1,32 @@
+.TH ACCOUNT-INVENTORY 1 "2026-10-13" "SASD Freeware" "Unix Administration"
+.SH NAME
+account-inventory \- Inventory local or NSS-enumerated Unix users and groups
+.SH SYNOPSIS
+\fBaccount-inventory\fR [options]
+.SH DESCRIPTION
+By default scans /etc/passwd and /etc/group. NSS enumeration may omit remotely configured identities. Historical NIS compatibility records are skipped.
+.SH OPTIONS
+.TP
+.B --source local|nss
+Select local files (default) or NSS enumeration. NSS is not guaranteed complete.
+.TP
+.B --kind users|groups|both
+Select records.
+.TP
+.B --passwd-file PATH, --group-file PATH
+Override local text files (not permitted with NSS mode).
+.TP
+.B --null
+Emit seven NUL-separated fields per record.
+.TP
+.B --help
+Display usage information.
+.TP
+.B --version
+Display program version.
+.SH EXIT STATUS
+0 completed, 1 malformed local data or traversal errors, 2 argument errors, 3 missing prerequisites.
+.SH SEE ALSO
+passwd(5), group(5), getent(1)
+.SH AUTHOR
+SASD Freeware contributors.

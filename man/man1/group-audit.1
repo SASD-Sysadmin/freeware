@@ -1,0 +1,23 @@
+.TH GROUP-AUDIT 1 "2026-10-13" "SASD Freeware" "Unix Administration"
+.SH NAME
+group-audit \- Check the structure of a local Unix group file
+.SH SYNOPSIS
+\fBgroup-audit\fR [options]
+.SH DESCRIPTION
+Does not modify files. Duplicate group IDs and names are warnings. Malformed records or member names are errors. NIS compatibility entries are skipped.
+.SH OPTIONS
+.TP
+.B --file PATH
+Read the specified group file instead of /etc/group.
+.TP
+.B --help
+Display usage information.
+.TP
+.B --version
+Display program version.
+.SH EXIT STATUS
+0 completed, 1 malformed local data or traversal errors, 2 argument errors, 3 missing prerequisites.
+.SH SEE ALSO
+passwd(5), group(5), getent(1)
+.SH AUTHOR
+SASD Freeware contributors.

@@ -1,0 +1,64 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Check local home directory metadata; do not inspect files within them.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Fcntl qw(S_ISDIR S_ISLNK);
+BEGIN {
+    unless (eval { require SASD::Freeware::Account; 1 }) {
+        print STDERR "home-audit: required bundled Perl module SASD::Freeware::Account is unavailable: $@";
+        exit 3;
+    }
+}
+use SASD::Freeware::Account qw(read_local display_field);
+my $VERSION = '0.1.0';
+my ($help, $version, $file, $min_uid, $max_uid, $all, $null) =
+    (0, 0, '/etc/passwd', 1000, 59999, 0, 0);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'file=s'=>\$file,
+           'min-uid=s'=>\$min_uid,'max-uid=s'=>\$max_uid,'all'=>\$all,'null'=>\$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "home-audit $VERSION\n"; exit 0; }
+usage(2) if @ARGV || $min_uid !~ /\A\d{1,10}\z/ || $max_uid !~ /\A\d{1,10}\z/ ||
+    $min_uid > 4294967295 || $max_uid > 4294967295 || $min_uid > $max_uid;
+sub diagnostic { warn "home-audit: $_[0]\n"; }
+my $data = read_local($file,'passwd',\&diagnostic);
+defined $data or exit 3;
+my ($scanned, $findings, $errors) = (0, 0, $data->{errors});
+print "ISSUE\tUSER\tUID\tHOME\n" unless $null;
+sub finding {
+    my @parts = @_;
+    ++$findings;
+    if ($null) { print join("\0", @parts), "\0"; }
+    else { print join("\t", map { display_field($_) } @parts), "\n"; }
+}
+for my $u (@{$data->{records}}) {
+    my ($name, $uid, $home) = ($u->[0], $u->[2], $u->[5]);
+    next if !$all && ($uid < $min_uid || $uid > $max_uid);
+    ++$scanned;
+    my @stat = lstat($home);
+    if (!@stat) {
+        if ($!{ENOENT}) { finding('missing',$name,$uid,$home); }
+        else { ++$errors; diagnostic(display_field($home) . ": lstat failed: $!"); }
+        next;
+    }
+    my $mode = $stat[2];
+    if (S_ISLNK($mode)) { finding('symlink',$name,$uid,$home); next; }
+    if (!S_ISDIR($mode)) { finding('not-directory',$name,$uid,$home); next; }
+    finding('wrong-owner',$name,$uid,$home) if $stat[4] != $uid;
+    finding('world-writable',$name,$uid,$home) if $mode & 0002;
+}
+print "Accounts checked: $scanned\nFindings: $findings\nErrors: $errors\n"
+    unless $null;
+exit($errors ? 1 : 0);
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: home-audit [--file PATH] [--min-uid N] [--max-uid N] [--all] [--null]\n",
+                 "       home-audit --help | --version\n",
+                 "Local passwd records only; default UID range is 1000..59999.\n";
+    exit $code;
+}
