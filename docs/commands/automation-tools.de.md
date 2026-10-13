@@ -2,6 +2,11 @@
 
 [English](automation-tools.md) | **Deutsch** · [Projekt-README](../../README.de.md) · [Bisherige Perl-Werkzeuge](perl-tools.de.md)
 
+
+Alle hier beschriebenen Programme unterstützen außerdem `--help` und
+`--version`, ohne Eingabedateien zu lesen. Beide Optionen enden mit Exitcode 0
+und schreiben nach stdout.
+
 ## Zusammenfassung
 
 Vier Perl-5-Programme ermöglichen die Prüfung von SSH-Schlüsseldateien, SHA-256-Dateiintegrität, die Inventarisierung von SUID-/SGID-Dateien und die Kontrolle der IPv4-TCP-Erreichbarkeit. Parameter, Berechtigungen und Rückgabewerte sind jeweils beschrieben.

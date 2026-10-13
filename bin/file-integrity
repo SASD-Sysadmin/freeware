@@ -12,10 +12,12 @@ use Fcntl qw(O_WRONLY O_CREAT O_EXCL);
 use Digest::SHA;
 use JSON::PP;
 
-my ($root_arg, $manifest, $initialize, $check, $help);
+my ($root_arg, $manifest, $initialize, $check, $help, $version);
 GetOptions('root=s' => \$root_arg, 'manifest=s' => \$manifest,
-    'init' => \$initialize, 'check' => \$check, 'help' => \$help) or usage(2);
+    'init' => \$initialize, 'check' => \$check,
+    'help' => \$help, 'version' => \$version) or usage(2);
 usage(0) if $help;
+if ($version) { print "file-integrity 0.1.0\n"; exit 0; }
 usage(2) if @ARGV || !defined($root_arg) || !defined($manifest)
     || ($initialize && $check);
 -l $root_arg and fail("root cannot be a symbolic link: $root_arg");
@@ -94,6 +96,6 @@ sub fail { die "file-integrity: $_[0]\n" }
 sub usage {
     my ($code) = @_;
     print {$code ? *STDERR : *STDOUT}
-        "Usage: file-integrity --root DIR --manifest FILE [--init | --check] [--help]\n";
+        "Usage: file-integrity --root DIR --manifest FILE [--init | --check] [--help | --version]\n";
     exit $code;
 }

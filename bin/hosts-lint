@@ -6,10 +6,11 @@ use warnings;
 use Getopt::Long qw(GetOptions);
 use Socket qw(AF_INET6 inet_pton);
 
-my ($help, $file) = (0, '/etc/hosts');
+my ($help, $version, $file) = (0, 0, '/etc/hosts');
 Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
-GetOptions('help|h' => \$help, 'file=s' => \$file) or usage(2);
+GetOptions('help|h' => \$help, 'version' => \$version, 'file=s' => \$file) or usage(2);
 usage(0) if $help;
+if ($version) { print "hosts-lint 0.1.0\n"; exit 0; }
 usage(2) if @ARGV;
 open my $in, '<', $file or die "hosts-lint: cannot read $file: $!\n";
 
@@ -76,6 +77,6 @@ sub valid_hostname {
 }
 sub usage {
     my ($status) = @_;
-    print STDERR "Usage: hosts-lint [--file PATH]   (default: /etc/hosts)\n";
+    print {$status ? *STDERR : *STDOUT} "Usage: hosts-lint [--file PATH] [--help | --version]   (default: /etc/hosts)\n";
     exit $status;
 }

@@ -3,7 +3,7 @@
 PREFIX ?= /usr/freeware
 DESTDIR ?=
 
-.PHONY: all check test integration-test install uninstall
+.PHONY: all check test integration-test shellcheck install uninstall
 all: test
 
 check:
@@ -29,6 +29,11 @@ test: check
 
 # Explicit opt-in: native dig/ldapsearch run against loopback protocol fixtures.
 # Ordinary make test stays offline and requires no optional network clients.
+# Optional locally, mandatory in Ubuntu CI: static Bash analysis.
+shellcheck:
+	@command -v shellcheck >/dev/null 2>&1 || { echo "make shellcheck: install ShellCheck first" >&2; exit 1; }
+	@shellcheck bin/rotate tests/test_rotate.sh
+
 integration-test: check
 	@command -v prove >/dev/null 2>&1 || { echo "make integration-test: prove is required" >&2; exit 1; }
 	@prove -v tests/integration/name_services.t

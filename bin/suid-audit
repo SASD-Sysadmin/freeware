@@ -6,9 +6,11 @@ use warnings;
 use Getopt::Long qw(GetOptions);
 use File::Find;
 
-my ($root, $help) = (undef, 0);
-GetOptions('root=s' => \$root, 'help' => \$help) or usage(2);
+my ($root, $help, $version) = (undef, 0, 0);
+GetOptions('root=s' => \$root, 'help' => \$help,
+    'version' => \$version) or usage(2);
 usage(0) if $help;
+if ($version) { print "suid-audit 0.1.0\n"; exit 0; }
 usage(2) if @ARGV || !defined $root;
 -d $root && !-l $root or die "suid-audit: expected a real directory: $root\n";
 my ($scanned, $found, $errors) = (0,0,0);
@@ -36,6 +38,6 @@ exit($errors ? 2 : 0);
 
 sub usage {
     my ($code) = @_;
-    print {$code ? *STDERR : *STDOUT} "Usage: suid-audit --root DIRECTORY [--help]\n";
+    print {$code ? *STDERR : *STDOUT} "Usage: suid-audit --root DIRECTORY [--help | --version]\n";
     exit $code;
 }

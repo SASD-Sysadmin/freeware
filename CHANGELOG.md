@@ -4,6 +4,13 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### CLI and repository quality contracts
+
+- Standardized side-effect-free `--help` and `--version` across the eight older commands.
+- Added tests for all executable metadata interfaces, matching manpages, Markdown whitespace, unresolved link placeholders and Git-index document modes.
+- Added ShellCheck to the Ubuntu CI job and clarified the macOS LDAPS skip policy.
+
+
 ### Tests and quality assurance
 
 - Added opt-in loopback DNS (UDP) and LDAPS (TLS + LDAP) integration fixtures, exercised by native dig and ldapsearch clients when available.

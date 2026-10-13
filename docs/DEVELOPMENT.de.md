@@ -38,3 +38,27 @@ Neue Programme erhalten reproduzierbare Offline-Tests für gültige und fehlerha
 Eine lokale ZIP-Datei ist kein veröffentlichter Stand. Erst eingecheckte, dokumentierte und erfolgreich getestete Programme können als veröffentlicht bezeichnet werden.
 
 Das optionale Ziel `make integration-test` prüft native DNS- und LDAPS-Clients gegen lokale Protokoll-Testdienste. `make test` bleibt unabhängig von Netzwerkdiensten. GitHub Actions erzwingt die dokumentierten Integrationsvoraussetzungen. Siehe [Integrationstests](TESTING.de.md) und [Rückgabecodes](EXIT-CODES.de.md).
+
+## Qualitätsvertrag der Kommandozeilenschnittstellen
+
+Alle 30 Programme unter `bin/` und `sbin/` unterstützen `--help` und
+`--version`, ohne Systemdateien auszulesen, Zustände zu verändern,
+Netzwerkverbindungen aufzubauen oder Root-Rechte zu benötigen. `--help`
+gibt eine Aufrufhilfe auf stdout aus (Exitcode 0), `--version` gibt
+`PROGRAMM MAJOR.MINOR.PATCH` gefolgt von einem Zeilenumbruch auf stdout aus
+(Exitcode 0). Bei Erfolg bleibt stderr leer.
+
+Diese **Metadatenoptionen** ersetzen keine Prüfung echter Programmaufrufe.
+Ungültige Aufrufe bleiben Fehler; bereits vorhandene Rückgabecode-Konventionen
+(etwa der Nagios-Modus) werden nicht verändert. Zusätzliche Optionen und
+Detailausgaben der einzelnen Programme bleiben zulässig.
+
+`make test` findet die ausführbaren Programme automatisch und prüft die
+Schnittstellen, zugehörige Manpages, Leerzeichen am Ende von Markdown-Zeilen
+und unaufgelöste Link-Platzhalter. In Git-Checkouts prüft es zusätzlich den
+**Git-Index** auf nicht ausführbare Markdown-Dateien (`100644`). Dies ist
+auch bei WSL/Windows-Mounts zuverlässig. Ohne `.git` entfällt die Indexprüfung.
+
+`make shellcheck` analysiert das Bash-Programm und seine Tests und benötigt
+ShellCheck. Ubuntu-CI installiert ShellCheck ausdrücklich; macOS-CI prüft
+weiterhin Bash-Syntax und Regressionen ohne Homebrew-Voraussetzung.

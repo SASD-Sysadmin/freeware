@@ -38,3 +38,26 @@ Each tool needs offline, repeatable tests of valid inputs, errors, boundary case
 No command is considered released merely because it exists in a local ZIP file; its published version must be present in the repository and accompanied by documentation and passing tests.
 
 The opt-in `make integration-test` target tests native DNS and LDAPS clients against loopback-only protocol fixtures. `make test` remains safe and independent of external services; integration requirements are enforced separately in GitHub Actions. Consult [integration testing](TESTING.md) and the [exit-code convention](EXIT-CODES.md).
+
+## Command-line quality contract
+
+All 30 programs in `bin/` and `sbin/` support `--help` and `--version` without
+reading system files, changing state, opening sockets, or needing elevated
+privileges. `--help` writes a usage line to stdout and exits with status 0;
+`--version` writes `COMMAND MAJOR.MINOR.PATCH` followed by a newline to stdout
+and exits with status 0. Both produce no stderr diagnostics on success.
+
+These are **metadata options**, not alternatives to actual runtime validation.
+An invalid invocation still fails; existing operational exit-code conventions
+(such as Nagios mode) remain unchanged. Commands remain free to have additional
+options, more detailed help output, and distinct runtime behavior.
+
+`make test` discovers all executable commands and checks those contracts,
+corresponding manpages, Markdown whitespace and unresolved local link
+placeholders. When run from a Git checkout it also inspects Git's *index* for
+non-executable Markdown (`100644`), which is reliable on WSL/Windows mounts.
+The Git-index check is omitted for source archives without `.git`.
+
+Run `make shellcheck` to lint the Bash command and its tests (requires
+ShellCheck). Ubuntu CI installs ShellCheck explicitly; macOS CI continues
+checking Bash syntax and regression behavior without requiring Homebrew.

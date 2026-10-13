@@ -2,6 +2,10 @@
 
 [English](perl-tools.md) | [Deutsch](perl-tools.de.md) · [Project](../../README.md)
 
+
+All commands described here also support `--help` and `--version` without
+reading their target files. These options exit with status 0 and write to stdout.
+
 ## Summary
 
 Four Perl 5 command-line utilities provide read-only reports for directory contents, hosts-file syntax, account records and log messages. The tools use standard Perl modules and do not change input data.

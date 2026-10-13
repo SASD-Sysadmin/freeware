@@ -2,6 +2,11 @@
 
 [English](perl-tools.md) | [Deutsch](perl-tools.de.md) · [Projektbeschreibung](../../README.de.md)
 
+
+Alle hier beschriebenen Programme unterstützen außerdem `--help` und
+`--version`, ohne Eingabedateien zu lesen. Beide Optionen enden mit Exitcode 0
+und schreiben nach stdout.
+
 ## Zusammenfassung
 
 Vier Perl-5-Kommandozeilenprogramme liefern lesende Auswertungen zu Verzeichnisinhalten, Hosts-Dateien, Kontodatensätzen und Logmeldungen. Die Programme verwenden Perl-Standardmodule und ändern keine Eingabedaten.
