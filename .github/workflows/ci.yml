@@ -41,6 +41,8 @@ jobs:
           staging="$(mktemp -d)"
           trap 'rm -rf "$staging"' EXIT
           make install DESTDIR="$staging" PREFIX=/usr/freeware
+          test -f "$staging/usr/freeware/.sasd-freeware-install.tsv"
+          make install DESTDIR="$staging" PREFIX=/usr/freeware
           test -x "$staging/usr/freeware/bin/account-inventory"
           test -x "$staging/usr/freeware/bin/home-audit"
           test -x "$staging/usr/freeware/bin/nss-lookup"
@@ -64,6 +66,7 @@ jobs:
           test -f "$staging/usr/freeware/docs/PRIVILEGED-SAFETY.de.md"
           test -f "$staging/usr/freeware/man/man8/account-manage.8"
           make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
+          test ! -e "$staging/usr/freeware/.sasd-freeware-install.tsv"
           test ! -e "$staging/usr/freeware/bin/account-inventory"
           test ! -e "$staging/usr/freeware/bin/nss-lookup"
           test ! -e "$staging/usr/freeware/bin/host-resolve"

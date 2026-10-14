@@ -38,55 +38,11 @@ integration-test: check
 	@command -v prove >/dev/null 2>&1 || { echo "make integration-test: prove is required" >&2; exit 1; }
 	@prove -v tests/integration/name_services.t
 
+# Installation operates only on files enumerated in the owned SHA-256 manifest.
+# Use DESTDIR for staging; privileged host installation requires review.
 install:
-	@set -eu; \
-		for section in bin sbin; do \
-			for src in "$$section"/*; do \
-				[ -e "$$src" ] || continue; \
-				[ -f "$$src" ] && [ ! -L "$$src" ] && [ -x "$$src" ] || { echo "Invalid executable: $$src" >&2; exit 1; }; \
-				install -d "$(DESTDIR)$(PREFIX)/$$section"; \
-				install -m 755 "$$src" "$(DESTDIR)$(PREFIX)/$$src"; \
-			done; \
-		done; \
-		for module in lib/SASD/Freeware/*.pm; do \
-			[ -e "$$module" ] || continue; \
-			[ -f "$$module" ] && [ ! -L "$$module" ] || { echo "Invalid module: $$module" >&2; exit 1; }; \
-			install -d "$(DESTDIR)$(PREFIX)/lib/SASD/Freeware"; \
-			install -m 644 "$$module" "$(DESTDIR)$(PREFIX)/$$module"; \
-		done; \
-		for page in man/man[1-9]/*.[1-9]; do \
-			[ -e "$$page" ] || continue; \
-			[ -f "$$page" ] && [ ! -L "$$page" ] || { echo "Invalid man page: $$page" >&2; exit 1; }; \
-			dir=$${page%/*}; \
-			install -d "$(DESTDIR)$(PREFIX)/$$dir"; \
-			install -m 644 "$$page" "$(DESTDIR)$(PREFIX)/$$page"; \
-		done; \
-		for doc in docs/commands/*.md; do \
-			[ -e "$$doc" ] || continue; \
-			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid guide: $$doc" >&2; exit 1; }; \
-			install -d "$(DESTDIR)$(PREFIX)/docs/commands"; \
-			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
-		done; \
-		for doc in docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md docs/PRIVILEGED-SAFETY*.md; do \
-			[ -e "$$doc" ] || continue; \
-			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid top-level guide: $$doc" >&2; exit 1; }; \
-			install -d "$(DESTDIR)$(PREFIX)/docs"; \
-			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
-		done
+	@perl tools/installation.pl --mode install --source . --prefix "$(PREFIX)" --destdir "$(DESTDIR)"
 
+# Uninstallation is independent of the current checkout file list.
 uninstall:
-	@set -eu; \
-		for section in bin sbin; do \
-			for src in "$$section"/*; do \
-				[ -f "$$src" ] && [ ! -L "$$src" ] || continue; \
-				rm -f "$(DESTDIR)$(PREFIX)/$$src"; \
-			done; \
-		done; \
-		for module in lib/SASD/Freeware/*.pm; do \
-			[ -f "$$module" ] && [ ! -L "$$module" ] || continue; \
-			rm -f "$(DESTDIR)$(PREFIX)/$$module"; \
-		done; \
-		for page in man/man[1-9]/*.[1-9] docs/commands/*.md docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md docs/PRIVILEGED-SAFETY*.md; do \
-			[ -f "$$page" ] && [ ! -L "$$page" ] || continue; \
-			rm -f "$(DESTDIR)$(PREFIX)/$$page"; \
-		done
+	@perl tools/installation.pl --mode uninstall --prefix "$(PREFIX)" --destdir "$(DESTDIR)"
