@@ -1,6 +1,6 @@
 # SASD Freeware
 
-[English](README.md) | **Deutsch** · [MIT-Lizenz](LICENSE) · [Mitwirkung](CONTRIBUTING.md) · [Änderungsprotokoll](CHANGELOG.md) · [Roadmap](docs/ROADMAP.de.md) · [Privilegierte Sicherheit](docs/PRIVILEGED-SAFETY.de.md) · [Plattformunterstützung](docs/PLATFORMS.de.md)
+[English](README.md) | **Deutsch** · [MIT-Lizenz](LICENSE) · [Mitwirkung](CONTRIBUTING.md) · [Änderungsprotokoll](CHANGELOG.md) · [Roadmap](docs/ROADMAP.de.md) · [Privilegierte Sicherheit](docs/PRIVILEGED-SAFETY.de.md) · [Plattformunterstützung](docs/PLATFORMS.de.md) · [Release-Verfahren](docs/RELEASE-ENGINEERING.de.md)
 
 SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die Systemadministration unter Linux und Unix bereit. Die Werkzeuge sind für einen zuverlässigen Betrieb, die unkomplizierte Integration in bestehende Umgebungen und eine langfristige Wartbarkeit ausgelegt. Zu jedem Programm gehören Dokumentation, praktische Anwendungsbeispiele und automatisierte Tests.
 

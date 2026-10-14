@@ -4,6 +4,13 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Release engineering (M3 work in progress)
+
+- Replace checkout-list-based install/uninstall with a versioned, SHA-256-verified ownership manifest.
+- Protect operator-modified/unowned files, remove obsolete managed files on upgrade, and stage updates with best-effort rollback.
+- Add fixture-only install, upgrade, uninstall, path-safety and manifest-tampering tests plus bilingual release procedures.
+- This does not publish a `v0.1.0` release or close the outstanding privileged VM acceptance.
+
 ### Privileged safety and isolated test boundaries
 
 - Publish `file-integrity --init` baselines through a private staging file and atomic, no-overwrite hard-link step; existing manifests stay untouched after failed attempts.
