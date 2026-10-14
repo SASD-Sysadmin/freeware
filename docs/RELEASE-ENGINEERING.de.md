@@ -21,7 +21,10 @@ make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
 Für einen echten Host wird `DESTDIR` weggelassen und bei Bedarf mit den dafür
 vorgesehenen Rechten ausgeführt. `PREFIX` muss ein absoluter Pfad ungleich `/`
 sein. `DESTDIR` ist optional, ebenfalls absolut. Pfadkomponenten `.` und `..`
-sowie symbolische Links in der Zielverzeichniskette werden abgelehnt.
+sowie symbolische Links in der Zielverzeichniskette werden grundsätzlich
+abgelehnt. Ausgenommen sind ausschließlich die fest definierten, geprüften
+macOS-Systemalias-Pfade `/var`, `/tmp` und `/etc` nach `/private/...`;
+selbst angelegte Symlinks im Installationspfad bleiben verboten.
 
 ## Eigentum und Schutz
 

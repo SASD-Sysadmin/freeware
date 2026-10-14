@@ -20,7 +20,10 @@ make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
 
 Host installation omits `DESTDIR` and requires appropriate filesystem rights.
 `PREFIX` must be absolute and cannot be `/`; `DESTDIR`, when used, must be
-absolute. Dot components and symlinks along the destination path are refused.
+absolute. Dot components and arbitrary symlinks along the destination path are
+refused. Only the verified native macOS aliases `/var`, `/tmp` and `/etc`
+resolving to `/private/...` are accepted; operator-created symlinks remain
+forbidden.
 
 ## Manifest ownership
 

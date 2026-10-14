@@ -42,6 +42,33 @@ sub regular_file {
     my ($file) = @_;
     return -f $file && !-l $file;
 }
+# macOS ships a small, stable set of system aliases. In particular, its
+# temporary directory is exposed through /var -> /private/var. Recognize only
+# those exact operating-system aliases and validate their resolved directories;
+# never allow arbitrary symlinks inside the operator's installation path.
+sub trusted_darwin_alias {
+    my ($path) = @_;
+    return 0 unless $^O eq 'darwin';
+    my %aliases = (
+        '/var' => '/private/var',
+        '/tmp' => '/private/tmp',
+        '/etc' => '/private/etc',
+    );
+    my $expected = $aliases{$path};
+    return 0 unless defined $expected;
+    my $resolved = abs_path($path);
+    return 0 unless defined($resolved) && $resolved eq $expected;
+    for my $component ('/private', $expected) {
+        my @st = lstat($component);
+        return 0 unless @st && -d _ && !-l _ && $st[4] == 0;
+        # /private/tmp is root-owned, world-writable and sticky by design;
+        # no other group/world-writable alias destination is trusted.
+        if ($st[2] & 0022) {
+            return 0 unless $component eq '/private/tmp' && ($st[2] & 01000);
+        }
+    }
+    return 1;
+}
 sub ancestors_safe {
     my ($path, $file_target) = @_;
     my $current = '';
@@ -50,7 +77,14 @@ sub ancestors_safe {
         $current .= '/' . $components[$i];
         my @st = lstat($current);
         next unless @st;
-        die "installation: symbolic link in target path $current\n" if -l _;
+        if (-l _) {
+            trusted_darwin_alias($current)
+                or die "installation: symbolic link in target path $current\n";
+            # The alias is a directory, never the final regular-file target.
+            die "installation: not a regular target file: $current\n"
+                if $i == $#components && $file_target;
+            next;
+        }
         if ($i == $#components && $file_target) {
             die "installation: not a regular target file: $current\n" unless -f _;
         } else {
@@ -60,7 +94,7 @@ sub ancestors_safe {
 }
 sub allowed_relative {
     my ($rel) = @_;
-    return $rel =~ m{\A(?:bin/[A-Za-z0-9_.-]+|sbin/[A-Za-z0-9_.-]+|lib/SASD/Freeware/[A-Za-z0-9_.-]+\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING)(?:\.de)?\.md)\z};
+    return $rel =~ m{\A(?:bin/[A-Za-z0-9][A-Za-z0-9_.-]*|sbin/[A-Za-z0-9][A-Za-z0-9_.-]*|lib/SASD/Freeware/[A-Za-z0-9_.-]+\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING)(?:\.de)?\.md)\z};
 }
 sub digest {
     my ($path) = @_;

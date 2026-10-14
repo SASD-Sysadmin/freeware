@@ -7,6 +7,7 @@ use Test::More;
 use File::Temp qw(tempdir);
 use File::Path qw(make_path);
 use File::Spec;
+use Cwd ();
 use FindBin;
 use IPC::Open3;
 use Symbol qw(gensym);
@@ -51,6 +52,10 @@ sub invoke {
 
 write_file("$source/bin/alpha", "#!/bin/sh\necho first\n", 0755);
 write_file("$source/sbin/admin", "#!/bin/sh\nexit 0\n", 0755);
+# Real Git checkouts contain these non-executable placeholders. They must not
+# be classified as installable commands or copied into the ownership manifest.
+write_file("$source/bin/.gitkeep", "", 0644);
+write_file("$source/sbin/.gitkeep", "", 0644);
 write_file("$source/lib/SASD/Freeware/Account.pm", "1;\n");
 write_file("$source/man/man1/alpha.1", "manual\n");
 write_file("$source/docs/commands/alpha.de.md", "guide\n");
@@ -61,6 +66,8 @@ like($output, qr/Installed 6 managed files/, 'payload count is reported');
 ok(-x "$installed/bin/alpha", 'executables are installed as executables');
 is((stat("$installed/bin/alpha"))[2] & 0777, 0755, 'executable mode is 0755');
 is((stat("$installed/docs/commands/alpha.de.md"))[2] & 0777, 0644, 'documentation mode is 0644');
+ok(!-e "$installed/bin/.gitkeep" && !-e "$installed/sbin/.gitkeep",
+    'hidden repository placeholders are not installed');
 ok(-f "$installed/.sasd-freeware-install.tsv", 'install manifest is written');
 like(read_file("$installed/.sasd-freeware-install.tsv"),
      qr{\A\# sasd-freeware-manifest-v1\n(?:[^\n]+\n)+\z}, 'versioned manifest contains file records');
@@ -109,6 +116,17 @@ write_file("$installed/bin/beta", "someone else's beta\n", 0755);
 isnt($rc, 0, 'fresh install refuses collision without manifest');
 is(read_file("$installed/bin/beta"), "someone else's beta\n", 'fresh install preserves unowned data');
 unlink("$installed/bin/beta") or die $!;
+
+# macOS exposes its normal temporary directories via /var -> /private/var.
+# Reaching this point on Darwin proves the trusted alias allowed the staged
+# install while the tests below still reject an attacker-selected symlink.
+SKIP: {
+    skip 'Darwin-specific trusted temporary-directory alias', 1
+        unless $^O eq 'darwin';
+    my $canonical = Cwd::abs_path($stage);
+    ok(defined($canonical) && -d $canonical,
+       'Darwin staging directory works with its system path aliases');
+}
 
 # Refuse symlinks in the installed directory chain, not just at file leaf.
 my $external = "$tmp/elsewhere";
