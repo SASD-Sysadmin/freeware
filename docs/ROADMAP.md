@@ -13,7 +13,7 @@ and positive/negative tests before it can be considered complete.
 | --- | --- | --- | --- |
 | **2 – Filesystem** | Inventory, permissions, links, quotas, integrity | Evaluate mounts, ACLs and storage diagnostics | Substantial, incomplete |
 | **3 – User Accounts** | Inventory, group/home audits, guarded writes | Privileged VM acceptance, gap audit | Substantial, incomplete |
-| **4 – User Activity** | `session-report`, `process-report` (M4 part 1) | `login-audit`, history and attribution | In progress |
+| **4 – User Activity** | `session-report`, `process-report`; `login-audit` (Linux `last`/`lastb`) | macOS native login history, attribution and completeness review | In progress |
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, resolver | Gap review and platform completion | Substantial, incomplete |
 | **6 – Directory Services** | LDAPS/NIS diagnostics, TLS configuration audit | Scope/platform gap analysis | Partial |
 | **7 – SQL Administration** | No dedicated command | DB health, size and connection diagnostics | Open |

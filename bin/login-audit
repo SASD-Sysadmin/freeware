@@ -1,0 +1,173 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Chapter 4: bounded, read-only review of Linux login history.
+#
+# GNU/util-linux `last` and `lastb` read wtmp and btmp. Their output is not a
+# forensic source of truth: logs may be rotated, incomplete or inaccessible.
+# Fixture inputs use the *same* last --time-format iso -w text format so that
+# parsers can be tested offline without touching host authentication records.
+# No shell, login attempts, account changes, or privilege escalation occur.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $kind, $user, $limit, $null, $input_success, $input_failed) =
+   (0, 0, 'both', undef, 100, 0, undef, undef);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'kind=s' => \$kind, 'user=s' => \$user,
+           'limit=s' => \$limit, 'null' => \$null,
+           'input-success=s' => \$input_success,
+           'input-failed=s' => \$input_failed) or usage(2);
+usage(0) if $help;
+if ($version) { print "login-audit $VERSION\n"; exit 0; }
+usage(2) if @ARGV;
+$kind =~ /\A(?:success|failed|both)\z/ or fail(2, '--kind must be success, failed or both');
+$limit =~ /\A[1-9][0-9]{0,3}\z/ && $limit <= 1000
+    or fail(2, '--limit must be a whole number between 1 and 1000');
+if (defined $user) {
+    length($user) > 0 && length($user) <= 255 && $user !~ /[\s\x00-\x1f\x7f]/
+        or fail(2, 'invalid --user filter');
+}
+
+my @selected = $kind eq 'both' ? qw(success failed) : ($kind);
+my $fixture_mode = defined($input_success) || defined($input_failed);
+if ($fixture_mode) {
+    # Do not silently mix saved evidence with live system history.
+    for my $source (@selected) {
+        my $file = $source eq 'success' ? $input_success : $input_failed;
+        defined($file) && length($file)
+            or fail(2, "--input-$source is required with --kind $kind in fixture mode");
+    }
+    if ($kind eq 'success' && defined($input_failed)) {
+        fail(2, '--input-failed is incompatible with --kind success');
+    }
+    if ($kind eq 'failed' && defined($input_success)) {
+        fail(2, '--input-success is incompatible with --kind failed');
+    }
+} elsif ($^O ne 'linux') {
+    fail(3, 'live history supported only on Linux; use fixture inputs on this platform');
+}
+
+my @entries;
+my ($matched, $malformed) = (0, 0);
+my %source_totals = (success => 0, failed => 0);
+for my $source (@selected) {
+    my $file = $source eq 'success' ? $input_success : $input_failed;
+    my ($fh, $is_command);
+    if ($fixture_mode) {
+        # Explicitly reject file symlinks. No password, login or log file writes.
+        defined($file) && -f $file && !-l $file
+            or fail(3, "--input-$source must be an existing regular file, not a symlink");
+        open $fh, '<', $file or fail(3, "cannot open --input-$source: $!");
+        $is_command = 0;
+    } else {
+        my $name = $source eq 'success' ? 'last' : 'lastb';
+        my ($binary) = grep { -f $_ && -x $_ } ("/usr/bin/$name", "/bin/$name");
+        defined $binary or fail(3, "$name is unavailable (or not executable)");
+        # Read at most 5000 source records per kind, then filter in our process.
+        # Locale pinning makes the CLI result reproducible for util-linux backends.
+        {
+            local $ENV{LC_ALL} = 'C';
+            open $fh, '-|', $binary, '--time-format', 'iso', '-w', '-n', '5000'
+                or fail(3, "cannot execute $name: $!");
+        }
+        $is_command = 1;
+    }
+
+    while (my $line = <$fh>) {
+        # Reject unexpected binary/oversized lines before any parsing or output.
+        if (length($line) > 8192 || $line =~ /[\x00\r]/) { ++$malformed; next; }
+        $line =~ s/\n\z//;
+        next if $line =~ /\A\s*\z/;
+        next if $line =~ /\A\s*(?:wtmp|btmp)\s+begins\b/;
+        # wtmp contains machine lifecycle events, not account login events.
+        next if $line =~ /\A\s*(?:reboot|shutdown|runlevel)\s+/;
+
+        my $item = parse_login_line($source, $line);
+        if (!defined $item) { ++$malformed; next; }
+        next if defined($user) && $item->[1] ne $user;
+        ++$matched;
+        ++$source_totals{$source};
+        push @entries, $item if @entries < $limit;
+    }
+    my $close_ok = close $fh;
+    if ($is_command && !$close_ok) {
+        # Exit 3 means we could not prove the requested source was read.
+        # Withhold any partial results collected above.
+        fail(3, "$source backend could not complete (permission, format or source error)");
+    }
+    if (!$is_command && !$close_ok) {
+        fail(3, "cannot finish reading --input-$source: $!");
+    }
+}
+
+if ($null) {
+    for my $item (@entries) { print join("\0", @$item), "\0"; }
+} else {
+    print "KIND\tUSER\tTTY\tHOST\tLOGIN\tDETAILS\n";
+    for my $item (@entries) {
+        print join("\t", map { printable($_) } @$item), "\n";
+    }
+    print "Matching: $matched\nShown: ", scalar(@entries), "\n";
+    print "Successful: $source_totals{success}\nFailed: $source_totals{failed}\n";
+    print "Sources: ", join(',', @selected), "\n";
+}
+warn "login-audit: skipped $malformed malformed record(s); results incomplete\n"
+    if $malformed;
+exit($malformed ? 1 : 0);
+
+sub parse_login_line {
+    my ($source, $line) = @_;
+    # ISO timestamps are deliberately required: locale-formatted dates cannot
+    # be compared reliably and are not silently converted to an invented zone.
+    # Host may be empty (local console sessions), but cannot contain spaces.
+    my ($name, $tty, $host, $timestamp, $details) =
+        $line =~ /\A\s*(\S+)\s+(\S+)\s+(?:(\S+)\s+)?(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:Z|[+-]\d\d:\d\d))\s+-\s+(.+?)\s*\z/;
+    return unless defined $details;
+    $host //= '';
+    return if length($name) > 255 || length($tty) > 255 ||
+              length($host) > 255 || length($details) > 4096;
+    return if "$name$tty$host$details" =~ /[\x00-\x1f\x7f]/;
+    return unless valid_timestamp($timestamp);
+    return [$source, $name, $tty, $host, $timestamp, $details];
+}
+
+sub valid_timestamp {
+    my ($value) = @_;
+    my ($y,$mon,$day,$h,$m,$s,$zone) =
+      $value =~ /\A(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(Z|[+-]\d\d:\d\d)\z/;
+    return 0 unless defined $zone;
+    return 0 if $mon < 1 || $mon > 12 || $h > 23 || $m > 59 || $s > 59;
+    my @days = (0,31,28,31,30,31,30,31,31,30,31,30,31);
+    $days[2] = 29 if ($y % 4 == 0 && ($y % 100 != 0 || $y % 400 == 0));
+    return 0 if $day < 1 || $day > $days[$mon];
+    if ($zone ne 'Z') {
+        my ($zh,$zm) = substr($zone,1) =~ /\A(\d\d):(\d\d)\z/;
+        return 0 if $zh > 14 || $zm > 59 || ($zh == 14 && $zm != 0);
+    }
+    return 1;
+}
+
+sub printable {
+    my ($value) = @_;
+    $value =~ s/([\\\x00-\x1f\x7f])/sprintf('\\x%02X', ord($1))/ge;
+    return $value;
+}
+sub fail { my ($status, $message) = @_; warn "login-audit: $message\n"; exit $status; }
+sub usage {
+    my ($status) = @_;
+    my $out = $status ? *STDERR : *STDOUT;
+    print {$out} <<'USAGE';
+Usage: login-audit [--kind success|failed|both] [--user NAME] [--limit 1..1000]
+       [--input-success FILE] [--input-failed FILE] [--null]
+       login-audit --help | --version
+Read-only Linux login history from last/lastb (util-linux --time-format iso).
+Fixture mode: provide each requested kind's saved ISO-formatted last/lastb output.
+--null emits KIND, USER, TTY, HOST, LOGIN, DETAILS as six NUL-terminated fields.
+Exit: 0 parsed; 1 malformed record(s); 2 usage; 3 missing/failed source.
+No matching rows does NOT demonstrate absence of login attempts.
+USAGE
+    exit $status;
+}
