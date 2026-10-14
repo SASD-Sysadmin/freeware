@@ -4,6 +4,12 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 4 – User Activity (M4, login history)
+
+- Add Linux-only read-only `login-audit` for bounded util-linux `last`/`lastb` ISO-format history review.
+- Support explicit saved-text fixtures on Linux/macOS, account filters, NUL-delimited output, explicit missing-source failures, and offline regression tests.
+- Document retention, permissions, completeness and native macOS limitations in EN/DE guides, manpage and chapter roadmap.
+
 ### Chapter 4 – User Activity (M4, first increment)
 
 - Add read-only `session-report` (current login sessions) and `process-report` (process snapshot) with safe fixture inputs, filters, and NUL-record formats.

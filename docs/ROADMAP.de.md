@@ -13,7 +13,7 @@ DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
 | --- | --- | --- | --- |
 | **2 – Filesystem** | Inventar, Berechtigungen, Links, Quotas, Integrität | Mounts, ACLs und Storage-Analyse bewerten | Gut ausgebaut, offen |
 | **3 – User Accounts** | Konten, Gruppen, Home-Audit, eingeschränkte Verwaltung | Privilegierte VM-Abnahme, weitere Abdeckungsprüfung | Gut ausgebaut, offen |
-| **4 – User Activity** | `session-report`, `process-report` (M4 Teil 1) | `login-audit`, Historie, sichere Zuordnung von Prozessaktivität | In Arbeit |
+| **4 – User Activity** | `session-report`, `process-report`; `login-audit` (Linux `last`/`lastb`) | macOS-Anmeldehistorie, Zuordnung und Vollständigkeit prüfen | In Arbeit |
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, Resolver | Abschlussprüfung und sinnvolle Ergänzungen | Gut ausgebaut, offen |
 | **6 – Directory Services** | LDAPS/NIS-Diagnose, TLS-Konfigurationsaudit | Funktions-/Plattformgrenzen und offene Aufgaben prüfen | Teilweise |
 | **7 – SQL Administration** | Noch kein eigenes Kommando | DB-Health, Größenberichte, Verbindungstests | Offen |

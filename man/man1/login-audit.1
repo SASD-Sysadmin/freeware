@@ -1,0 +1,44 @@
+.TH LOGIN-AUDIT 1 "2026-10-14" "SASD Freeware" "Unix Administration"
+.SH NAME
+login-audit \- read-only historical Linux login and failed-login overview
+.SH SYNOPSIS
+.B login-audit
+[--kind success|failed|both] [--user NAME] [--limit 1..1000]
+[--input-success FILE] [--input-failed FILE] [--null]
+.SH DESCRIPTION
+Reads util-linux last/lastb ISO-formatted text or, on Linux only, invokes
+native last/lastb. Does not modify system login records. Source availability,
+permissions, rotation and bounded 5000-entry samples limit completeness.
+Zero reported rows do not prove that no login activity took place.
+.SH OPTIONS
+.TP
+.B --kind success|failed|both
+Select source, default both. Both is not globally time-sorted.
+.TP
+.B --user NAME
+Exact case-sensitive account name filter.
+.TP
+.B --limit N
+Output a maximum of N combined entries (default 100; maximum 1000).
+.TP
+.B --input-success FILE
+Parse saved ISO-format last text from a regular non-symlink file.
+.TP
+.B --input-failed FILE
+Parse saved ISO-format lastb text from a regular non-symlink file.
+.TP
+.B --null
+Output six NUL-terminated fields: KIND USER TTY HOST LOGIN DETAILS.
+.TP
+.B --help, --version
+Show metadata without accessing system history.
+.SH EXIT STATUS
+0 sources processed; 1 malformed source rows (incomplete output);
+2 invalid invocation; 3 source/backend unavailable or unsuccessful.
+.SH SECURITY
+Source records and reports can contain personal data. No root privileges
+are requested or granted by this tool. Native macOS/BSD history is unsupported.
+.SH SEE ALSO
+last(1), lastb(1), wtmp(5), btmp(5)
+.SH AUTHOR
+SASD Freeware contributors.

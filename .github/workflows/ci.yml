@@ -46,6 +46,8 @@ jobs:
           test -x "$staging/usr/freeware/bin/account-inventory"
           test -x "$staging/usr/freeware/bin/session-report"
           test -x "$staging/usr/freeware/bin/process-report"
+          test -x "$staging/usr/freeware/bin/login-audit"
+          test -f "$staging/usr/freeware/man/man1/login-audit.1"
           test -x "$staging/usr/freeware/bin/home-audit"
           test -x "$staging/usr/freeware/bin/nss-lookup"
           test -x "$staging/usr/freeware/bin/host-resolve"
