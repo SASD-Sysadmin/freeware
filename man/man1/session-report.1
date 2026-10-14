@@ -1,0 +1,32 @@
+.TH SESSION-REPORT 1 "2026-10-14" "SASD Freeware" "Unix Administration"
+.SH NAME
+session-report \- read-only inventory of current interactive user sessions
+.SH SYNOPSIS
+.B session-report
+[--user NAME] [--input FILE] [--null]
+.br
+.B session-report
+--help | --version
+.SH DESCRIPTION
+Reads current interactive login sessions from the system who command.
+Outputs USER, TTY and unmodified date/origin DETAILS plus counts. These
+fields are OS-specific and do not constitute an authentication history.
+.SH OPTIONS
+.TP
+.B --user NAME
+Include only sessions for this user.
+.TP
+.B --input FILE
+Parse saved who output from an existing regular file, refusing symlinks.
+.TP
+.B --null
+Output three raw NUL-terminated fields per row, no header or totals.
+.TP
+.B --help, --version
+Show usage or version without invoking who.
+.SH EXIT STATUS
+0 completed, 1 malformed input records, 2 usage, 3 unavailable input/backend.
+.SH SECURITY
+Read only. Session and host details can be sensitive. No root required.
+.SH SEE ALSO
+who(1), last(1), ps(1), process-report(1)

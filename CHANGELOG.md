@@ -4,6 +4,12 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 4 – User Activity (M4, first increment)
+
+- Add read-only `session-report` (current login sessions) and `process-report` (process snapshot) with safe fixture inputs, filters, and NUL-record formats.
+- Add 55 fixture/smoke tests, English/German command guides, manual pages, and explicit Linux/macOS limitations.
+- Switch development planning to a chapter coverage matrix; login history, SQL, mail, logs, and monitoring remain open.
+
 ### Release engineering (M3 work in progress)
 
 - Replace checkout-list-based install/uninstall with a versioned, SHA-256-verified ownership manifest.

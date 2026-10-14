@@ -1,0 +1,38 @@
+.TH PROCESS-REPORT 1 "2026-10-14" "SASD Freeware" "Unix Administration"
+.SH NAME
+process-report \- read-only current-process inventory
+.SH SYNOPSIS
+.B process-report
+[--user NAME] [--state LETTER] [--limit 1..5000] [--input FILE] [--null]
+.br
+.B process-report
+--help | --version
+.SH DESCRIPTION
+Uses native ps with fields PID, PPID, USER, STATE, ELAPSED and COMMAND.
+This is a snapshot, not historical process or authentication evidence.
+The COMMAND field corresponds to ps comm, not a full command line.
+.SH OPTIONS
+.TP
+.B --user NAME
+Show processes for one user.
+.TP
+.B --state LETTER
+Filter by the first letter of the process state (for example R, S or Z).
+.TP
+.B --limit N
+Show at most N rows (default 200, maximum 5000); Matching reports all matches.
+.TP
+.B --input FILE
+Parse saved headerless ps output, refusing symbolic links.
+.TP
+.B --null
+Output six raw NUL-terminated fields per row, no header or totals.
+.TP
+.B --help, --version
+Show usage or version without invoking ps.
+.SH EXIT STATUS
+0 completed, 1 malformed input records, 2 usage, 3 unavailable input/backend.
+.SH SECURITY
+Read only. Process details can be sensitive. No root required.
+.SH SEE ALSO
+ps(1), who(1), session-report(1)
