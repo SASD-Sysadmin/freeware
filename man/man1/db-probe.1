@@ -1,0 +1,64 @@
+.TH DB-PROBE 1 "2026-10-14" "SASD Freeware" "User Commands"
+.SH NAME
+db-probe \- read-only SQL connectivity and server identity probe
+.SH SYNOPSIS
+.B db-probe
+.B --engine
+.I postgresql|mysql|mariadb
+.RI [ --host\ HOST ]
+.RI [ --port\ N ]
+.RI [ --user\ NAME ]
+.RI [ --database\ NAME ]
+.RI [ --timeout\ N ]
+.RI [ --client\ ABSOLUTE_PATH ]
+.RI [ --defaults-file\ ABSOLUTE_PATH ]
+.RI [ --null ]
+.br
+.B db-probe --help | --version
+.SH DESCRIPTION
+Executes one fixed read-only SQL identity/version query through a trusted
+native psql, mysql or mariadb command-line client. Reports ENGINE, DATABASE,
+DB_USER and VERSION. A successful TCP connection without valid SQL results
+is not considered successful. Oracle and SQL Server are not yet supported.
+.SH OPTIONS
+.TP
+.B --engine
+Required; postgresql, mysql or mariadb.
+.TP
+.B --host
+Remote TCP host; without this, MySQL/MariaDB use a local Unix socket.
+.TP
+.B --port
+TCP port 1 to 65535; requires --host.
+.TP
+.B --user, --database
+Optional native-client login and database selection parameters.
+.TP
+.B --timeout
+Client connection timeout, 1 to 30 seconds, default 5; total run timeout
+is five seconds longer.
+.TP
+.B --client
+Explicit absolute path to an executable trusted native client.
+.TP
+.B --defaults-file
+MySQL/MariaDB only: private non-symlink client config file (mode 0600).
+Only supported [client] credential and TLS options are allowed.
+.TP
+.B --null
+Print the four fields as NUL-terminated strings, without headings.
+.SH SECURITY
+Passwords are never accepted as command-line options. PostgreSQL uses native
+libpq authentication and forces TLS verify-full for TCP. MySQL forces TLS
+VERIFY_IDENTITY, MariaDB enables certificate verification for TCP. No
+user-supplied SQL or shell evaluation. Client stderr is suppressed to avoid
+leaking secrets; invalid output or backend timeouts cause nonzero exit.
+Uses bounded output and process runtime. Prefer read-only SQL accounts.
+.SH EXIT STATUS
+0 valid SQL identity record; 1 connection/authentication/SQL failure;
+2 invalid parameters; 3 missing native client, unsafe configuration, timeout
+or unusable client output.
+.SH SEE ALSO
+.BR psql (1),
+.BR mysql (1),
+.BR mariadb (1)
