@@ -1,0 +1,97 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Chapter 4: read-only process snapshot via native ps on Linux and macOS.
+# Avoid /proc-specific assumptions, shell interpolation and process mutation.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $input, $user, $state, $limit, $null) =
+    (0, 0, undef, undef, undef, 200, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'user=s' => \$user,
+           'state=s' => \$state, 'limit=s' => \$limit, 'null' => \$null)
+    or usage(2);
+usage(0) if $help;
+if ($version) { print "process-report $VERSION\n"; exit 0; }
+usage(2) if @ARGV;
+if (defined $user) {
+    length($user) && length($user) <= 255 && $user !~ /[\s\x00-\x1f\x7f]/
+        or fail(2, 'invalid --user');
+}
+if (defined $state) {
+    $state =~ /\A[A-Za-z]\z/ or fail(2, '--state must be one process state letter');
+}
+$limit =~ /\A[1-9][0-9]{0,3}\z/ && $limit <= 5000
+    or fail(2, '--limit must be 1..5000');
+
+my ($fh, $backend);
+if (defined $input) {
+    $input ne '' && -f $input && !-l $input
+        or fail(3, 'input must be an existing regular file (not a symlink)');
+    open $fh, '<', $input or fail(3, "cannot open input: $!");
+} else {
+    ($backend) = grep { -f $_ && -x $_ } ('/bin/ps', '/usr/bin/ps');
+    defined $backend or fail(3, 'system ps command is unavailable');
+    # Headerless fields; "comm" is the OS-provided executable name.
+    # Field width can vary between BSD and procps, so parse whitespace.
+    open $fh, '-|', $backend, '-eo',
+        'pid=,ppid=,user=,stat=,etime=,comm='
+        or fail(3, "cannot execute ps: $!");
+}
+my @rows;
+my ($matches, $malformed) = (0, 0);
+while (my $line = <$fh>) {
+    if (length($line) > 8192 || $line =~ /[\x00\r]/) { ++$malformed; next; }
+    $line =~ s/\n\z//;
+    next if $line =~ /\A\s*\z/;
+    my ($pid, $ppid, $owner, $stat, $elapsed, $command) =
+        $line =~ /\A\s*([0-9]+)\s+([0-9]+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+?)\s*\z/;
+    if (!defined($command) || length($pid) > 10 || length($ppid) > 10 ||
+        $pid == 0 || $pid > 4294967295 || $ppid > 4294967295 ||
+        $owner =~ /[\x00-\x1f\x7f]/ || $stat !~ /\A[A-Za-z][^\s\x00-\x1f\x7f]*\z/ ||
+        $command =~ /[\x00-\x08\x0b-\x1f\x7f]/) {
+        ++$malformed;
+        next;
+    }
+    next if defined($user) && $owner ne $user;
+    next if defined($state) && uc(substr($stat, 0, 1)) ne uc($state);
+    ++$matches;
+    push @rows, [$pid, $ppid, $owner, $stat, $elapsed, $command]
+        if @rows < $limit;
+}
+my $closed = close $fh;
+if (defined($backend) && $? != 0) { fail(3, "ps exited unsuccessfully (status " . ($? >> 8) . ")"); }
+if (!defined($backend) && !$closed) { fail(3, "cannot finish reading input: $!"); }
+if ($null) {
+    for my $entry (@rows) { print join("\0", @$entry), "\0"; }
+} else {
+    print "PID\tPPID\tUSER\tSTATE\tELAPSED\tCOMMAND\n";
+    for my $entry (@rows) { print join("\t", map { printable($_) } @$entry), "\n"; }
+    print "Matching: $matches\nShown: ", scalar(@rows), "\n";
+}
+warn "process-report: skipped $malformed malformed input record(s)\n" if $malformed;
+exit($malformed ? 1 : 0);
+
+sub printable {
+    my ($value) = @_;
+    $value =~ s/([\\\x00-\x1f\x7f])/sprintf('\\x%02X', ord($1))/ge;
+    return $value;
+}
+sub fail { my ($code, $why) = @_; warn "process-report: $why\n"; exit $code; }
+sub usage {
+    my ($status) = @_;
+    my $fh = $status ? *STDERR : *STDOUT;
+    print {$fh} <<'USAGE';
+Usage: process-report [--user NAME] [--state LETTER] [--limit 1..5000]
+       [--input FILE] [--null]
+       process-report --help | --version
+Read-only process snapshot from system ps (or a fixture).
+--input FILE  Parse saved ps -eo pid=,ppid=,user=,stat=,etime=,comm= output.
+--null        Emit six NUL-terminated fields per process, no header or totals.
+Exit: 0 complete, 1 malformed record(s), 2 usage, 3 missing backend/input.
+USAGE
+    exit $status;
+}

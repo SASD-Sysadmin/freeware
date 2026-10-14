@@ -8,6 +8,8 @@ SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die 
 
 | Befehl | Pfad | Funktion | Dokumentation |
 | --- | --- | --- | --- |
+| `session-report` | [`bin/session-report`](bin/session-report) | Angemeldete interaktive Benutzersitzungen erfassen (Kapitel 4). | [Deutsch](docs/commands/session-report.de.md) · [English](docs/commands/session-report.md) · [Manpage](man/man1/session-report.1) |
+| `process-report` | [`bin/process-report`](bin/process-report) | Prozesse nach Benutzer und Status inventarisieren (Kapitel 4). | [Deutsch](docs/commands/process-report.de.md) · [English](docs/commands/process-report.md) · [Manpage](man/man1/process-report.1) |
 | `core-report` | [`bin/core-report`](bin/core-report) | Dateien mit Core-Dump-typischen Namen und ihre Größen erfassen. | [Deutsch](docs/commands/core-report.de.md) · [English](docs/commands/core-report.md) · [Manpage](man/man1/core-report.1) |
 | `path-audit` | [`bin/path-audit`](bin/path-audit) | Überlange Pfadkomponenten und Pfadnamen ermitteln. | [Deutsch](docs/commands/path-audit.de.md) · [English](docs/commands/path-audit.md) · [Manpage](man/man1/path-audit.1) |
 | `link-audit` | [`bin/link-audit`](bin/link-audit) | Defekte, zyklische und nicht auflösbare symbolische Links anzeigen. | [Deutsch](docs/commands/link-audit.de.md) · [English](docs/commands/link-audit.md) · [Manpage](man/man1/link-audit.1) |

@@ -1,5 +1,40 @@
 # SASD Freeware – Technical inventory and prioritized roadmap
 
+## Current chapter-based development plan (14 October 2026)
+
+**Goal:** Complete useful administration tools for book chapters 2–10 before
+considering the first release. The old engineering assessment retained below
+is historical, **not** the active milestone sequence. M3 part 1 delivered the
+safer installer; release artifacts and publication are intentionally deferred.
+A chapter requires scoped behavior, platform boundaries, EN/DE guides, manpages,
+and positive/negative tests before it can be considered complete.
+
+| Chapter | Available coverage | Gaps | Status |
+| --- | --- | --- | --- |
+| **2 – Filesystem** | Inventory, permissions, links, quotas, integrity | Evaluate mounts, ACLs and storage diagnostics | Substantial, incomplete |
+| **3 – User Accounts** | Inventory, group/home audits, guarded writes | Privileged VM acceptance, gap audit | Substantial, incomplete |
+| **4 – User Activity** | `session-report`, `process-report` (M4 part 1) | `login-audit`, history and attribution | In progress |
+| **5 – TCP/IP Name Services** | Hosts, DNS, NSS, resolver | Gap review and platform completion | Substantial, incomplete |
+| **6 – Directory Services** | LDAPS/NIS diagnostics, TLS configuration audit | Scope/platform gap analysis | Partial |
+| **7 – SQL Administration** | No dedicated command | DB health, size and connection diagnostics | Open |
+| **8 – Electronic Mail** | No dedicated command | SMTP, queues and config diagnostics | Open |
+| **9 – Log Files** | `log-summary` | Journal, error and authentication-log audits | Major gaps |
+| **10 – Security and Network Monitoring** | SSH, SUID, integrity and TCP checks | Network, service and firewall inventory | Partial |
+
+**Planned order:** M4 User Activity (live snapshots, then login history),
+M5 SQL, M6 Mail, M7 Logs, M8 Security/Network, M9 chapter gap closure and
+platform acceptance, M10 release artifacts. These are scope goals, not
+commitments about dates or production readiness.
+
+**M4 part 1 contract:** `session-report` uses `who`; `process-report` uses
+`ps`. Both are read-only, run without root, and accept offline test fixtures
+through `--input`. They are snapshots, not exhaustive history or guaranteed
+coverage of remote/container identities. Tests must not change real users.
+See [session guide](commands/session-report.md) and
+[process guide](commands/process-report.md).
+
+## Historical engineering assessment (13 October 2026)
+
 Repository: https://github.com/SASD-Sysadmin/freeware
 Analyzed main commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`
 Assessment date: 2026-10-13

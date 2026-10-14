@@ -1,5 +1,41 @@
 # SASD Freeware – Bestandsaufnahme und priorisierte Roadmap
 
+## Aktuelle kapitelorientierte Planung (14. Oktober 2026)
+
+**Ziel:** Die Werkzeuge zu den Buchkapiteln 2–10 systematisch ergänzen.
+Der frühere technische Review (weiter unten) ist eine historische Bestandsaufnahme,
+**nicht** mehr die aktuelle Meilensteinreihenfolge. Der Installer aus M3 Teil 1 ist
+implementiert; Release-Artefakte und eine Veröffentlichung bleiben bewusst zurückgestellt.
+Ein Kapitel gilt erst als abgeschlossen, wenn Anforderungen, Plattformgrenzen,
+DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
+
+| Kapitel | Bereits verfügbare Schwerpunkte | Noch zu bearbeiten | Status |
+| --- | --- | --- | --- |
+| **2 – Filesystem** | Inventar, Berechtigungen, Links, Quotas, Integrität | Mounts, ACLs und Storage-Analyse bewerten | Gut ausgebaut, offen |
+| **3 – User Accounts** | Konten, Gruppen, Home-Audit, eingeschränkte Verwaltung | Privilegierte VM-Abnahme, weitere Abdeckungsprüfung | Gut ausgebaut, offen |
+| **4 – User Activity** | `session-report`, `process-report` (M4 Teil 1) | `login-audit`, Historie, sichere Zuordnung von Prozessaktivität | In Arbeit |
+| **5 – TCP/IP Name Services** | Hosts, DNS, NSS, Resolver | Abschlussprüfung und sinnvolle Ergänzungen | Gut ausgebaut, offen |
+| **6 – Directory Services** | LDAPS/NIS-Diagnose, TLS-Konfigurationsaudit | Funktions-/Plattformgrenzen und offene Aufgaben prüfen | Teilweise |
+| **7 – SQL Administration** | Noch kein eigenes Kommando | DB-Health, Größenberichte, Verbindungstests | Offen |
+| **8 – Electronic Mail** | Noch kein eigenes Kommando | SMTP-, Queue- und Konfigurationsdiagnostik | Offen |
+| **9 – Log Files** | `log-summary` | Journal, Fehleranalyse, Authentifizierungslogs | Große Lücken |
+| **10 – Security and Network Monitoring** | SSH-, SUID-, Integritäts- und TCP-Prüfungen | Netzwerk-, Dienst- und Firewall-Inventar | Teilweise |
+
+**Geplante Reihenfolge:** M4 User Activity (zunächst aktuelle Sessions/Prozesse,
+danach Anmeldehistorie), M5 SQL, M6 Mail, M7 Logs, M8 Sicherheit und Netzwerk,
+M9 Kapitel-Lücken und plattformbezogene Qualitätsabnahme, M10 Release-Artefakte.
+Diese Reihenfolge ist eine Arbeitsplanung, keine Aussage über Produktreife oder Termine.
+
+**M4 Teil 1 – Prüfumfang:** `session-report` nutzt `who`, `process-report` nutzt
+`ps`; beide sind lesend, brauchen keine Root-Rechte und unterstützen
+synthetische Eingaben über `--input`. Ergebnisse sind Momentaufnahmen:
+keine umfassende Anmelde-/Prozesshistorie und keine garantierte
+Container-/Remote-Sicht. Tests dürfen keine realen Benutzer verändern.
+Siehe [Session-Anleitung](commands/session-report.de.md) und
+[Prozess-Anleitung](commands/process-report.de.md).
+
+## Historischer technischer Review (Stand 13. Oktober 2026)
+
 Repository: https://github.com/SASD-Sysadmin/freeware
 Untersuchter main-Commit: `f618e42b77b48ac6905b8a5e8b6f75af4a0db8eb`
 Bestandsstichtag: 2026-10-13

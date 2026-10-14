@@ -1,0 +1,87 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Chapter 4: read-only interactive session inventory. The backend is invoked
+# by absolute path and argv (never through a shell); --input is for fixtures.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $input, $user, $null) = (0, 0, undef, undef, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'user=s' => \$user, 'null' => \$null)
+    or usage(2);
+usage(0) if $help;
+if ($version) { print "session-report $VERSION\n"; exit 0; }
+usage(2) if @ARGV;
+if (defined $user) {
+    length($user) && length($user) <= 255 && $user !~ /[\s\x00-\x1f\x7f]/
+        or fail(2, 'invalid --user (expected one login name without whitespace)');
+}
+
+# Use a trusted system binary instead of an attacker-controlled PATH entry.
+# File mode is useful for reproducible offline tests and incident review.
+my ($fh, $backend);
+if (defined $input) {
+    $input ne '' && -f $input && !-l $input
+        or fail(3, 'input must be an existing regular file (not a symlink)');
+    open $fh, '<', $input or fail(3, "cannot open input: $!");
+} else {
+    ($backend) = grep { -f $_ && -x $_ } ('/usr/bin/who', '/bin/who');
+    defined $backend or fail(3, 'system who command is unavailable');
+    open $fh, '-|', $backend or fail(3, "cannot execute who: $!");
+}
+
+my (@sessions, $malformed);
+$malformed = 0;
+while (my $line = <$fh>) {
+    # A maliciously long or binary backend record is not usable evidence.
+    if (length($line) > 8192 || $line =~ /[\x00\r]/) { ++$malformed; next; }
+    $line =~ s/\n\z//;
+    next if $line =~ /\A\s*\z/;
+    my ($name, $tty, $details) = $line =~ /\A\s*(\S+)\s+(\S+)\s+(.+\S)\s*\z/;
+    if (!defined $details || $name =~ /[\x00-\x1f\x7f]/ ||
+        $tty =~ /[\x00-\x1f\x7f]/ || $details =~ /[\x00-\x08\x0b-\x1f\x7f]/) {
+        ++$malformed;
+        next;
+    }
+    next if defined($user) && $name ne $user;
+    push @sessions, [$name, $tty, $details];
+}
+my $closed = close $fh;
+if (defined($backend) && $? != 0) { fail(3, "who exited unsuccessfully (status " . ($? >> 8) . ")"); }
+if (!defined($backend) && !$closed) { fail(3, "cannot finish reading input: $!"); }
+
+if ($null) {
+    for my $entry (@sessions) { print join("\0", @$entry), "\0"; }
+} else {
+    print "USER\tTTY\tDETAILS\n";
+    for my $entry (@sessions) {
+        print join("\t", map { printable($_) } @$entry), "\n";
+    }
+    my %unique = map { $_->[0] => 1 } @sessions;
+    print 'Sessions: ', scalar(@sessions), "\nUsers: ", scalar(keys %unique), "\n";
+}
+warn "session-report: skipped $malformed malformed input record(s)\n" if $malformed;
+exit($malformed ? 1 : 0);
+
+sub printable {
+    my ($value) = @_;
+    $value =~ s/([\\\x00-\x1f\x7f])/sprintf('\\x%02X', ord($1))/ge;
+    return $value;
+}
+sub fail { my ($code, $why) = @_; warn "session-report: $why\n"; exit $code; }
+sub usage {
+    my ($status) = @_;
+    my $fh = $status ? *STDERR : *STDOUT;
+    print {$fh} <<'USAGE';
+Usage: session-report [--user NAME] [--input FILE] [--null]
+       session-report --help | --version
+Read-only inventory of interactive sessions from system who (or a fixture).
+--input FILE  Read a saved who-style file instead of running the backend.
+--null        Emit USER, TTY, DETAILS as three NUL-terminated fields per row.
+Exit: 0 complete, 1 malformed record(s), 2 usage, 3 missing backend/input.
+USAGE
+    exit $status;
+}

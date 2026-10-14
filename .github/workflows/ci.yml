@@ -44,6 +44,8 @@ jobs:
           test -f "$staging/usr/freeware/.sasd-freeware-install.tsv"
           make install DESTDIR="$staging" PREFIX=/usr/freeware
           test -x "$staging/usr/freeware/bin/account-inventory"
+          test -x "$staging/usr/freeware/bin/session-report"
+          test -x "$staging/usr/freeware/bin/process-report"
           test -x "$staging/usr/freeware/bin/home-audit"
           test -x "$staging/usr/freeware/bin/nss-lookup"
           test -x "$staging/usr/freeware/bin/host-resolve"
