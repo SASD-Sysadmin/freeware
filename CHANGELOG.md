@@ -4,6 +4,13 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Privileged safety and isolated test boundaries
+
+- Publish `file-integrity --init` baselines through a private staging file and atomic, no-overwrite hard-link step; existing manifests stay untouched after failed attempts.
+- Add fixture-only security checks for account/quota approval, integrity-manifest protection, rotate copy failures and competing rotations.
+- Document remaining non-transactional rotation risks and a snapshotted, human-approved Linux VM test plan in English and German.
+
+
 ### CLI and repository quality contracts
 
 - Standardized side-effect-free `--help` and `--version` across the eight older commands.

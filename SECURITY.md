@@ -20,3 +20,10 @@ A useful report includes the affected tool and revision, steps to reproduce with
 - `file-integrity --init` deliberately writes a new baseline; no existing baseline is overwritten. Protect manifests outside the monitored tree.
 - `tcp-check` makes an actual network connection. Test only endpoints that you are authorized to probe.
 - `ssh-key-audit` and `suid-audit` are heuristic inventories, not proof of a secure configuration.
+
+## Privileged application and isolated verification
+
+- `account-manage` and `quota-set` default to previews, but their approved Linux backends can change accounts, password locks and disk quotas. Never interpret a preview as authorization to apply changes.
+- Real apply/rollback tests belong only in a disposable, snapshotted Linux VM, **not** in CI, WSL or a production host.
+- `file-integrity --init` publishes a private, no-overwrite manifest with hard links; the target filesystem must support hard links. An abrupt SIGKILL may leave a private staging file. Baselines do not provide cryptographic authenticity without separate protection.
+- See the [privileged safety test plan](docs/PRIVILEGED-SAFETY.md) ([Deutsch](docs/PRIVILEGED-SAFETY.de.md)) for limitations, independent verification and VM restore gates.
