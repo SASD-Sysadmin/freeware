@@ -32,7 +32,7 @@ test: check
 # Optional locally, mandatory in Ubuntu CI: static Bash analysis.
 shellcheck:
 	@command -v shellcheck >/dev/null 2>&1 || { echo "make shellcheck: install ShellCheck first" >&2; exit 1; }
-	@shellcheck bin/rotate tests/test_rotate.sh
+	@shellcheck bin/rotate tests/test_rotate.sh tests/test_rotate_safety.sh
 
 integration-test: check
 	@command -v prove >/dev/null 2>&1 || { echo "make integration-test: prove is required" >&2; exit 1; }
@@ -67,7 +67,7 @@ install:
 			install -d "$(DESTDIR)$(PREFIX)/docs/commands"; \
 			install -m 644 "$$doc" "$(DESTDIR)$(PREFIX)/$$doc"; \
 		done; \
-		for doc in docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md; do \
+		for doc in docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md docs/PRIVILEGED-SAFETY*.md; do \
 			[ -e "$$doc" ] || continue; \
 			[ -f "$$doc" ] && [ ! -L "$$doc" ] || { echo "Invalid top-level guide: $$doc" >&2; exit 1; }; \
 			install -d "$(DESTDIR)$(PREFIX)/docs"; \
@@ -86,7 +86,7 @@ uninstall:
 			[ -f "$$module" ] && [ ! -L "$$module" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$module"; \
 		done; \
-		for page in man/man[1-9]/*.[1-9] docs/commands/*.md docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md; do \
+		for page in man/man[1-9]/*.[1-9] docs/commands/*.md docs/PLATFORMS*.md docs/TESTING*.md docs/EXIT-CODES*.md docs/PRIVILEGED-SAFETY*.md; do \
 			[ -f "$$page" ] && [ ! -L "$$page" ] || continue; \
 			rm -f "$(DESTDIR)$(PREFIX)/$$page"; \
 		done

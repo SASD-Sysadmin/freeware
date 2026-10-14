@@ -60,6 +60,8 @@ jobs:
           test -f "$staging/usr/freeware/docs/TESTING.de.md"
           test -f "$staging/usr/freeware/docs/EXIT-CODES.md"
           test -f "$staging/usr/freeware/docs/EXIT-CODES.de.md"
+          test -f "$staging/usr/freeware/docs/PRIVILEGED-SAFETY.md"
+          test -f "$staging/usr/freeware/docs/PRIVILEGED-SAFETY.de.md"
           test -f "$staging/usr/freeware/man/man8/account-manage.8"
           make uninstall DESTDIR="$staging" PREFIX=/usr/freeware
           test ! -e "$staging/usr/freeware/bin/account-inventory"
@@ -75,3 +77,5 @@ jobs:
           test ! -e "$staging/usr/freeware/docs/PLATFORMS.md"
           test ! -e "$staging/usr/freeware/docs/TESTING.md"
           test ! -e "$staging/usr/freeware/docs/EXIT-CODES.de.md"
+          test ! -e "$staging/usr/freeware/docs/PRIVILEGED-SAFETY.md"
+          test ! -e "$staging/usr/freeware/docs/PRIVILEGED-SAFETY.de.md"

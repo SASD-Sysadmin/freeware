@@ -8,9 +8,9 @@ use Cwd qw(abs_path);
 use File::Basename qw(dirname basename);
 use File::Find;
 use File::Spec;
-use Fcntl qw(O_WRONLY O_CREAT O_EXCL);
 use Digest::SHA;
 use JSON::PP;
+use File::Temp qw(tempfile);
 
 my ($root_arg, $manifest, $initialize, $check, $help, $version);
 GetOptions('root=s' => \$root_arg, 'manifest=s' => \$manifest,
@@ -47,13 +47,31 @@ find({ no_chdir => 1, follow => 0, wanted => sub {
 }}, $root);
 
 if ($initialize) {
-    sysopen(my $out, $manifest_abs, O_WRONLY | O_CREAT | O_EXCL, 0600)
-        or fail("cannot create new manifest $manifest_abs (will not overwrite): $!");
+    # First write a private file in the manifest directory, then publish it
+    # using an atomic, no-overwrite hard link. O_EXCL on the staging file and
+    # link() on the destination protect an existing baseline even if two
+    # initializers race. A failed or interrupted write never exposes a partial
+    # final manifest. The filesystem must support hard links within a directory.
     my $json = JSON::PP->new->canonical->pretty->encode({
         format => 'sasd-integrity-v1', root => $root, sha256 => \%files
     });
-    print {$out} $json or do { close $out; unlink $manifest_abs; fail('cannot write manifest'); };
-    close $out or fail("cannot close manifest: $!");
+    my ($out, $staged) = tempfile('.sasd-integrity-XXXXXXXX',
+                                  DIR => $manifest_parent, UNLINK => 0);
+    my $ok = eval {
+        local $SIG{INT} = sub { die "initialization interrupted by SIGINT\n"; };
+        local $SIG{TERM} = sub { die "initialization interrupted by SIGTERM\n"; };
+        print {$out} $json or die "cannot write staging manifest: $!\n";
+        close $out or die "cannot close staging manifest: $!\n";
+        link($staged, $manifest_abs)
+            or die "cannot publish manifest (will not overwrite): $!\n";
+        1;
+    };
+    my $error = $@;
+    # The original staging inode is never the public baseline. Remove it on
+    # both success and failure; do not remove the published name on failure.
+    unlink($staged)
+        or fail("cannot remove private staging manifest $staged: $!");
+    $ok or fail($error);
     print "BASELINE: files=$scanned manifest=$manifest_abs\n";
     exit 0;
 }
