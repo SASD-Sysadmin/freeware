@@ -8,6 +8,7 @@ SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die 
 
 | Befehl | Pfad | Funktion | Dokumentation |
 | --- | --- | --- | --- |
+| `db-probe` | [`bin/db-probe`](bin/db-probe) | SQL-Verbindung, Datenbankidentität und Serverversion prüfen (M5.1). | [Deutsch](docs/commands/db-probe.de.md) · [English](docs/commands/db-probe.md) · [Manpage](man/man1/db-probe.1) |
 | `session-report` | [`bin/session-report`](bin/session-report) | Angemeldete interaktive Benutzersitzungen erfassen (Kapitel 4). | [Deutsch](docs/commands/session-report.de.md) · [English](docs/commands/session-report.md) · [Manpage](man/man1/session-report.1) |
 | `process-report` | [`bin/process-report`](bin/process-report) | Prozesse nach Benutzer und Status inventarisieren (Kapitel 4). | [Deutsch](docs/commands/process-report.de.md) · [English](docs/commands/process-report.md) · [Manpage](man/man1/process-report.1) |
 | `login-audit` | [`bin/login-audit`](bin/login-audit) | Linux-Anmeldehistorie und Fehlversuche lesen (Kapitel 4); gespeicherte ISO-Testdaten auf weiteren Plattformen. | [Deutsch](docs/commands/login-audit.de.md) · [English](docs/commands/login-audit.md) · [Manpage](man/man1/login-audit.1) |

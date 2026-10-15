@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 7 – SQL Administration (M5.1)
+
+- Add read-only `db-probe` for PostgreSQL, MySQL and MariaDB, using fixed
+  identity/version SQL and native clients without shell or password argv.
+- Require verified TLS for explicit TCP targets, bound execution/output,
+  private MySQL/MariaDB credential files and explicit error classification.
+- Add offline mock-client regression tests, DE/EN guides, manpage and CI
+  staged install/remove assertions; Oracle and SQL Server remain planned.
+
 ### Chapter 4 – User Activity (M4, login history)
 
 - Add Linux-only read-only `login-audit` for bounded util-linux `last`/`lastb` ISO-format history review.

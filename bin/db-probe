@@ -1,0 +1,237 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M5.1: bounded, read-only database identity probe for PostgreSQL, MySQL,
+# and MariaDB. Deliberately no user-supplied SQL, password or shell command.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use IPC::Open3;
+use IO::Select;
+use Symbol qw(gensym);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $engine, $host, $port, $database, $user, $client,
+    $defaults_file, $timeout, $null) = (0, 0, undef, undef, undef, undef,
+                                       undef, undef, undef, 5, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'engine=s' => \$engine, 'host=s' => \$host,
+           'port=s' => \$port, 'database=s' => \$database,
+           'user=s' => \$user, 'client=s' => \$client,
+           'defaults-file=s' => \$defaults_file,
+           'timeout=s' => \$timeout, 'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "db-probe $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined $engine;
+$engine =~ /\A(?:postgresql|mysql|mariadb)\z/
+    or fail(2, 'engine must be postgresql, mysql or mariadb');
+$timeout =~ /\A(?:[1-9]|[12][0-9]|30)\z/
+    or fail(2, 'timeout must be 1..30 seconds');
+if (defined $port) {
+    $port =~ /\A[1-9][0-9]{0,4}\z/ && $port <= 65535
+        or fail(2, 'port must be 1..65535');
+    defined $host or fail(2, '--port requires an explicit --host');
+}
+# Every external value becomes one argv element, never a fragment of SQL or
+# client options. Prevent option injection, multiline/control output and URI
+# forms that could smuggle credentials into the process listing.
+for my $field (['host', $host], ['database', $database], ['user', $user]) {
+    my ($label, $value) = @$field;
+    next unless defined $value;
+    length($value) && length($value) <= 255 &&
+        $value !~ /\A-/ && $value !~ /[\x00-\x20\x7f]/ &&
+        $value !~ /[\x80-\x9f]/
+        or fail(2, "invalid --$label (no whitespace, controls or leading dash)");
+}
+# Reject libpq connection strings/URIs in -d. Such strings can override
+# PGSSLMODE, TLS verification and the declared target despite our argv safety.
+if (defined $database) {
+    $database =~ /\A[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}\z/
+        or fail(2, '--database must be a simple database identifier, not a URI/conninfo');
+}
+if (defined $host) {
+    $host =~ /\A[A-Za-z0-9_.:][A-Za-z0-9_.:-]{0,254}\z/
+        or fail(2, 'host must be a hostname or IP address, not a URI/path');
+}
+if (defined $client) {
+    $client =~ m{\A/} && -f $client && -x $client
+        or fail(3, '--client must name an executable absolute file path');
+}
+if (defined $defaults_file) {
+    $engine ne 'postgresql'
+        or fail(2, '--defaults-file applies only to MySQL/MariaDB');
+    $defaults_file =~ m{\A/} && -f $defaults_file && !-l $defaults_file
+        or fail(3, '--defaults-file must be an absolute regular file (not a symlink)');
+    my @st = stat $defaults_file;
+    @st && ($st[2] & 0077) == 0
+        or fail(3, '--defaults-file must not be readable or writable by group/others (mode 0600)');
+    -r $defaults_file or fail(3, '--defaults-file is not readable');
+    # A MySQL option file can also contain executable client options such as
+    # init-command. Accept only credential/TLS material to keep this probe
+    # read-only even when a supplied configuration is accidentally broad.
+    $st[7] <= 65536 or fail(3, '--defaults-file exceeds 64 KiB');
+    open my $cf, '<', $defaults_file or fail(3, 'cannot read --defaults-file');
+    my $line_number = 0;
+    my $section = '';
+    my %allowed = map { $_ => 1 }
+        qw(user password ssl-ca ssl-capath ssl-cert ssl-key ssl-cipher
+           ssl-crl ssl-crlpath);
+    while (my $line = <$cf>) {
+        ++$line_number;
+        $line =~ s/\r?\n\z//;
+        next if $line =~ /\A\s*(?:[;#]|\z)/;
+        if ($line =~ /\A\s*\[([^]\r\n]+)\]\s*\z/) {
+            $section = lc($1);
+            next;
+        }
+        my ($option) = $line =~ /\A\s*([A-Za-z][A-Za-z0-9_-]*)\s*=/;
+        defined $option && $section eq 'client' && $allowed{lc($option)} &&
+            $line !~ /[\x00-\x08\x0b-\x1f\x7f]/
+            or fail(3, "unsafe option or section in --defaults-file at line $line_number");
+    }
+    close $cf or fail(3, 'cannot finish reading --defaults-file');
+}
+
+my %executables = (postgresql => 'psql', mysql => 'mysql', mariadb => 'mariadb');
+if (!defined $client) {
+    # Fixed trusted locations only; --client supplies nonstandard Homebrew,
+    # Oracle-style or user-managed installation paths explicitly.
+    for my $dir (qw(/usr/bin /usr/local/bin /opt/homebrew/bin /opt/local/bin)) {
+        my $candidate = "$dir/$executables{$engine}";
+        if (-f $candidate && -x $candidate) { $client = $candidate; last; }
+    }
+}
+defined $client or fail(3, "native $executables{$engine} client not found (use --client /absolute/path)");
+
+my (@args, $query);
+if ($engine eq 'postgresql') {
+    $query = q{SELECT current_database(), current_user, current_setting('server_version')};
+    @args = ('-X', '-w', '-A', '-t', '-F', "\t", '-P', 'pager=off',
+             '-v', 'ON_ERROR_STOP=1');
+    push @args, ('-h', $host) if defined $host;
+    push @args, ('-p', $port) if defined $port;
+    push @args, ('-U', $user) if defined $user;
+    push @args, ('-d', $database) if defined $database;
+    push @args, ('-c', $query);
+} else {
+    # MySQL --defaults-file/--no-defaults must precede every other option.
+    # With --no-defaults, normal plaintext option files are ignored; MySQL
+    # clients may still read their separate encrypted .mylogin.cnf.
+    @args = defined $defaults_file ? ("--defaults-file=$defaults_file")
+                                 : ('--no-defaults');
+    $query = q{SELECT COALESCE(DATABASE(), '<none>'), CURRENT_USER(), VERSION()};
+    push @args, ('--batch', '--raw', '--skip-column-names', '--silent',
+                 '--no-auto-rehash', "--connect-timeout=$timeout");
+    if (defined $host) {
+        push @args, ('--protocol=TCP', "--host=$host");
+        # Encrypted transport without VERIFIED hostname is not sufficient.
+        # Client versions lacking these capabilities fail closed.
+        if ($engine eq 'mysql') { push @args, '--ssl-mode=VERIFY_IDENTITY'; }
+        else { push @args, ('--ssl', '--ssl-verify-server-cert'); }
+    } else {
+        # Force a Unix-domain socket. Ignore any remote host or protocol
+        # configured in .mylogin.cnf; no silent fallback to unverified TCP.
+        push @args, ('--protocol=SOCKET', '--host=localhost');
+    }
+    push @args, "--port=$port" if defined $port;
+    push @args, "--user=$user" if defined $user;
+    push @args, "--database=$database" if defined $database;
+    push @args, ('--execute', $query);
+}
+
+my ($status, $stdout);
+# Limit the complete child runtime as well as its output. Discard stderr
+# rather than echo native-client diagnostics, which may contain server or
+# credential/configuration details. A named password is never accepted.
+{
+    local %ENV = %ENV;
+    delete $ENV{MYSQL_PWD};  # Avoid obsolete plaintext password environment API.
+    if ($engine eq 'postgresql') {
+        $ENV{PGSSLMODE} = 'verify-full'; # Applies to TCP; Unix sockets need no TLS.
+        $ENV{PGCONNECT_TIMEOUT} = "$timeout";
+        delete @ENV{qw(PGHOSTADDR PGHOST PGPORT PGDATABASE PGUSER PGSERVICE
+                       PGSERVICEFILE PGSYSCONFDIR PGOPTIONS)};
+        # Avoid libpq service files, DSN environment overrides and hidden
+        # remote targets. Password and CA env settings remain supported.
+    }
+    ($status, $stdout) = run_client($client, \@args, $timeout + 5);
+}
+$status == 0 or fail($status == 1 ? 1 : 3,
+    $status == 1 ? 'database connection or read-only query failed; check credentials, TLS trust and permissions'
+                 : 'native client could not complete the probe; check client, timeout and output format');
+
+# A successful native exit is not proof of a valid SQL result. Reject banners,
+# injected output, extra records and controls instead of guessing values.
+$stdout =~ s/\r?\n\z//;
+my @rows = split /\n/, $stdout, -1;
+@rows == 1 or fail(3, 'unexpected number of SQL output rows');
+my @fields = split /\t/, $rows[0], -1;
+@fields == 3 or fail(3, 'unexpected SQL output column count');
+for my $field (@fields) {
+    length($field) && length($field) <= 512 &&
+        $field !~ /[\x00-\x1f\x7f]/
+        or fail(3, 'invalid SQL output field (empty, oversized or containing controls)');
+}
+if ($null) {
+    print join("\0", $engine, @fields), "\0";
+} else {
+    print "ENGINE\tDATABASE\tDB_USER\tVERSION\n";
+    print join("\t", $engine, @fields), "\n";
+}
+exit 0;
+
+sub run_client {
+    my ($binary, $argv, $seconds) = @_;
+    my ($in, $out, $err) = (undef, undef, gensym());
+    my ($pid, $output, $stderr, $exit_status) = (undef, '', '', undef);
+    my $ok = eval {
+        local $SIG{ALRM} = sub { die "timeout\n" };
+        alarm($seconds);
+        $pid = open3($in, $out, $err, $binary, @$argv);
+        close $in;               # Never offer a password prompt stdin.
+        my $select = IO::Select->new($out, $err);
+        my $stdout_fd = fileno($out);
+        while ($select->count) {
+            for my $fd ($select->can_read(1)) {
+                my $length = sysread($fd, my $buffer, 4096);
+                defined $length or die "backend read error\n";
+                if (!$length) { $select->remove($fd); close($fd); next; }
+                if (fileno($fd) == $stdout_fd) { $output .= $buffer; }
+                else { $stderr .= $buffer; }
+                die "backend output limit\n" if length($output) > 16384 || length($stderr) > 16384;
+            }
+        }
+        waitpid($pid, 0);
+        $exit_status = $?;
+        alarm(0);
+        1;
+    };
+    unless ($ok) {
+        alarm(0);
+        if (defined $pid && $pid > 0) {
+            kill 'KILL', $pid;
+            waitpid($pid, 0);
+        }
+        return (3, '');
+    }
+    return (($exit_status == 0) ? 0 : 1, $output);
+}
+sub fail { my ($code, $why) = @_; warn "db-probe: $why\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: db-probe --engine postgresql|mysql|mariadb [--host HOST] [--port 1..65535]
+       [--database NAME] [--user NAME] [--timeout 1..30]
+       [--client ABSOLUTE_PATH] [--defaults-file ABSOLUTE_PATH] [--null]
+       db-probe --help | --version
+Read-only database version/identity probe using native command-line clients.
+--defaults-file  Optional mode-0600 MySQL/MariaDB client configuration file.
+                 Without it, --no-defaults is used (socket or MySQL login-path).
+--null           Print ENGINE, DATABASE, DB_USER, VERSION as NUL fields.
+No passwords, SQL or TLS-downgrade options are accepted in argv.
+Exit: 0 verified one-row response, 1 database query failure, 2 usage,
+      3 missing prerequisite, timeout or malformed client output.
+HELP
+    exit $code;
+}

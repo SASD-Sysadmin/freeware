@@ -8,6 +8,7 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 
 | Command | Location | Purpose | Documentation |
 | --- | --- | --- | --- |
+| `db-probe` | [`bin/db-probe`](bin/db-probe) | Verify SQL connectivity, database identity and server version (M5.1). | [Guide](docs/commands/db-probe.md) · [Deutsch](docs/commands/db-probe.de.md) · [Manpage](man/man1/db-probe.1) |
 | `session-report` | [`bin/session-report`](bin/session-report) | Inventory interactive login sessions (Chapter 4). | [Guide](docs/commands/session-report.md) · [Deutsch](docs/commands/session-report.de.md) · [Manpage](man/man1/session-report.1) |
 | `process-report` | [`bin/process-report`](bin/process-report) | Inventory processes by user and state (Chapter 4). | [Guide](docs/commands/process-report.md) · [Deutsch](docs/commands/process-report.de.md) · [Manpage](man/man1/process-report.1) |
 | `login-audit` | [`bin/login-audit`](bin/login-audit) | Review Linux login and failed-login history (Chapter 4); ISO-format fixture input on other platforms. | [Guide](docs/commands/login-audit.md) · [Deutsch](docs/commands/login-audit.de.md) · [Manpage](man/man1/login-audit.1) |
