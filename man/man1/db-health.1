@@ -1,0 +1,61 @@
+.TH DB-HEALTH 1 "October 2026" "SASD Freeware 0.1.0" "User Commands"
+.SH NAME
+db-health \- read-only connection and activity snapshot for SQL servers
+.SH SYNOPSIS
+.B db-health
+.B --engine
+.IR postgresql|mysql|mariadb
+.RI [ --host " HOST" ]
+.RI [ --port " PORT" ]
+.RI [ --database " NAME" ]
+.RI [ --user " NAME" ]
+.RI [ --timeout " 1..30" ]
+.RI [ --client " ABSOLUTE_PATH" ]
+.RI [ --defaults-file " ABSOLUTE_PATH" ]
+.RI [ --null ]
+.br
+.B db-health
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Uses a native client and a fixed, read-only SQL statement. Prints current
+connections, active sessions/threads and server uptime. No SQL input or
+passwords are accepted. This is a point-in-time metric snapshot, not a
+health verdict. It must not be treated as a full lock or query audit.
+.SH OUTPUT
+Default fields are tab-separated ENGINE, SCOPE, CONNECTIONS, ACTIVE,
+UPTIME_SECONDS. With
+.B --null
+exactly five NUL-delimited fields are emitted without a header. PostgreSQL
+scope is cluster; MySQL and MariaDB scope is server.
+.PP
+MySQL/MariaDB report global Threads_connected, Threads_running and Uptime.
+PostgreSQL counts client backends, client backends in active state, and
+seconds since postmaster start. These are not identical activity semantics.
+.SH PRIVILEGES
+MySQL/MariaDB normally need only the ability to connect (USAGE).
+PostgreSQL needs the effective pg_read_all_stats built-in role or superuser
+for all sessions' state; insufficient rights produce exit code 1 and no
+misleading partial report. This role can expose other sessions' SQL text.
+.SH SECURITY
+Explicit remote connections enforce certificate and hostname verification.
+Without --host, MySQL/MariaDB use the local Unix socket. MySQL/MariaDB
+--defaults-file must be a regular, private (0600), non-symlink file, with
+approved [client] credential and TLS keys only. No included configuration,
+startup SQL or arbitrary native switches are permitted. PostgreSQL uses
+libpq credential mechanisms such as .pgpass or PGPASSFILE. Client output,
+execution time and terminal output are bounded, and raw stderr is suppressed.
+.SH EXIT STATUS
+0: complete snapshot (not a health verdict).
+.br
+1: database connection/query failure or insufficient PostgreSQL statistics rights.
+.br
+2: invalid arguments.
+.br
+3: missing prerequisite, unsafe config, timeout or malformed client response.
+.SH SEE ALSO
+.BR db-probe (1),
+.BR psql (1),
+.BR mysql (1),
+.BR mariadb (1)
+.SH DOCUMENTATION
+See docs/commands/db-health.md and docs/commands/db-health.de.md.
