@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 7 – SQL Administration (M5.3, session activity)
+
+- Add read-only `db-activity` snapshots of visible sessions and wait hints for
+  PostgreSQL, MySQL and MariaDB, with capped rows and nonzero truncated status.
+- PostgreSQL validates `pg_read_all_stats` and uses `pg_blocking_pids()` for real
+  blocker counts; MySQL/MariaDB label process-list lock signals as hints only.
+- Never retrieve SQL text or client addresses; add offline failure/security
+  regression tests, DE/EN guides, manpage and CI installation checks.
+
 ### Chapter 7 – SQL Administration (M5.2, server health)
 
 - Add read-only `db-health` for PostgreSQL, MySQL and MariaDB: bounded native-client

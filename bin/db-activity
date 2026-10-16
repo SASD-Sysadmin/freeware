@@ -1,0 +1,340 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M5.3: bounded read-only session/activity snapshot. No arbitrary SQL,
+# passwords, TLS downgrades, user-provided client switches or shell commands.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use IPC::Open3;
+use IO::Select;
+use Symbol qw(gensym);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $engine, $host, $port, $database, $user, $client,
+    $defaults_file, $timeout, $null, $limit, $min_seconds, $include_idle) =
+    (0, 0, undef, undef, undef, undef, undef, undef, undef, 5, 0, 25, 0, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'engine=s' => \$engine, 'host=s' => \$host,
+           'port=s' => \$port, 'database=s' => \$database,
+           'user=s' => \$user, 'client=s' => \$client,
+           'defaults-file=s' => \$defaults_file,
+           'timeout=s' => \$timeout, 'null' => \$null,
+           'limit=s' => \$limit, 'min-seconds=s' => \$min_seconds,
+           'include-idle' => \$include_idle) or usage(2);
+usage(0) if $help;
+if ($version) { print "db-activity $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined $engine;
+$engine =~ /\A(?:postgresql|mysql|mariadb)\z/
+    or fail(2, 'engine must be postgresql, mysql or mariadb');
+$timeout =~ /\A(?:[1-9]|[12][0-9]|30)\z/
+    or fail(2, 'timeout must be 1..30 seconds');
+$limit =~ /\A(?:[1-9]|[1-9][0-9]|100)\z/
+    or fail(2, 'limit must be 1..100');
+$min_seconds =~ /\A(?:0|[1-9][0-9]{0,4})\z/ && $min_seconds <= 86400
+    or fail(2, 'min-seconds must be 0..86400');
+if (defined $port) {
+    $port =~ /\A[1-9][0-9]{0,4}\z/ && $port <= 65535
+        or fail(2, 'port must be 1..65535');
+    defined $host or fail(2, '--port requires an explicit --host');
+}
+# Every external value becomes one argv element, never a fragment of SQL or
+# client options. Prevent option injection, multiline/control output and URI
+# forms that could smuggle credentials into the process listing.
+for my $field (['host', $host], ['database', $database], ['user', $user]) {
+    my ($label, $value) = @$field;
+    next unless defined $value;
+    length($value) && length($value) <= 255 &&
+        $value !~ /\A-/ && $value !~ /[\x00-\x20\x7f]/ &&
+        $value !~ /[\x80-\x9f]/
+        or fail(2, "invalid --$label (no whitespace, controls or leading dash)");
+}
+# Reject libpq connection strings/URIs in -d. Such strings can override
+# PGSSLMODE, TLS verification and the declared target despite our argv safety.
+if (defined $database) {
+    $database =~ /\A[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}\z/
+        or fail(2, '--database must be a simple database identifier, not a URI/conninfo');
+}
+if (defined $host) {
+    $host =~ /\A[A-Za-z0-9_.:][A-Za-z0-9_.:-]{0,254}\z/
+        or fail(2, 'host must be a hostname or IP address, not a URI/path');
+}
+if (defined $client) {
+    $client =~ m{\A/} && -f $client && -x $client
+        or fail(3, '--client must name an executable absolute file path');
+}
+if (defined $defaults_file) {
+    $engine ne 'postgresql'
+        or fail(2, '--defaults-file applies only to MySQL/MariaDB');
+    $defaults_file =~ m{\A/} && -f $defaults_file && !-l $defaults_file
+        or fail(3, '--defaults-file must be an absolute regular file (not a symlink)');
+    my @st = stat $defaults_file;
+    @st && ($st[2] & 0077) == 0
+        or fail(3, '--defaults-file must not be readable or writable by group/others (mode 0600)');
+    -r $defaults_file or fail(3, '--defaults-file is not readable');
+    # A MySQL option file can also contain executable client options such as
+    # init-command. Accept only credential/TLS material to keep this probe
+    # read-only even when a supplied configuration is accidentally broad.
+    $st[7] <= 65536 or fail(3, '--defaults-file exceeds 64 KiB');
+    open my $cf, '<', $defaults_file or fail(3, 'cannot read --defaults-file');
+    my $line_number = 0;
+    my $section = '';
+    my %allowed = map { $_ => 1 }
+        qw(user password ssl-ca ssl-capath ssl-cert ssl-key ssl-cipher
+           ssl-crl ssl-crlpath);
+    while (my $line = <$cf>) {
+        ++$line_number;
+        $line =~ s/\r?\n\z//;
+        next if $line =~ /\A\s*(?:[;#]|\z)/;
+        if ($line =~ /\A\s*\[([^]\r\n]+)\]\s*\z/) {
+            $section = lc($1);
+            $section eq 'client' or fail(3, "unsafe section in --defaults-file at line $line_number");
+            next;
+        }
+        my ($option) = $line =~ /\A\s*([A-Za-z][A-Za-z0-9_-]*)\s*=/;
+        defined $option && $section eq 'client' && $allowed{lc($option)} &&
+            $line !~ /[\x00-\x08\x0b-\x1f\x7f]/
+            or fail(3, "unsafe option or section in --defaults-file at line $line_number");
+    }
+    close $cf or fail(3, 'cannot finish reading --defaults-file');
+}
+
+my %executables = (postgresql => 'psql', mysql => 'mysql', mariadb => 'mariadb');
+if (!defined $client) {
+    # Fixed trusted locations only; --client supplies nonstandard Homebrew,
+    # Oracle-style or user-managed installation paths explicitly.
+    for my $dir (qw(/usr/bin /usr/local/bin /opt/homebrew/bin /opt/local/bin)) {
+        my $candidate = "$dir/$executables{$engine}";
+        if (-f $candidate && -x $candidate) { $client = $candidate; last; }
+    }
+}
+defined $client or fail(3, "native $executables{$engine} client not found (use --client /absolute/path)");
+
+# The only SQL interpolations are the two validated nonnegative integers.
+# We fetch one extra result solely to detect truncation, and never retrieve
+# query text, client addresses or user-specified SQL statements.
+my $sql_limit = $limit + 1;
+my (@args, $query);
+if ($engine eq 'postgresql') {
+    # Refuse partial, misleading cluster activity. A role with
+    # pg_read_all_stats may inspect other sessions without superuser access.
+    # The privilege sentinel also works when no matching sessions exist.
+    my $idle_condition = $include_idle ? '' : q{ AND a.state IS DISTINCT FROM 'idle'};
+    # One SQL statement: psql -c returns only the last result set for
+    # multi-statement strings. A UNION ALL sentinel must be first even when
+    # no matching sessions exist or the caller has insufficient rights.
+    $query = q{WITH allowed AS (SELECT pg_has_role(current_user, 'pg_read_all_stats', 'USAGE') AS ok), }
+        . q{sample AS (SELECT a.pid::text AS sid, COALESCE(a.usename, '<unknown>')::text AS uname, }
+        . q{COALESCE(a.datname, '<none>')::text AS dbname, COALESCE(a.state, '<unknown>')::text AS state, }
+        . q{GREATEST(0, FLOOR(EXTRACT(EPOCH FROM clock_timestamp() - }
+        . q{CASE WHEN a.state = 'active' THEN COALESCE(a.query_start, a.state_change, a.backend_start) }
+        . q{ELSE COALESCE(a.state_change, a.query_start, a.backend_start) END))::bigint)::text AS seconds, }
+        . q{COALESCE(a.wait_event_type, '<none>')::text AS wait_type, }
+        . q{COALESCE(a.wait_event, '<none>')::text AS wait_event, }
+        . q{cardinality(pg_blocking_pids(a.pid))::text AS blockers }
+        . q{FROM pg_catalog.pg_stat_activity a }
+        . q{WHERE (SELECT ok FROM allowed) AND a.backend_type = 'client backend' }
+        . q{AND a.pid <> pg_backend_pid()}
+        . $idle_condition
+        . q{ AND GREATEST(0, FLOOR(EXTRACT(EPOCH FROM clock_timestamp() - }
+        . q{CASE WHEN a.state = 'active' THEN COALESCE(a.query_start, a.state_change, a.backend_start) }
+        . q{ELSE COALESCE(a.state_change, a.query_start, a.backend_start) END))::bigint) >= }
+        . $min_seconds
+        . q{ ORDER BY COALESCE(a.wait_event_type = 'Lock', false) DESC, }
+        . q{COALESCE(a.query_start, a.state_change, a.backend_start) ASC, a.pid ASC LIMIT }
+        . $sql_limit
+        . q{) SELECT sid, uname, dbname, state, seconds, wait_type, wait_event, blockers FROM }
+        . q{(SELECT 0 AS sortkey, 'SASD_PRIV'::text AS sid, }
+        . q{CASE WHEN ok THEN 'yes' ELSE 'no' END AS uname, }
+        . q{'<none>'::text AS dbname, '<none>'::text AS state, '0'::text AS seconds, }
+        . q{'<none>'::text AS wait_type, '<none>'::text AS wait_event, '0'::text AS blockers }
+        . q{FROM allowed UNION ALL SELECT 1 AS sortkey, sid, uname, dbname, state, }
+        . q{seconds, wait_type, wait_event, blockers FROM sample) AS rows ORDER BY sortkey, sid};
+    @args = ('-X', '-w', '-A', '-t', '-F', "\t", '-P', 'pager=off',
+             '-v', 'ON_ERROR_STOP=1');
+    push @args, ('-h', $host) if defined $host;
+    push @args, ('-p', $port) if defined $port;
+    push @args, ('-U', $user) if defined $user;
+    push @args, ('-d', $database) if defined $database;
+    push @args, ('-c', $query);
+} else {
+    # MySQL 8.4 still offers INFORMATION_SCHEMA.PROCESSLIST but documents
+    # deprecation. We keep the initial backend portable to MariaDB 10.11
+    # and MySQL 8.x; Performance Schema will be a separate future adapter.
+    my $idle_condition = $include_idle ? '' : q{ AND COMMAND <> 'Sleep'};
+    $query = q{SELECT ID, COALESCE(USER, '<unknown>'), COALESCE(DB, '<none>'), }
+        . q{COALESCE(COMMAND, '<unknown>'), GREATEST(TIME, 0), }
+        . q{COALESCE(STATE, '<none>') FROM information_schema.PROCESSLIST }
+        . q{WHERE ID <> CONNECTION_ID()}
+        . $idle_condition
+        . q{ AND TIME >= } . $min_seconds
+        . q{ ORDER BY (LOWER(COALESCE(STATE, '')) LIKE '%lock%') DESC, TIME DESC, ID ASC LIMIT }
+        . $sql_limit;
+    # Option files must be the first client argument; reject unsafe entries
+    # during validation above. The local socket target is explicit.
+    @args = defined $defaults_file ? ("--defaults-file=$defaults_file")
+                                  : ('--no-defaults');
+    push @args, ('--batch', '--raw', '--skip-column-names', '--silent',
+                 '--no-auto-rehash', "--connect-timeout=$timeout");
+    if (defined $host) {
+        push @args, ('--protocol=TCP', "--host=$host");
+        if ($engine eq 'mysql') { push @args, '--ssl-mode=VERIFY_IDENTITY'; }
+        else { push @args, ('--ssl', '--ssl-verify-server-cert'); }
+    } else {
+        push @args, ('--protocol=SOCKET', '--host=localhost');
+    }
+    push @args, "--port=$port" if defined $port;
+    push @args, "--user=$user" if defined $user;
+    push @args, "--database=$database" if defined $database;
+    push @args, ('--execute', $query);
+}
+
+# Native clients are invoked by argv, not a shell. Suppress raw native
+# stderr because it may include credential or connection details.
+my ($status, $stdout);
+{
+    local %ENV = %ENV;
+    delete $ENV{MYSQL_PWD};
+    if ($engine eq 'postgresql') {
+        $ENV{PGSSLMODE} = 'verify-full';
+        $ENV{PGCONNECT_TIMEOUT} = "$timeout";
+        delete @ENV{qw(PGHOSTADDR PGHOST PGPORT PGDATABASE PGUSER PGSERVICE
+                       PGSERVICEFILE PGSYSCONFDIR PGOPTIONS)};
+    }
+    ($status, $stdout) = run_client($client, \@args, $timeout + 5);
+}
+$status == 0 or fail($status == 1 ? 1 : 3,
+    $status == 1 ? 'database query failed; check credentials, privileges, TLS and client compatibility'
+                 : 'native client failed, timed out or exceeded output limits');
+
+# Never print unvalidated partial results. Malformed/duplicate sentinel rows
+# and controls in server-provided labels must not reach a human terminal.
+$stdout =~ s/\r?\n\z// if length $stdout;
+my @lines = length($stdout) ? split(/\n/, $stdout, -1) : ();
+if ($engine eq 'postgresql') {
+    @lines >= 1 or fail(3, 'missing PostgreSQL privilege sentinel');
+    my @header = split(/\t/, shift @lines, -1);
+    @header == 8 && $header[0] eq 'SASD_PRIV' && $header[1] =~ /\A(?:yes|no)\z/ &&
+    $header[2] eq '<none>' && $header[3] eq '<none>' && $header[4] eq '0' &&
+    $header[5] eq '<none>' && $header[6] eq '<none>' && $header[7] eq '0'
+        or fail(3, 'invalid PostgreSQL privilege sentinel');
+    $header[1] eq 'yes' or fail(1,
+        'pg_read_all_stats is required for complete PostgreSQL activity; no partial rows reported');
+}
+@lines <= $sql_limit or fail(3, 'native client returned too many rows');
+my $truncated = @lines > $limit;
+splice @lines, $limit if $truncated;
+my @records;
+for my $line (@lines) {
+    my @native = split /\t/, $line, -1;
+    my $expected = $engine eq 'postgresql' ? 8 : 6;
+    @native == $expected or fail(3, 'malformed activity row or column count');
+    my ($id, $username, $dbname, $command, $seconds, $wait, $lock, $blockers);
+    if ($engine eq 'postgresql') {
+        my ($pid, $u, $db, $state, $elapsed, $wait_type, $wait_event, $count) = @native;
+        ($id, $username, $dbname, $command, $seconds, $blockers) =
+            ($pid, $u, $db, $state, $elapsed, $count);
+        $wait = $wait_type eq '<none>' ? '<none>' :
+                ($wait_event eq '<none>' ? $wait_type : "$wait_type:$wait_event");
+        $count =~ /\A[0-9]{1,9}\z/ or fail(3, 'invalid blocker count');
+        $lock = $count > 0 ? 'blocked' :
+                ($wait_type eq 'Lock' ? 'waiting' : 'none');
+        for my $value ($wait_type, $wait_event) {
+            valid_label($value, 'PostgreSQL wait event');
+        }
+    } else {
+        ($id, $username, $dbname, $command, $seconds, $wait) = @native;
+        $blockers = '?'; # PROCESSLIST cannot establish who blocks whom.
+        # A state string is only a hint, NEVER proof of an actual blocker.
+        $lock = $wait =~ /\block/i ? 'possible' : 'unknown';
+    }
+    $id =~ /\A[0-9]{1,18}\z/ && $id > 0 or fail(3, 'invalid session ID');
+    $seconds =~ /\A[0-9]{1,18}\z/ or fail(3, 'invalid elapsed seconds');
+    if ($engine eq 'postgresql') {
+        $blockers =~ /\A[0-9]{1,9}\z/ or fail(3, 'invalid blocker count');
+    }
+    for my $field ($username, $dbname, $command, $wait) {
+        valid_label($field, 'activity label');
+    }
+    push @records, [$engine, $engine eq 'postgresql' ? 'cluster' : 'visible',
+                    $id, $username, $dbname, $command, $seconds,
+                    $wait, $lock, $blockers];
+}
+if ($null) {
+    for my $record (@records) { print join("\0", @$record), "\0"; }
+} else {
+    print "ENGINE\tSCOPE\tSESSION_ID\tDB_USER\tDATABASE\tSTATE\tSECONDS\tWAIT\tLOCK_STATUS\tBLOCKERS\n";
+    for my $record (@records) { print join("\t", @$record), "\n"; }
+    print "# No visible sessions matched (own probe excluded).\n" unless @records;
+    print "# INCOMPLETE: limit $limit reached; more sessions exist. Increase --limit/--min-seconds.\n"
+        if $truncated;
+}
+# A truncated snapshot is explicitly nonzero, including machine-readable mode.
+# Callers must not mistake an incomplete sample for a complete survey.
+exit($truncated ? 1 : 0);
+
+sub valid_label {
+    my ($value, $label) = @_;
+    defined($value) && length($value) >= 1 && length($value) <= 256 &&
+        $value !~ /[\x00-\x1f\x7f\x80-\x9f]/
+        or fail(3, "invalid $label in native output");
+}
+
+sub run_client {
+    my ($binary, $argv, $seconds) = @_;
+    my ($in, $out, $err) = (undef, undef, gensym());
+    my ($pid, $output, $stderr, $exit_status) = (undef, '', '', undef);
+    my $ok = eval {
+        local $SIG{ALRM} = sub { die "timeout\n" };
+        alarm($seconds);
+        $pid = open3($in, $out, $err, $binary, @$argv);
+        close $in;               # Never offer a password prompt stdin.
+        my $select = IO::Select->new($out, $err);
+        my $stdout_fd = fileno($out);
+        while ($select->count) {
+            for my $fd ($select->can_read(1)) {
+                my $length = sysread($fd, my $buffer, 4096);
+                defined $length or die "backend read error\n";
+                if (!$length) { $select->remove($fd); close($fd); next; }
+                if (fileno($fd) == $stdout_fd) { $output .= $buffer; }
+                else { $stderr .= $buffer; }
+                die "backend output limit\n" if length($output) > 16384 || length($stderr) > 16384;
+            }
+        }
+        waitpid($pid, 0);
+        $exit_status = $?;
+        alarm(0);
+        1;
+    };
+    unless ($ok) {
+        alarm(0);
+        if (defined $pid && $pid > 0) {
+            kill 'KILL', $pid;
+            waitpid($pid, 0);
+        }
+        return (3, '');
+    }
+    return (($exit_status == 0) ? 0 : 1, $output);
+}
+sub fail { my ($code, $why) = @_; warn "db-activity: $why\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: db-activity --engine postgresql|mysql|mariadb [--host HOST] [--port 1..65535]
+       [--database NAME] [--user NAME] [--timeout 1..30]
+       [--client ABSOLUTE_PATH] [--defaults-file ABSOLUTE_PATH]
+       [--min-seconds 0..86400] [--limit 1..100] [--include-idle] [--null]
+       db-activity --help | --version
+Read-only active-session and wait-status snapshot. No SQL statement text is shown.
+PostgreSQL: pg_read_all_stats required; LOCK_STATUS blocked is authoritative
+at snapshot time; MySQL/MariaDB: possible is only a state-text heuristic.
+MySQL/MariaDB default scope is visible sessions (PROCESS for other users).
+--include-idle  Include idle/Sleep sessions, which can still hold locks.
+--null          Output ten NUL-delimited fields per record, no header.
+Exit: 0 complete snapshot (possibly empty); 1 query error/insufficient rights
+      or truncated snapshot;
+      2 invalid invocation; 3 missing native client, timeout, malformed output.
+HELP
+    exit $code;
+}

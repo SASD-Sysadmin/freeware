@@ -1,0 +1,87 @@
+.TH DB-ACTIVITY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+ db-activity \- bounded, read-only SQL session activity and lock hints
+.SH SYNOPSIS
+.B db-activity --engine postgresql|mysql|mariadb
+.RI [ --host " HOST" ]
+.RI [ --port " PORT" ]
+.RI [ --database " NAME" ]
+.RI [ --user " NAME" ]
+.RI [ --client " ABSOLUTE_PATH" ]
+.RI [ --defaults-file " ABSOLUTE_PATH" ]
+.RI [ --timeout " 1..30" ]
+.RI [ --min-seconds " 0..86400" ]
+.RI [ --limit " 1..100" ]
+.RI [ --include-idle ]
+.RI [ --null ]
+.br
+.B db-activity --help | --version
+.SH DESCRIPTION
+Queries native PostgreSQL, MySQL or MariaDB clients using fixed, read-only SQL.
+No statement text, client IP addresses or password command-line arguments are
+retrieved or printed. The own diagnostic connection is excluded.
+No sessions are killed; no locks are released.
+.SH OPTIONS
+.TP
+.B --engine
+One of postgresql, mysql, mariadb.
+.TP
+.B --host, --port, --database, --user
+Connection target and database identity options; port requires host.
+Explicit TCP requires verified TLS; absent host forces MySQL/MariaDB socket.
+.TP
+.B --client
+Absolute path to a native command-line client executable.
+.TP
+.B --defaults-file
+Absolute regular private mode-0600 MySQL/MariaDB client options file.
+Only credential and TLS file options in [client] are allowed.
+.TP
+.B --timeout
+Native client connection timeout, 1 to 30 seconds (default 5), plus bounded process runtime.
+.TP
+.B --min-seconds
+Minimum reported activity/state age, 0 to 86400 (default 0).
+.TP
+.B --limit
+Maximum output session count, 1 to 100 (default 25).
+A query requests at most limit+1 for truncation detection; truncation returns 1.
+.TP
+.B --include-idle
+Include MySQL/MariaDB Sleep and PostgreSQL idle sessions.
+.TP
+.B --null
+Ten NUL-delimited fields per record, no header. Check the exit code for truncation.
+.SH OUTPUT
+Tab-separated ENGINE, SCOPE, SESSION_ID, DB_USER, DATABASE, STATE, SECONDS,
+WAIT, LOCK_STATUS, BLOCKERS. PostgreSQL requires pg_read_all_stats for full
+cluster activity. Its pg_blocking_pids count gives a momentary blocker count;
+state waiting may have no reported blockers. MySQL/MariaDB PROCESSLIST state
+provides possible lock hints only and BLOCKERS is ?. Without PROCESS privilege
+MySQL/MariaDB show only sessions visible to the current account.
+SECONDS semantics differ between backends; consult the detailed guide.
+.SH EXIT STATUS
+.TP
+.B 0
+Successful complete snapshot, including empty result.
+.TP
+.B 1
+Database/permission failure or incomplete result (server had more than limit rows).
+.TP
+.B 2
+Invalid invocation.
+.TP
+.B 3
+Missing prerequisite, timeout, malformed or oversized client output.
+.SH NOTES
+Raw SQL statement text is deliberately excluded. MySQL's INFORMATION_SCHEMA
+PROCESSLIST is deprecated upstream. These reports are snapshots, not a
+complete blocker graph, deadlock detector or continuous monitor.
+.SH SEE ALSO
+.BR db-probe (1),
+.BR db-health (1),
+.BR psql (1),
+.BR mysql (1),
+.BR mariadb (1)
+.SH DOCUMENTATION
+See docs/commands/db-activity.md and db-activity.de.md.
