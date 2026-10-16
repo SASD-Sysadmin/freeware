@@ -1,0 +1,300 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M5.4: bounded, read-only MySQL/MariaDB table-storage inventory. No arbitrary SQL,
+# passwords, TLS downgrades, user-provided client switches or shell commands.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use IPC::Open3;
+use IO::Select;
+use Symbol qw(gensym);
+use Math::BigInt;
+
+my $VERSION = '0.1.0';
+my ($help, $version, $engine, $host, $port, $database, $user, $client,
+    $defaults_file, $timeout, $null, $limit, $sort_by) =
+    (0, 0, undef, undef, undef, undef, undef, undef, undef, 5, 0, 20, 'total');
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'engine=s' => \$engine, 'host=s' => \$host,
+           'port=s' => \$port, 'database=s' => \$database,
+           'user=s' => \$user, 'client=s' => \$client,
+           'defaults-file=s' => \$defaults_file,
+           'timeout=s' => \$timeout, 'null' => \$null,
+           'limit=s' => \$limit, 'sort-by=s' => \$sort_by) or usage(2);
+usage(0) if $help;
+if ($version) { print "db-storage $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined $engine || !defined $database;
+$engine =~ /\A(?:mysql|mariadb)\z/
+    or fail(2, 'engine must be mysql or mariadb (PostgreSQL and Oracle not yet implemented)');
+$timeout =~ /\A(?:[1-9]|[12][0-9]|30)\z/
+    or fail(2, 'timeout must be 1..30 seconds');
+$limit =~ /\A(?:[1-9]|[1-9][0-9]|100)\z/
+    or fail(2, 'limit must be 1..100');
+$sort_by =~ /\A(?:total|data|index|free)\z/
+    or fail(2, '--sort-by must be total, data, index or free');
+if (defined $port) {
+    $port =~ /\A[1-9][0-9]{0,4}\z/ && $port <= 65535
+        or fail(2, 'port must be 1..65535');
+    defined $host or fail(2, '--port requires an explicit --host');
+}
+# Every external value becomes one argv element, never a fragment of SQL or
+# client options. Prevent option injection, multiline/control output and URI
+# forms that could smuggle credentials into the process listing.
+for my $field (['host', $host], ['database', $database], ['user', $user]) {
+    my ($label, $value) = @$field;
+    next unless defined $value;
+    length($value) && length($value) <= 255 &&
+        $value !~ /\A-/ && $value !~ /[\x00-\x20\x7f]/ &&
+        $value !~ /[\x80-\x9f]/
+        or fail(2, "invalid --$label (no whitespace, controls or leading dash)");
+}
+# Database names are deliberately restricted to simple identifiers.
+# The name stays in a native-client argument, never in SQL.
+if (defined $database) {
+    $database =~ /\A[A-Za-z0-9_][A-Za-z0-9_.-]{0,254}\z/
+        or fail(2, '--database must be a simple database identifier, not a URI/conninfo');
+}
+if (defined $host) {
+    $host =~ /\A[A-Za-z0-9_.:][A-Za-z0-9_.:-]{0,254}\z/
+        or fail(2, 'host must be a hostname or IP address, not a URI/path');
+}
+if (defined $client) {
+    $client =~ m{\A/} && -f $client && -x $client
+        or fail(3, '--client must name an executable absolute file path');
+}
+if (defined $defaults_file) {
+    $defaults_file =~ m{\A/} && -f $defaults_file && !-l $defaults_file
+        or fail(3, '--defaults-file must be an absolute regular file (not a symlink)');
+    my @st = stat $defaults_file;
+    @st && ($st[2] & 0077) == 0
+        or fail(3, '--defaults-file must not be readable or writable by group/others (mode 0600)');
+    -r $defaults_file or fail(3, '--defaults-file is not readable');
+    # A MySQL option file can also contain executable client options such as
+    # init-command. Accept only credential/TLS material to keep this probe
+    # read-only even when a supplied configuration is accidentally broad.
+    $st[7] <= 65536 or fail(3, '--defaults-file exceeds 64 KiB');
+    open my $cf, '<', $defaults_file or fail(3, 'cannot read --defaults-file');
+    my $line_number = 0;
+    my $section = '';
+    my %allowed = map { $_ => 1 }
+        qw(user password ssl-ca ssl-capath ssl-cert ssl-key ssl-cipher
+           ssl-crl ssl-crlpath);
+    while (my $line = <$cf>) {
+        ++$line_number;
+        $line =~ s/\r?\n\z//;
+        next if $line =~ /\A\s*(?:[;#]|\z)/;
+        if ($line =~ /\A\s*\[([^]\r\n]+)\]\s*\z/) {
+            $section = lc($1);
+            $section eq 'client' or fail(3, "unsafe section in --defaults-file at line $line_number");
+            next;
+        }
+        my ($option) = $line =~ /\A\s*([A-Za-z][A-Za-z0-9_-]*)\s*=/;
+        defined $option && $section eq 'client' && $allowed{lc($option)} &&
+            $line !~ /[\x00-\x08\x0b-\x1f\x7f]/
+            or fail(3, "unsafe option or section in --defaults-file at line $line_number");
+    }
+    close $cf or fail(3, 'cannot finish reading --defaults-file');
+}
+
+my %executables = (mysql => 'mysql', mariadb => 'mariadb');
+if (!defined $client) {
+    # Fixed trusted locations only; --client supplies nonstandard Homebrew,
+    # User-managed installation paths can be supplied explicitly.
+    for my $dir (qw(/usr/bin /usr/local/bin /opt/homebrew/bin /opt/local/bin)) {
+        my $candidate = "$dir/$executables{$engine}";
+        if (-f $candidate && -x $candidate) { $client = $candidate; last; }
+    }
+}
+defined $client or fail(3, "native $executables{$engine} client not found (use --client /absolute/path)");
+
+# Metadata-only SQL. Only a validated enum and bounded integer are
+# interpolated; database name stays in the client --database argument.
+# The TOTAL row is computed over ALL VISIBLE base tables. SQL returns only
+# TOTAL + top N rows, so result size is independent of database size.
+my %order_column = (
+    total => 'total_bytes', data => 'data_bytes',
+    index => 'index_bytes', free => 'free_bytes',
+);
+my $sql_limit = $limit + 1;
+my $order = $order_column{$sort_by};
+my $query = q{SELECT kind, name, storage_engine, table_count, data_bytes, index_bytes, }
+    . q{(data_bytes + index_bytes) AS total_bytes, free_bytes, missing_metrics }
+    . q{FROM (}
+    . q{SELECT 0 AS sort_position, 'TOTAL' AS kind, DATABASE() AS name, }
+    . q{'<all>' AS storage_engine, COUNT(*) AS table_count, }
+    . q{COALESCE(SUM(DATA_LENGTH), 0) AS data_bytes, }
+    . q{COALESCE(SUM(INDEX_LENGTH), 0) AS index_bytes, }
+    . q{COALESCE(SUM(DATA_FREE), 0) AS free_bytes, }
+    . q{COUNT(CASE WHEN DATA_LENGTH IS NULL OR INDEX_LENGTH IS NULL }
+    . q{OR DATA_FREE IS NULL THEN 1 END) AS missing_metrics }
+    . q{FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() }
+    . q{AND TABLE_TYPE = 'BASE TABLE' }
+    . q{UNION ALL }
+    . q{SELECT 1 AS sort_position, 'TABLE' AS kind, TABLE_NAME AS name, }
+    . q{COALESCE(ENGINE, '<unknown>') AS storage_engine, 1 AS table_count, }
+    . q{COALESCE(DATA_LENGTH, 0) AS data_bytes, }
+    . q{COALESCE(INDEX_LENGTH, 0) AS index_bytes, }
+    . q{COALESCE(DATA_FREE, 0) AS free_bytes, }
+    . q{IF(DATA_LENGTH IS NULL OR INDEX_LENGTH IS NULL OR DATA_FREE IS NULL, 1, 0) AS missing_metrics }
+    . q{FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() }
+    . q{AND TABLE_TYPE = 'BASE TABLE'}
+    . q{) AS inventory ORDER BY sort_position ASC, }
+    . $order . q{ DESC, name ASC LIMIT } . $sql_limit;
+
+# Client option files have to be the first argument. Server target and
+# transport are always set explicitly after the optional credentials.
+my @args = defined $defaults_file ? ("--defaults-file=$defaults_file") : ('--no-defaults');
+push @args, ('--batch', '--raw', '--skip-column-names', '--silent',
+             '--no-auto-rehash', "--connect-timeout=$timeout");
+if (defined $host) {
+    push @args, ('--protocol=TCP', "--host=$host");
+    if ($engine eq 'mysql') { push @args, '--ssl-mode=VERIFY_IDENTITY'; }
+    else { push @args, ('--ssl', '--ssl-verify-server-cert'); }
+} else {
+    push @args, ('--protocol=SOCKET', '--host=localhost');
+}
+push @args, "--port=$port" if defined $port;
+push @args, "--user=$user" if defined $user;
+push @args, "--database=$database";
+push @args, ('--execute', $query);
+
+# Native clients are invoked by argv, not a shell. Suppress raw native
+# stderr because it may include credential or connection details.
+my ($status, $stdout);
+{
+    local %ENV = %ENV;
+    delete $ENV{MYSQL_PWD};
+    ($status, $stdout) = run_client($client, \@args, $timeout + 5);
+}
+$status == 0 or fail($status == 1 ? 1 : 3,
+    $status == 1 ? 'database metadata query failed; check database access, credentials and TLS'
+                 : 'native client failed, timed out or exceeded output limits');
+
+# Validate every row *before* printing anything. The TOTAL sentinel is
+# obligatory, even when no base tables are visible for this account.
+$stdout =~ s/\r?\n\z// if length $stdout;
+my @lines = length($stdout) ? split(/\n/, $stdout, -1) : ();
+@lines >= 1 && @lines <= $sql_limit
+    or fail(3, 'missing TOTAL row or too many native result rows');
+my @records;
+my ($table_count, $unknown_total);
+for my $i (0 .. $#lines) {
+    my @fields = split /\t/, $lines[$i], -1;
+    @fields == 9 or fail(3, 'malformed SQL metadata: expected nine columns');
+    my ($kind, $name, $storage_engine, $tables, $data, $index,
+        $total, $free, $unknown) = @fields;
+    $kind eq ($i == 0 ? 'TOTAL' : 'TABLE')
+        or fail(3, 'missing/misordered TOTAL row or unexpected kind');
+    valid_label($name, 'database/table name');
+    valid_label($storage_engine, 'storage engine');
+    $i != 0 || $name eq $database
+        or fail(3, 'unexpected selected database in TOTAL row');
+    $i == 0 || $tables eq '1'
+        or fail(3, 'per-table count must equal one');
+    for my $field ($tables, $data, $index, $total, $free, $unknown) {
+        defined($field) && $field =~ /\A(?:0|[1-9][0-9]{0,29})\z/
+            or fail(3, 'non-canonical, negative or invalid byte/count value');
+    }
+    # Use core Math::BigInt so size arithmetic remains exact on 32-bit Perl
+    # and for values larger than IEEE-754 exact integers.
+    my $calculated = Math::BigInt->new($data)->badd($index)->bstr();
+    $calculated eq $total or fail(3, 'inconsistent total-size value');
+    $table_count = $tables if $i == 0;
+    $unknown_total = $unknown if $i == 0;
+    if ($i > 0 && $unknown > 1) {
+        fail(3, 'invalid per-table unknown-metrics count');
+    }
+    push @records, [$engine, 'visible', $kind, $name, $storage_engine,
+                    $tables, $data, $index, $total, $free, $unknown];
+}
+# TOTAL unknown count is bounded by its table count, and may be larger than
+# the displayed unknown subset when --limit hides additional tables.
+Math::BigInt->new($unknown_total)->bcmp($table_count) <= 0
+    or fail(3, 'unknown-metrics count exceeds total table count');
+for my $record (@records[1 .. $#records]) {
+    $record->[10] == 0 || $unknown_total > 0
+        or fail(3, 'per-table unknown metric omitted from TOTAL');
+}
+# Reject a native client that returned more table rows than the TOTAL count.
+# A simple lexical length check avoids lossy float conversion for big values.
+my $listed = @records - 1;
+my $expected = Math::BigInt->new($table_count);
+$expected->bcmp($listed) >= 0 or fail(3, 'more table rows than TOTAL count');
+if ($null) {
+    for my $record (@records) { print join("\0", @$record), "\0"; }
+} else {
+    print "ENGINE\tSCOPE\tKIND\tNAME\tSTORAGE_ENGINE\tTABLES\tDATA_BYTES\tINDEX_BYTES\tTOTAL_BYTES\tFREE_BYTES\tUNKNOWN\n";
+    for my $record (@records) { print join("\t", @$record), "\n"; }
+    print "# Showing top $listed table(s) out of $table_count visible BASE TABLE(s); sorted by $sort_by.\n";
+    print "# INCOMPLETE METRICS: $unknown_total table(s) have NULL size fields.\n"
+        if $unknown_total > 0;
+}
+# Filtering to one selected database and visible metadata is deliberate.
+# Unknown metadata fields must not silently produce a successful report.
+exit($unknown_total > 0 ? 1 : 0);
+
+sub valid_label {
+    my ($value, $label) = @_;
+    defined($value) && length($value) >= 1 && length($value) <= 256 &&
+        $value !~ /[\x00-\x1f\x7f\x80-\x9f]/
+        or fail(3, "invalid $label in native output");
+}
+
+sub run_client {
+    my ($binary, $argv, $seconds) = @_;
+    my ($in, $out, $err) = (undef, undef, gensym());
+    my ($pid, $output, $stderr, $exit_status) = (undef, '', '', undef);
+    my $ok = eval {
+        local $SIG{ALRM} = sub { die "timeout\n" };
+        alarm($seconds);
+        $pid = open3($in, $out, $err, $binary, @$argv);
+        close $in;               # Never offer a password prompt stdin.
+        my $select = IO::Select->new($out, $err);
+        my $stdout_fd = fileno($out);
+        while ($select->count) {
+            for my $fd ($select->can_read(1)) {
+                my $length = sysread($fd, my $buffer, 4096);
+                defined $length or die "backend read error\n";
+                if (!$length) { $select->remove($fd); close($fd); next; }
+                if (fileno($fd) == $stdout_fd) { $output .= $buffer; }
+                else { $stderr .= $buffer; }
+                die "backend output limit\n" if length($output) > 65536 || length($stderr) > 65536;
+            }
+        }
+        waitpid($pid, 0);
+        $exit_status = $?;
+        alarm(0);
+        1;
+    };
+    unless ($ok) {
+        alarm(0);
+        if (defined $pid && $pid > 0) {
+            kill 'KILL', $pid;
+            waitpid($pid, 0);
+        }
+        return (3, '');
+    }
+    return (($exit_status == 0) ? 0 : 1, $output);
+}
+sub fail { my ($code, $why) = @_; warn "db-storage: $why\n"; exit $code; }
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: db-storage --engine mariadb|mysql --database NAME [--host HOST] [--port 1..65535]
+       [--user NAME] [--timeout 1..30] [--client ABSOLUTE_PATH]
+       [--defaults-file ABSOLUTE_PATH] [--limit 1..100]
+       [--sort-by total|data|index|free] [--null]
+       db-storage --help | --version
+Read-only, selected-database INFORMATION_SCHEMA.TABLES storage snapshot.
+Reports visible BASE TABLE metadata, not actual filesystem consumption.
+TOTAL aggregates all visible tables; TABLE lines show a bounded top N.
+NULL metadata fields count as unknown; exit 1 even if partial bytes are shown.
+--null emits eleven NUL-separated fields per record, without a header.
+PostgreSQL and Oracle are NOT implemented in M5.4.
+Exit: 0 complete reported metadata; 1 database error/unknown metrics;
+      2 invalid invocation; 3 missing client/timeout/malformed output.
+HELP
+    exit $code;
+}
