@@ -16,7 +16,7 @@ and positive/negative tests before it can be considered complete.
 | **4 – User Activity** | `session-report`, `process-report`; `login-audit` (Linux `last`/`lastb`) | macOS native login history, attribution and completeness review | In progress |
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, resolver | Gap review and platform completion | Substantial, incomplete |
 | **6 – Directory Services** | LDAPS/NIS diagnostics, TLS configuration audit | Scope/platform gap analysis | Partial |
-| **7 – SQL Administration** | `db-probe` for PostgreSQL, MySQL and MariaDB (M5.1) | Oracle/SQL Server, DB health, size reports, real integration acceptance | In progress |
+| **7 – SQL Administration** | `db-probe` (M5.1), `db-health` counters (M5.2) for PostgreSQL/MySQL/MariaDB | Oracle/SQL Server, blocking/slow-query diagnostics, size reports, live integration acceptance | In progress |
 | **8 – Electronic Mail** | No dedicated command | SMTP, queues and config diagnostics | Open |
 | **9 – Log Files** | `log-summary` | Journal, error and authentication-log audits | Major gaps |
 | **10 – Security and Network Monitoring** | SSH, SUID, integrity and TCP checks | Network, service and firewall inventory | Partial |

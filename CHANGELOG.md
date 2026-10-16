@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 7 – SQL Administration (M5.2, server health)
+
+- Add read-only `db-health` for PostgreSQL, MySQL and MariaDB: bounded native-client
+  snapshots of connections, active activity and server uptime.
+- Require effective `pg_read_all_stats` for accurate PostgreSQL cluster-wide
+  activity; MySQL/MariaDB use unprivileged global status counters.
+- Document cross-engine semantics, minimum rights and safe credentials in
+  bilingual guides/manpage; add 120 offline negative/positive checks and CI staging.
+
 ### Chapter 7 – SQL Administration (M5.1)
 
 - Add read-only `db-probe` for PostgreSQL, MySQL and MariaDB, using fixed

@@ -16,7 +16,7 @@ DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
 | **4 – User Activity** | `session-report`, `process-report`; `login-audit` (Linux `last`/`lastb`) | macOS-Anmeldehistorie, Zuordnung und Vollständigkeit prüfen | In Arbeit |
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, Resolver | Abschlussprüfung und sinnvolle Ergänzungen | Gut ausgebaut, offen |
 | **6 – Directory Services** | LDAPS/NIS-Diagnose, TLS-Konfigurationsaudit | Funktions-/Plattformgrenzen und offene Aufgaben prüfen | Teilweise |
-| **7 – SQL Administration** | `db-probe` für PostgreSQL, MySQL und MariaDB (M5.1) | Oracle/SQL Server, DB-Health, Größenberichte und echte Integrationsabnahme | In Arbeit |
+| **7 – SQL Administration** | `db-probe` (M5.1), `db-health`-Zähler (M5.2) für PostgreSQL/MySQL/MariaDB | Oracle/SQL Server, Sperr-/Langläuferdiagnose, Größenberichte und echte Integrationsabnahme | In Arbeit |
 | **8 – Electronic Mail** | Noch kein eigenes Kommando | SMTP-, Queue- und Konfigurationsdiagnostik | Offen |
 | **9 – Log Files** | `log-summary` | Journal, Fehleranalyse, Authentifizierungslogs | Große Lücken |
 | **10 – Security and Network Monitoring** | SSH-, SUID-, Integritäts- und TCP-Prüfungen | Netzwerk-, Dienst- und Firewall-Inventar | Teilweise |
