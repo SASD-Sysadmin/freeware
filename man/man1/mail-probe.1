@@ -1,0 +1,46 @@
+.TH MAIL-PROBE 1 "2026-10-16" "SASD Freeware" "User Commands"
+.SH NAME
+mail-probe \- read-only SMTP diagnostic with mandatory verified STARTTLS
+.SH SYNOPSIS
+.B mail-probe --host
+.I HOST
+.RI [ --port\ N ]
+.RI [ --timeout\ N ]
+.RI [ --ca-file\ ABSOLUTE_PEM ]
+.RI [ --null ]
+.br
+.B mail-probe --help | --version
+.SH DESCRIPTION
+Checks the SMTP 220 banner, fixed EHLO, STARTTLS advertisement, TLS upgrade
+with verified certificate chain and hostname, and post-TLS EHLO. This does
+not send or accept messages and does not check deliverability. Only explicit
+STARTTLS is supported (default port 587), not implicit TLS on port 465.
+.SH OPTIONS
+.TP
+.B --host
+Required ASCII DNS name, IDNA A-label or dotted IPv4 address; IPv6 is not
+currently supported.
+.TP
+.B --port
+Port 1 through 65535; default 587.
+.TP
+.B --timeout
+Per-phase timeout 1 through 30 seconds; default 5. Overall deadline applies.
+.TP
+.B --ca-file
+Optional absolute regular, readable, non-symlink PEM trust file.
+.TP
+.B --null
+Emit exactly four NUL-terminated fields, no header; see command guide.
+.SH DEPENDENCIES
+Perl and non-core IO::Socket::SSL 2.009 or newer, working TLS backend and CA
+trust. The command itself never executes an external openssl client.
+.SH SECURITY
+Only EHLO and STARTTLS are sent. No AUTH, MAIL FROM, RCPT TO, DATA,
+credentials, queue or server changes, certificate-verification bypass, or
+plaintext fallback. Protocol output is limited and validated before printing.
+.SH EXIT STATUS
+0 complete verified STARTTLS dialogue; 1 negative SMTP or TLS result;
+2 invalid options; 3 missing dependency, invalid response, or timeout.
+.SH SEE ALSO
+.BR openssl (1)

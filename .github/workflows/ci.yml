@@ -18,6 +18,19 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Prepare verified SMTP test dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libio-socket-ssl-perl openssl
+      - name: Report SMTP TLS fixture availability (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          if perl -MIO::Socket::SSL -e 'IO::Socket::SSL->VERSION(2.009)' >/dev/null 2>&1 && command -v openssl >/dev/null 2>&1; then
+            echo 'macOS: SMTP STARTTLS fixtures enabled'
+          else
+            echo '::warning::M6.1 macOS SMTP TLS fixture tests will SKIP because IO::Socket::SSL or openssl is unavailable; full native TLS acceptance is pending'
+          fi
       - name: Run Bash and Perl test suites
         run: make test
       - name: Install optional integration clients (Ubuntu)
@@ -58,6 +71,9 @@ jobs:
           test -f "$staging/usr/freeware/docs/commands/db-activity.de.md"
           test -f "$staging/usr/freeware/man/man1/db-activity.1"
           test -x "$staging/usr/freeware/bin/db-storage"
+          test -x "$staging/usr/freeware/bin/mail-probe"
+          test -f "$staging/usr/freeware/docs/commands/mail-probe.de.md"
+          test -f "$staging/usr/freeware/man/man1/mail-probe.1"
           test -f "$staging/usr/freeware/docs/commands/db-storage.de.md"
           test -f "$staging/usr/freeware/man/man1/db-storage.1"
           test -x "$staging/usr/freeware/bin/home-audit"
@@ -91,6 +107,9 @@ jobs:
           test ! -e "$staging/usr/freeware/bin/db-activity"
           test ! -e "$staging/usr/freeware/man/man1/db-activity.1"
           test ! -e "$staging/usr/freeware/bin/db-storage"
+          test ! -e "$staging/usr/freeware/bin/mail-probe"
+          test ! -e "$staging/usr/freeware/docs/commands/mail-probe.de.md"
+          test ! -e "$staging/usr/freeware/man/man1/mail-probe.1"
           test ! -e "$staging/usr/freeware/man/man1/db-storage.1"
           test ! -e "$staging/usr/freeware/bin/nss-lookup"
           test ! -e "$staging/usr/freeware/bin/host-resolve"
