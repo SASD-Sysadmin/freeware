@@ -1,0 +1,80 @@
+.TH DB-STORAGE 1 "October 2026" "SASD Freeware 0.1.0" "User Commands"
+.SH NAME
+db-storage \- read-only MariaDB/MySQL table storage snapshot
+.SH SYNOPSIS
+.B db-storage
+.B --engine
+mariadb|mysql
+.B --database
+NAME
+.RI [ options ]
+.br
+.B db-storage --help
+|
+.B --version
+.SH DESCRIPTION
+One bounded, fixed, read-only INFORMATION_SCHEMA.TABLES query reports a TOTAL
+for visible base tables in one selected database, plus top-N individual
+TABLE records. PostgreSQL and Oracle are not implemented in M5.4.
+The metadata is not a filesystem allocation or growth measurement.
+.SH OPTIONS
+.TP
+.B --engine mariadb|mysql
+Native backend. Required.
+.TP
+.B --database NAME
+Explicit database to inspect. Required. Only simple identifiers supported.
+.TP
+.B --host HOST, --port PORT, --user NAME
+Explicit connection options. TCP requires verifiable TLS.
+.TP
+.B --timeout 1..30
+Native connection timeout, in seconds. Default 5.
+.TP
+.B --client ABSOLUTE_PATH
+Explicit native client executable; otherwise search fixed install locations.
+.TP
+.B --defaults-file ABSOLUTE_PATH
+Private mode-0600 native client credentials/TLS file, with only allowed
+[client] options and no symlinks or file includes.
+.TP
+.B --limit 1..100
+Number of top tables to display, default 20. TOTAL always covers all visible
+base tables independently of this display limit.
+.TP
+.B --sort-by total|data|index|free
+Sort TABLE records by the named metadata measure, default total.
+.TP
+.B --null
+Emit eleven NUL-separated fields per record (no human headers).
+.SH OUTPUT
+ENGINE, SCOPE, KIND, NAME, STORAGE_ENGINE, TABLES, DATA_BYTES, INDEX_BYTES,
+TOTAL_BYTES, FREE_BYTES, UNKNOWN. KIND is TOTAL or TABLE; SCOPE is visible.
+UNKNOWN counts tables where a source size field was NULL.
+Sums substitute zero for NULL but return exit status 1 for incomplete metadata.
+InnoDB figures can be estimates, and DATA_FREE can be shared tablespace space.
+Do not interpret these as filesystem usage or as time-series growth.
+.SH PRIVILEGES
+The connected role needs rights exposing metadata for the selected database.
+A user with only USAGE may see no tables or be unable to select a database;
+for a disposable test schema, a privileged administrator can grant SELECT
+on only that schema. Neither root nor SQL admin access is used by this command.
+.SH SECURITY
+No arbitrary SQL, DDL, ANALYZE TABLE, shell command or password argv is
+accepted. Local sockets are explicit. On TCP, verified TLS identity is required.
+Client output is bounded and validated before any formatted results are printed.
+Raw client stderr is never forwarded.
+.SH EXIT STATUS
+0 valid snapshot (including zero visible tables); 1 database error or
+NULL metrics; 2 invalid options or unsupported engine; 3 missing native
+client, timeout, malformed output or exceeded output limit.
+.SH EXAMPLES
+.nf
+./bin/db-storage --engine mariadb --database sasd_storage_lab \\
+  --defaults-file "$HOME/.config/sasd/mysql-probe.cnf" \\
+  --sort-by total --limit 10
+.fi
+.SH SEE ALSO
+.BR db-probe (1),
+.BR db-health (1),
+.BR db-activity (1)

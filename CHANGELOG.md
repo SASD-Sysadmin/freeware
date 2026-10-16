@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 7 – SQL Administration (M5.4, table storage metadata)
+
+- Add read-only `db-storage` for MariaDB/MySQL selected-database and
+  visible base-table size estimates with full-summary and bounded top N.
+- Explicitly flag unknown NULL statistics, restrict native clients,
+  enforce verified TCP TLS, and never accept arbitrary SQL or passwords.
+- Add offline positive/negative regression tests, DE/EN guides,
+  manpage and Ubuntu/macOS staged-installation checks.
+
 ### Chapter 7 – SQL Administration (M5.3, session activity)
 
 - Add read-only `db-activity` snapshots of visible sessions and wait hints for
