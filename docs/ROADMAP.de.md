@@ -17,7 +17,7 @@ DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, Resolver | Abschlussprüfung und sinnvolle Ergänzungen | Gut ausgebaut, offen |
 | **6 – Directory Services** | LDAPS/NIS-Diagnose, TLS-Konfigurationsaudit | Funktions-/Plattformgrenzen und offene Aufgaben prüfen | Teilweise |
 | **7 – SQL Administration** | `db-probe` (M5.1), `db-health` (M5.2), `db-activity` (M5.3) für PostgreSQL/MySQL/MariaDB; MariaDB-/MySQL-`db-storage` (M5.4) | PostgreSQL-Storage, Oracle/SQL Server, MySQL-Sperrgraph, Wachstumsmessungen und echte übergreifende Integrationstests | In Arbeit |
-| **8 – Electronic Mail** | Noch kein eigenes Kommando | SMTP-, Queue- und Konfigurationsdiagnostik | Offen |
+| **8 – Electronic Mail** | `mail-probe` (M6.1; geprüftes STARTTLS) | Queue-/Konfigurationsdiagnostik, 465/IPv6 und reale Mailserver-Abnahme | In Arbeit |
 | **9 – Log Files** | `log-summary` | Journal, Fehleranalyse, Authentifizierungslogs | Große Lücken |
 | **10 – Security and Network Monitoring** | SSH-, SUID-, Integritäts- und TCP-Prüfungen | Netzwerk-, Dienst- und Firewall-Inventar | Teilweise |
 

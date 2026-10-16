@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 8 – Electronic Mail (M6.1, SMTP STARTTLS probe)
+
+- Add read-only `mail-probe` for bounded SMTP banner, EHLO and post-TLS
+  capability checks with mandatory certificate and server-name verification.
+- Explicitly fail for missing STARTTLS, rejected or malformed SMTP replies,
+  invalid certificates, unavailable TLS dependencies and timeouts.
+- Add offline loopback SMTP/TLS tests, bilingual guides, a manpage and staged
+  installation assertions. No AUTH, mail submission or public SMTP scanning.
+
 ### Chapter 7 – SQL Administration (M5.4, table storage metadata)
 
 - Add read-only `db-storage` for MariaDB/MySQL selected-database and

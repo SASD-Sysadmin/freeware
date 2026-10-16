@@ -1,0 +1,184 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M6.1: bounded, read-only SMTP capability probe. Never sends mail or AUTH.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use IO::Socket::INET;
+use IO::Select;
+use Time::HiRes qw(time);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $host, $ca_file, $null) = (0, 0, undef, undef, 0);
+my ($port, $timeout) = (587, 5);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'host=s' => \$host, 'port=s' => \$port,
+           'timeout=s' => \$timeout, 'ca-file=s' => \$ca_file,
+           'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "mail-probe $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($host);
+
+# ASCII DNS labels (including IDNA A-labels), or dotted IPv4. IPv6 and
+# arbitrary address/URL forms are intentionally postponed to a later step.
+# Never interpolate host into a shell command or unvalidated SMTP content.
+my $dns_label = qr/[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?/;
+length($host) <= 253 && $host =~ /\A$dns_label(?:\.$dns_label)*\z/
+    or fail(2, 'invalid host (ASCII DNS name or IPv4 address required)');
+$port =~ /\A[0-9]{1,5}\z/ && $port >= 1 && $port <= 65535
+    or fail(2, 'port must be 1..65535');
+$timeout =~ /\A(?:[1-9]|[12][0-9]|30)\z/
+    or fail(2, 'timeout must be 1..30 seconds');
+if (defined($ca_file)) {
+    $ca_file =~ m{\A/[^\r\n\0]*\z} && -f $ca_file && !-l $ca_file && -r $ca_file
+        or fail(3, 'CA file must be an accessible absolute regular file, not a symlink');
+}
+# Core Perl does not include TLS. Fail explicitly, never silently fall back
+# to unauthenticated SMTP if the optional verified-TLS provider is absent.
+eval { require IO::Socket::SSL; IO::Socket::SSL->VERSION(2.009); 1 }
+    or fail(3, 'IO::Socket::SSL >= 2.009 is required for verified STARTTLS');
+
+my $socket = IO::Socket::INET->new(PeerAddr => $host, PeerPort => $port,
+                                   Proto => 'tcp', Timeout => $timeout);
+$socket or fail(1, 'cannot connect to SMTP endpoint');
+binmode($socket);
+my $result;
+my $completed = eval {
+    # A server disconnect must become an ordinary failure, never SIGPIPE.
+    local $SIG{PIPE} = 'IGNORE';
+    # An upper wall-clock deadline also covers blocking SSL negotiation.
+    local $SIG{ALRM} = sub { die "TIMEOUT: overall probe deadline\n"; };
+    alarm(4 * $timeout + 2);
+    my $banner = reply($socket, $timeout, 220);
+    send_line($socket, 'EHLO sasd-probe.invalid', $timeout);
+    my $pre = reply($socket, $timeout, 250);
+    my $starttls = 0;
+    for my $line (@$pre) {
+        $starttls = 1 if $line =~ /\ASTARTTLS\z/i;
+    }
+    die "NEGATIVE: STARTTLS not advertised\n" unless $starttls;
+    send_line($socket, 'STARTTLS', $timeout);
+    reply($socket, $timeout, 220);
+
+    # Upgrade *this* socket; never open a new plaintext connection between
+    # EHLO and TLS. Certificate-chain AND reference-hostname validation must
+    # complete before sending further SMTP traffic.
+    my %ssl = (SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_PEER(),
+               SSL_verifycn_name => $host, SSL_verifycn_scheme => 'www',
+               SSL_hostname => $host, SSL_startHandshake => 1,
+               SSL_version => 'TLSv1_2:!TLSv1_1:!TLSv1:!SSLv3:!SSLv2',
+               Timeout => $timeout);
+    $ssl{SSL_ca_file} = $ca_file if defined($ca_file);
+    $socket = IO::Socket::SSL->start_SSL($socket, %ssl)
+        or die "NEGATIVE: TLS handshake or certificate verification failed\n";
+    send_line($socket, 'EHLO sasd-probe.invalid', $timeout);
+    my $post = reply($socket, $timeout, 250);
+    # SMTP 250 first line can identify the server. Report advertised
+    # capabilities only, with bounded and terminal-safe ASCII.
+    my @caps = grep { /\A[A-Za-z][A-Za-z0-9_-]*(?: [\x20-\x7e]*)?\z/ } @$post;
+    @caps = sort @caps;
+    $result = { host => $host, port => $port, caps => \@caps };
+    alarm(0);
+    1;
+};
+if (!$completed) {
+    my $error = $@ || 'PROTOCOL: unknown probe error';
+    alarm(0);
+    eval { close($socket) if $socket; };
+    if ($error =~ /\ANEGATIVE:/) {
+        fail(1, 'STARTTLS not advertised') if $error =~ /STARTTLS not advertised/;
+        fail(1, 'SMTP server rejected the requested phase') if $error =~ /SMTP rejected/;
+        fail(1, 'TLS handshake or certificate verification failed');
+    }
+    if ($error =~ /\ATIMEOUT:/)  { fail(3, 'SMTP probe timed out'); }
+    if ($error =~ /\APROTOCOL:/) { fail(3, 'malformed, oversized or unexpected SMTP response'); }
+    fail(3, 'unexpected SMTP client failure');
+}
+# QUIT is not needed for diagnostics. Closing the stream cannot initiate mail.
+eval { close($socket) if $socket; };
+my $caps = join(',', @{$result->{caps}});
+if ($null) {
+    print join("\0", $result->{host}, $result->{port}, 'verified-starttls', $caps), "\0";
+} else {
+    print "HOST\tPORT\tTLS\tCAPABILITIES\n";
+    print join("\t", $result->{host}, $result->{port}, 'verified-starttls', $caps), "\n";
+}
+exit 0;
+
+# Do not accept overlong, partial, LF-only, binary or inconsistent SMTP
+# reply framing. Read single bytes to avoid swallowing the first TLS record.
+sub reply {
+    my ($sock, $seconds, $required) = @_;
+    my $limit_lines = 64;
+    my $limit_total = 16384;
+    my $total = 0;
+    my @message;
+    for my $idx (1 .. $limit_lines) {
+        my $line = '';
+        my $deadline = time() + $seconds;
+        while (length($line) <= 512) {
+            my $remaining = $deadline - time();
+            die "TIMEOUT: reply deadline\n" if $remaining <= 0;
+            my $ssl_pending = $sock->can('pending') && $sock->pending();
+            unless ($ssl_pending || IO::Select->new($sock)->can_read($remaining)) {
+                die "TIMEOUT: reply deadline\n";
+            }
+            my $n = sysread($sock, my $byte, 1);
+            die "PROTOCOL: socket read failed\n" unless defined($n) && $n == 1;
+            $line .= $byte;
+            $total++;
+            die "PROTOCOL: response size\n" if $total > $limit_total;
+            last if $line =~ /\r\n\z/;
+        }
+        die "PROTOCOL: overlong SMTP line\n" if length($line) > 512;
+        $line =~ /\A([0-9]{3})([ -])([\x20-\x7e]*)\r\n\z/
+            or die "PROTOCOL: invalid SMTP line\n";
+        my ($code, $continuation, $text) = ($1, $2, $3);
+        if ($code != $required) {
+            die "NEGATIVE: SMTP rejected requested phase\n" if $idx == 1;
+            die "PROTOCOL: inconsistent SMTP multiline status\n";
+        }
+        push @message, $text;
+        return \@message if $continuation eq ' ';
+    }
+    die "PROTOCOL: too many SMTP lines\n";
+}
+
+sub send_line {
+    my ($sock, $command, $seconds) = @_;
+    my $buffer = "$command\r\n";
+    my $deadline = time() + $seconds;
+    while (length $buffer) {
+        my $remaining = $deadline - time();
+        die "TIMEOUT: send deadline\n" if $remaining <= 0;
+        IO::Select->new($sock)->can_write($remaining)
+            or die "TIMEOUT: send deadline\n";
+        my $n = syswrite($sock, $buffer);
+        die "PROTOCOL: SMTP write failed\n" unless defined($n) && $n > 0;
+        substr($buffer, 0, $n, '');
+    }
+}
+
+sub fail {
+    my ($code, $message) = @_;
+    $message =~ s/[\r\n\t]+/ /g;
+    warn "mail-probe: $message\n";
+    exit $code;
+}
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: mail-probe --host HOST [--port 1..65535] [--timeout 1..30]
+       [--ca-file ABSOLUTE_PEM_PATH] [--null]
+       mail-probe --help | --version
+Read-only SMTP banner, EHLO and verified STARTTLS probe (default port 587).
+Requires IO::Socket::SSL >= 2.009; never sends mail, AUTH or credentials.
+Only verified STARTTLS is supported in M6.1; SMTPS/465 is not implemented.
+--null prints four NUL-terminated fields without headings.
+Exit: 0 verified TLS/EHLO; 1 negative endpoint/TLS result;
+      2 invalid invocation; 3 missing prerequisite, protocol or timeout.
+HELP
+    exit $code;
+}
