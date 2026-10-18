@@ -1,0 +1,61 @@
+.TH MAIL-QUEUE 1 "2026-10-16" "SASD Freeware" "User Commands"
+.SH NAME
+mail-queue \- bounded read-only Postfix mail queue summary
+.SH SYNOPSIS
+.B mail-queue
+.RI [ --timeout\ 1..30 ]
+.RI [ --client\ ABSOLUTE_PATH ]
+.RI [ --null ]
+.br
+.B mail-queue --input
+.I FILE
+.RI [ --null ]
+.br
+.B mail-queue --help | --version
+.SH DESCRIPTION
+Reads a local Postfix 3.1+ queue listing by executing only
+.BR "postqueue -j" .
+Aggregates queued messages, message bytes and remaining recipient counts by
+queue. Does not disclose message bodies, queue IDs, sender/recipient addresses
+or delivery failure reasons. Does not send, flush, retry, hold or delete mail.
+A live listing is not atomic and may duplicate or miss messages as the queue
+changes. The program does not provide Exim/Sendmail or old mailq text parsing.
+.SH OPTIONS
+.TP
+.B --input FILE
+Analyze a regular, readable, non-symlink JSON-Lines fixture offline.
+Mutually exclusive with --client. Never starts postqueue.
+.TP
+.B --client ABSOLUTE_PATH
+Use an explicitly trusted absolute regular executable, not a symlink.
+Otherwise search for postqueue in absolute PATH components.
+.TP
+.B --timeout N
+Whole native process timeout in seconds (1 to 30, default 10).
+.TP
+.B --null
+Emit seven records of four NUL-terminated fields (queue name, message count,
+byte count, recipient count) without a heading.
+.TP
+.B --help, --version
+Display usage or version without contacting Postfix.
+.SH OUTPUT
+Tab-separated QUEUE, MESSAGES, BYTES, RECIPIENTS. Queues are maildrop,
+incoming, active, deferred, hold, other, and TOTAL. Bytes are Postfix
+message_size values, not on-disk consumption. Unknown queue names count
+as other. Recipient counts are not unique email addresses.
+.SH SECURITY
+Uses only postqueue -j, with argv execution and no shell. Native stderr is
+suppressed; only aggregate values are printed. Inherited MAIL_CONFIG and
+MAIL_VERBOSE are cleared. Limits: 8 MiB total output, 64 KiB per record,
+20,000 messages; malformed/truncated records produce no partial summary.
+JSON::PP is required. Live Postfix integration has not yet been verified.
+.SH EXIT STATUS
+0 complete listing without findings; 1 deferred/held/unknown queue entries
+or native postqueue error; 2 invalid invocation; 3 missing prerequisite,
+timeout, malformed/oversized data or incomplete listing. A native failure
+returns no summary. A complete listing is not an atomic queue snapshot.
+.SH SEE ALSO
+.BR postqueue (1),
+.BR mailq (1),
+.BR mail-probe (1)

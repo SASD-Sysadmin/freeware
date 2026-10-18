@@ -4,6 +4,16 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 8 – Electronic Mail (M6.2, Postfix queue snapshot)
+
+- Add read-only `mail-queue` using only `postqueue -j` (Postfix 3.1+),
+  with aggregate message/byte/recipient totals and no address disclosure.
+- Bound runtime, output and record counts; classify deferred/hold/unknown
+  queues, incomplete JSON, and native failures with explicit exit codes.
+- Add 122+ offline positive/negative tests, bilingual guides, a manpage
+  and Ubuntu/macOS CI staged-installation assertions. Live Postfix
+  acceptance remains an explicit follow-up.
+
 ### Chapter 8 – Electronic Mail (M6.1, SMTP STARTTLS probe)
 
 - Add read-only `mail-probe` for bounded SMTP banner, EHLO and post-TLS
