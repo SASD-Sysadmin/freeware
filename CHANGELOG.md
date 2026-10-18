@@ -4,6 +4,16 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 8 – Electronic Mail (M6.3, static Postfix config audit)
+
+- Add read-only `mail-config-audit` for bounded static main.cf checks
+  with optional master.cf override discovery and no value disclosure.
+- Review relay boundaries, broad `mynetworks` trust, SASL/TLS
+  exposure risks and structural errors without claiming live certainty.
+- Add offline positive/negative fixtures, DE/EN guides, a manpage
+  and staged installation tests on Ubuntu/macOS. Real Postfix
+  validation and effective service/default analysis remain open.
+
 ### Chapter 8 – Electronic Mail (M6.2, Postfix queue snapshot)
 
 - Add read-only `mail-queue` using only `postqueue -j` (Postfix 3.1+),

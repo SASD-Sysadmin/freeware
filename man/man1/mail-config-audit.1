@@ -1,0 +1,64 @@
+.TH MAIL-CONFIG-AUDIT 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+mail-config-audit \- read-only static review of Postfix configuration text
+.SH SYNOPSIS
+.B mail-config-audit
+.RB [ --main " ABSOLUTE_PATH]
+.RB [ --master " ABSOLUTE_PATH]
+.RB [ --null ]
+.br
+.B mail-config-audit
+.BR --help " | " --version
+.SH DESCRIPTION
+Reads explicit settings in
+.I main.cf
+and optionally identifies unverified service overrides in
+.IR master.cf .
+Does not execute Postfix, access the network, follow inclusion directives,
+modify files, evaluate lookup maps, expand Postfix parameters, check TLS
+certificates or establish the live server configuration.
+.PP
+The standard report contains LEVEL, SOURCE, LINE and CODE followed by issue
+and note counts. Values, secrets and raw configuration text are not printed.
+A report without static issues is not proof of a safe mail relay or secure
+SMTP authentication.
+.SH OPTIONS
+.TP
+.BI --main " PATH"
+Absolute path of main.cf (default: /etc/postfix/main.cf).
+.TP
+.BI --master " PATH"
+Optional absolute path of master.cf. Recognized service -o overrides yield
+review notes rather than false assumptions about effective values.
+.TP
+.B --null
+Use NUL-terminated four-field records for findings and summary.
+.TP
+.BR --help , " -h"
+Display help.
+.TP
+.B --version
+Display tool version.
+.SH EXIT STATUS
+.TP
+.B 0
+No definite static issues detected (not a security certification).
+.TP
+.B 1
+One or more static issues detected.
+.TP
+.B 2
+Invalid arguments.
+.TP
+.B 3
+Unavailable, unreadable, oversized or malformed inputs or runtime error.
+.SH LIMITATIONS
+At most 2 MiB and 10,000 lines per file, 16 KiB per physical line.
+No evaluation of Postfix defaults, environment, service overrides, expansion,
+access maps, active listeners or effective relay policy.
+Master.cf uses only a partial parser and all detected overrides require
+manual inspection. No partial report on an input failure.
+.SH SEE ALSO
+.BR postconf (1),
+.BR postconf (5),
+.BR master (5)
