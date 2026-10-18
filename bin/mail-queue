@@ -1,0 +1,249 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M6.2: Postfix queue snapshot, aggregated without disclosing message metadata.
+# This tool invokes exactly `postqueue -j`: it cannot deliver, flush or delete.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use IO::Select;
+use Time::HiRes qw(time sleep);
+use POSIX qw(WNOHANG _exit);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 8 * 1024 * 1024;       # Output/input memory and parsing bound.
+my $MAX_LINE  = 64 * 1024;             # One JSON object from one queue file.
+my $MAX_MESSAGES = 20000;             # Never misreport a truncated queue as full.
+my $MAX_TOTAL_SIZE = 9007199254740991; # Exact integral arithmetic boundary.
+my @queues = qw(maildrop incoming active deferred hold other);
+my ($help, $version, $input, $client, $null) = (0, 0, undef, undef, 0);
+my $timeout = 10;
+
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'client=s' => \$client,
+           'timeout=s' => \$timeout, 'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "mail-queue $VERSION\n"; exit 0; }
+usage(2) if @ARGV || (defined($input) && defined($client));
+$timeout =~ /\A(?:[1-9]|[12][0-9]|30)\z/
+    or fail(2, 'timeout must be 1..30 seconds');
+
+# JSON::PP is distributed with modern Perl; requiring it only after --help and
+# --version preserves the usual dependency-free metadata contract.
+eval { require JSON::PP; 1 }
+    or fail(3, 'JSON::PP is required for Postfix JSON-Lines parsing');
+
+my $data;
+if (defined $input) {
+    # Explicit fixture/file mode never invokes Postfix. Do not follow symlinks
+    # or echo the file contents (which can contain private mail addresses).
+    -f $input && !-l $input && -r $input
+        or fail(3, 'input must be an accessible regular file, not a symlink');
+    open my $fh, '<', $input or fail(3, 'cannot open input file');
+    binmode $fh;
+    $data = bounded_read($fh);
+    close $fh or fail(3, 'cannot close input file');
+} else {
+    # A caller-supplied executable is an explicit trust decision: absolute,
+    # regular, executable and not a symlink. Otherwise use the bundled safe
+    # program discovery helper, which ignores relative PATH components.
+    if (!defined $client) {
+        eval { require SASD::Freeware::External; 1 }
+            or fail(3, 'bundled external executable helper is unavailable');
+        $client = SASD::Freeware::External::find_program('postqueue');
+        defined $client or fail(3, 'postqueue not found in PATH (Postfix 3.1+ required)');
+    }
+    $client =~ m{\A/[^\x00-\x1f\x7f]*\z} && -f $client && -x $client && !-l $client
+        or fail(3, 'client must be an executable absolute regular file, not a symlink');
+    $data = run_postqueue($client, $timeout);
+}
+
+my %aggregate = map { $_ => { messages => 0, bytes => 0, recipients => 0 } } @queues;
+my $parser = JSON::PP->new->utf8->max_depth(16);
+my $count = 0;
+
+# Strict JSON Lines: Postfix emits one full object plus LF per queue file.
+# A partial line after EOF is not a trustworthy complete queue snapshot.
+my $offset = 0;
+while ($offset < length($data)) {
+    my $end = index($data, "\n", $offset);
+    $end >= 0 or fail(3, 'unterminated JSON-Lines record');
+    my $length = $end - $offset;
+    $length <= $MAX_LINE or fail(3, 'JSON-Lines record exceeds size limit');
+    my $line = substr($data, $offset, $length);
+    $offset = $end + 1;
+    $line =~ s/\r\z//; # Accept CRLF fixtures without changing JSON semantics.
+    length($line) or fail(3, 'empty JSON-Lines record');
+    ++$count;
+    $count <= $MAX_MESSAGES or fail(3, 'queue listing exceeds message limit');
+
+    my $record = eval { $parser->decode($line) };
+    !$@ && ref($record) eq 'HASH'
+        or fail(3, 'malformed Postfix JSON-Lines object');
+    # Required documented fields are checked without printing their values.
+    # Unknown extension members are intentionally ignored (Postfix contract).
+    ref($record->{queue_name}) eq '' && defined($record->{queue_name})
+        && $record->{queue_name} =~ /\A[a-z][a-z0-9_]{0,31}\z/
+        or fail(3, 'invalid Postfix queue name');
+    ref($record->{queue_id}) eq '' && defined($record->{queue_id})
+        && length($record->{queue_id}) && length($record->{queue_id}) <= 128
+        or fail(3, 'invalid Postfix queue identifier');
+    ref($record->{sender}) eq '' && defined($record->{sender})
+        or fail(3, 'missing Postfix sender metadata');
+    decimal($record->{arrival_time})
+        or fail(3, 'invalid Postfix arrival timestamp');
+    decimal($record->{message_size})
+        or fail(3, 'invalid Postfix message size');
+    ref($record->{recipients}) eq 'ARRAY'
+        or fail(3, 'invalid Postfix recipient list');
+    for my $recipient (@{$record->{recipients}}) {
+        ref($recipient) eq 'HASH' && defined($recipient->{address})
+            && ref($recipient->{address}) eq ''
+            or fail(3, 'invalid Postfix recipient metadata');
+    }
+
+    my $q = $record->{queue_name};
+    $q = 'other' unless exists($aggregate{$q});
+    my $entry = $aggregate{$q};
+    $entry->{messages}++;
+    $entry->{recipients} += scalar @{$record->{recipients}};
+    $entry->{bytes} += 0 + $record->{message_size};
+    $entry->{bytes} <= $MAX_TOTAL_SIZE or fail(3, 'queue byte total exceeds exact range');
+}
+
+my %total = (messages => 0, bytes => 0, recipients => 0);
+for my $q (@queues) {
+    for my $field (qw(messages bytes recipients)) {
+        $total{$field} += $aggregate{$q}{$field};
+    }
+}
+$total{bytes} <= $MAX_TOTAL_SIZE or fail(3, 'queue byte total exceeds exact range');
+
+# Do not print per-message identifiers, sender/recipient addresses or reasons.
+# NUL records have exactly four fields: queue, messages, bytes, recipients.
+my @rows = (map { [$_, @{$aggregate{$_}}{qw(messages bytes recipients)}] } @queues);
+push @rows, ['TOTAL', @total{qw(messages bytes recipients)}];
+if ($null) {
+    print join('', map { join("\0", @$_) . "\0" } @rows);
+} else {
+    print "QUEUE\tMESSAGES\tBYTES\tRECIPIENTS\n";
+    for my $row (@rows) { print join("\t", @$row), "\n"; }
+}
+# Deferred/held mail and unrecognized queues warrant operator attention.
+# Counts are a non-atomic snapshot; `postqueue -j` itself may miss/duplicate.
+exit($aggregate{deferred}{messages} || $aggregate{hold}{messages}
+     || $aggregate{other}{messages} ? 1 : 0);
+
+sub decimal {
+    my ($value) = @_;
+    return 0 if !defined($value) || ref($value);
+    # Representable integers only: no negative, exponent or floating point.
+    return 0 unless "$value" =~ /\A(?:0|[1-9][0-9]{0,14})\z/;
+    return "$value" <= $MAX_TOTAL_SIZE;
+}
+
+sub bounded_read {
+    my ($fh) = @_;
+    my $buffer = '';
+    while (1) {
+        my $n = read($fh, my $chunk, 8192);
+        defined($n) or fail(3, 'cannot read queue snapshot');
+        last if $n == 0;
+        length($buffer) + $n <= $MAX_BYTES
+            or fail(3, 'queue listing exceeds 8 MiB limit');
+        $buffer .= $chunk;
+    }
+    return $buffer;
+}
+
+sub run_postqueue {
+    my ($program, $seconds) = @_;
+    pipe(my $reader, my $writer) or fail(3, 'cannot create postqueue pipe');
+    my $pid = fork();
+    defined($pid) or fail(3, 'cannot start postqueue process');
+    if ($pid == 0) {
+        close $reader;
+        open STDOUT, '>&', $writer or _exit(127);
+        close $writer;
+        # Native error streams may contain message data or local paths.
+        open STDERR, '>', '/dev/null' or _exit(127);
+        # Avoid silently selecting another Postfix instance via environment.
+        delete @ENV{qw(MAIL_CONFIG MAIL_VERBOSE)};
+        $ENV{LC_ALL} = 'C';
+        if (!exec { $program } $program, '-j') { _exit(127); }
+    }
+    close $writer;
+    binmode $reader;
+    my $select = IO::Select->new($reader);
+    my $deadline = time() + $seconds;
+    my ($data, $error) = ('', '');
+    while (1) {
+        my $remaining = $deadline - time();
+        if ($remaining <= 0 || !$select->can_read($remaining)) {
+            $error = 'postqueue timed out'; last;
+        }
+        my $n = sysread($reader, my $chunk, 8192);
+        if (!defined $n) { $error = 'cannot read postqueue output'; last; }
+        last if $n == 0;
+        if (length($data) + $n > $MAX_BYTES) {
+            $error = 'queue listing exceeds 8 MiB limit'; last;
+        }
+        $data .= $chunk;
+    }
+    close $reader;
+    if ($error) {
+        # A bounded wait before SIGKILL ensures stalled clients cannot leave
+        # our process running indefinitely. No shell or external user input.
+        kill 'TERM', $pid;
+        sleep(0.1);
+        my $found = waitpid($pid, WNOHANG);
+        if ($found == 0) { kill 'KILL', $pid; waitpid($pid, 0); }
+        fail(3, $error);
+    }
+    # EOF may precede the child's actual exit; honor the same deadline.
+    my $finished;
+    while (time() < $deadline) {
+        $finished = waitpid($pid, WNOHANG);
+        last if $finished != 0;
+        sleep(0.02);
+    }
+    if (!$finished || $finished == 0) {
+        kill 'KILL', $pid;
+        waitpid($pid, 0);
+        fail(3, 'postqueue timed out during exit');
+    }
+    my $status = $?;
+    ($status & 127) == 0 or fail(3, 'postqueue terminated abnormally');
+    my $code = $status >> 8;
+    $code == 127 and fail(3, 'postqueue executable could not be started');
+    $code == 0 or fail(1, 'postqueue -j failed (permissions, service or Postfix version)');
+    return $data;
+}
+
+sub fail {
+    my ($code, $message) = @_;
+    warn "mail-queue: $message\n";
+    exit $code;
+}
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: mail-queue [--timeout 1..30] [--client ABSOLUTE_PATH] [--null]
+       mail-queue --input FILE [--null]
+       mail-queue --help | --version
+Read-only aggregate snapshot of Postfix 3.1+ via exactly `postqueue -j`.
+Never sends, retries, flushes, deletes or reveals message addresses/reasons.
+--input parses saved Postfix JSON-Lines without executing postqueue.
+Output: queue name, message count, message bytes and recipient count.
+Deferred, held or unknown queues are findings; live data is non-atomic.
+Limits: 8 MiB per listing, 64 KiB per record and 20000 messages.
+--null emits four NUL-terminated fields per record, without header.
+Exit: 0 complete snapshot without findings; 1 deferred/held/other or
+      postqueue failure; 2 invalid invocation; 3 missing prerequisite,
+      timeout, malformed or oversized output (no partial successful report).
+HELP
+    exit $code;
+}
