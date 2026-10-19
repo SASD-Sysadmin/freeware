@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 8 – Electronic Mail (M6.4, offline acceptance foundation)
+
+- Add a cross-tool mail workflow regression suite for safe and negative
+  synthetic Postfix/SMTP inputs, exit codes, privacy and NUL formats.
+- Add bilingual manual acceptance guides for native Postfix and verified
+  STARTTLS, with a clear distinction between offline CI and live checks.
+- Integrate the new guides into installation and Ubuntu/macOS CI.
+  Real Postfix acceptance and implicit TLS/IPv6 are still open.
+
 ### Chapter 8 – Electronic Mail (M6.3, static Postfix config audit)
 
 - Add read-only `mail-config-audit` for bounded static main.cf checks

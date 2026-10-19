@@ -4,6 +4,9 @@
 
 SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die Systemadministration unter Linux und Unix bereit. Die Werkzeuge sind für einen zuverlässigen Betrieb, die unkomplizierte Integration in bestehende Umgebungen und eine langfristige Wartbarkeit ausgelegt. Zu jedem Programm gehören Dokumentation, praktische Anwendungsbeispiele und automatisierte Tests.
 
+
+M6.4 Mail-Integration und Laborabnahme: [Deutsche Anleitung](docs/MAIL-ACCEPTANCE.de.md) · [English](docs/MAIL-ACCEPTANCE.md). Offline-Tests ersetzen keine echte Postfix-Abnahme.
+
 ## Enthaltene Werkzeuge
 
 | Befehl | Pfad | Funktion | Dokumentation |

@@ -4,6 +4,9 @@
 
 SASD Freeware provides a collection of command-line utilities, scripts, and libraries for Linux and Unix system administration. The tools are designed for reliable operation, straightforward integration into existing environments, and long-term maintainability. Each utility includes documentation, practical usage examples, and automated tests.
 
+
+M6.4 mail integration and lab acceptance: [English guide](docs/MAIL-ACCEPTANCE.md) · [Deutsch](docs/MAIL-ACCEPTANCE.de.md). The offline suite does not replace live Postfix validation.
+
 ## Included utilities
 
 | Command | Location | Purpose | Documentation |

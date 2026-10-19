@@ -94,7 +94,7 @@ sub ancestors_safe {
 }
 sub allowed_relative {
     my ($rel) = @_;
-    return $rel =~ m{\A(?:bin/[A-Za-z0-9][A-Za-z0-9_.-]*|sbin/[A-Za-z0-9][A-Za-z0-9_.-]*|lib/SASD/Freeware/[A-Za-z0-9_.-]+\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING)(?:\.de)?\.md)\z};
+    return $rel =~ m{\A(?:bin/[A-Za-z0-9][A-Za-z0-9_.-]*|sbin/[A-Za-z0-9][A-Za-z0-9_.-]*|lib/SASD/Freeware/[A-Za-z0-9_.-]+\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING|MAIL-ACCEPTANCE)(?:\.de)?\.md)\z};
 }
 sub digest {
     my ($path) = @_;
