@@ -1,0 +1,263 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M6.3: static, read-only review of explicit Postfix main.cf and (optionally)
+# master.cf. No postconf/postfix invocation, no secrets or raw values output.
+# IMPORTANT: We do not expand $variables, evaluate access maps, or infer live
+# service behavior from text. A clean report is NOT a security certification.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $main, $master, $null) = (0, 0, '/etc/postfix/main.cf', undef, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'main=s' => \$main, 'master=s' => \$master,
+           'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "mail-config-audit $VERSION\n"; exit 0; }
+usage(2) if @ARGV;
+
+# Fail closed on unavailable or malformed inputs BEFORE publishing findings.
+# This prevents a partial result being mistaken for a complete file review.
+my $main_lines = read_config($main);
+my $master_lines = defined($master) ? read_config($master) : undef;
+my (@findings, %parameters, %main_line);
+parse_main($main_lines);
+review_main();
+if (defined $master_lines) { parse_master($master_lines); }
+else { note('master', 0, 'master-cf-not-inspected'); }
+
+my ($issues, $notes) = (0, 0);
+for my $item (@findings) {
+    if ($item->[0] eq 'ISSUE') { ++$issues; } else { ++$notes; }
+}
+if ($null) {
+    for my $item (@findings) { print join("\0", @$item), "\0"; }
+    print join("\0", 'SUMMARY', 'all', '0', "issues=$issues,notes=$notes"), "\0";
+} else {
+    print "LEVEL\tSOURCE\tLINE\tCODE\n";
+    print join("\t", @$_), "\n" for @findings;
+    print "Issues: $issues\nNotes: $notes\n";
+}
+exit($issues ? 1 : 0);
+
+sub record {
+    my ($kind, $source, $line, $code) = @_;
+    # All fields are fixed strings or validated integer line numbers; never
+    # include raw input, filenames, parameter values or server credentials.
+    push @findings, [$kind, $source, $line, $code];
+    @findings <= 20000 or fail(3, 'too many findings to report safely');
+}
+sub issue { record('ISSUE', @_); }
+sub note  { record('NOTE', @_); }
+
+sub read_config {
+    my ($path) = @_;
+    defined($path) && length($path) <= 4096 &&
+        $path =~ m{\A/[^\x00-\x1f\x7f]*\z} &&
+        $path !~ m{(?:\A|/)\.{1,2}(?:/|\z)} &&
+        -f $path && !-l $path && -r $path
+        or fail(3, 'configuration must be an accessible absolute regular file (not a symlink)');
+    open my $in, '<', $path or fail(3, 'cannot open configuration file');
+    binmode $in;
+    my (@lines, $bytes);
+    $bytes = 0;
+    while (my $line = <$in>) {
+        $bytes += length($line);
+        $bytes <= 2 * 1024 * 1024 && length($line) <= 16384 && @lines < 10000
+            or fail(3, 'configuration exceeds input limits');
+        $line =~ /\n\z/ or fail(3, 'unterminated configuration line');
+        $line !~ /[\x00-\x08\x0b-\x0c\x0e-\x1f\x7f]/
+            or fail(3, 'invalid control byte in configuration');
+        $line !~ /\r(?!\n\z)/ or fail(3, 'invalid line ending');
+        $line =~ s/\r?\n\z//;
+        push @lines, $line;
+    }
+    close $in or fail(3, 'cannot close configuration file');
+    return \@lines;
+}
+
+sub parse_main {
+    my ($lines) = @_;
+    my ($current, $start);
+    for (my $idx = 0; $idx < @$lines; ++$idx) {
+        my $text = $lines->[$idx];
+        my $number = $idx + 1;
+        next if $text =~ /\A\s*(?:#|\z)/;
+        if ($text =~ /\A[ \t]/) {
+            if (!defined $current) { issue('main', $number, 'orphan-continuation'); next; }
+            my $continued = $text;
+            $continued =~ s/\A[ \t]+//;
+            $parameters{$current} .= ' ' . $continued;
+            length($parameters{$current}) <= 65536
+                or fail(3, 'expanded configuration entry exceeds input limits');
+            next;
+        }
+        # Keep Postfix's value literally, including inline '#', because
+        # comments are only treated as comments on separate lines here.
+        my ($key, $value) = $text =~ /\A([A-Za-z][A-Za-z0-9_]*)[ \t]*=[ \t]*(.*)\z/;
+        if (!defined $key) {
+            issue('main', $number, 'malformed-assignment');
+            undef $current;
+            next;
+        }
+        $key = lc $key;
+        issue('main', $number, 'duplicate-parameter') if exists $parameters{$key};
+        $parameters{$key} = $value;
+        $main_line{$key} = $number;
+        $current = $key;
+    }
+}
+
+sub val {
+    my ($key) = @_;
+    return undef unless exists $parameters{$key};
+    my $value = lc $parameters{$key};
+    $value =~ s/\A[ \t]+|[ \t]+\z//g;
+    return $value;
+}
+sub truth {
+    my ($value) = @_;
+    return undef unless defined $value;
+    return 1 if $value =~ /\A(?:yes|true|1)\z/;
+    return 0 if $value =~ /\A(?:no|false|0)\z/;
+    return undef;
+}
+sub guard {
+    my ($raw, $source, $line) = @_;
+    return if !defined $raw;
+    my $text = lc $raw;
+    $text =~ s/\A[ \t]+|[ \t]+\z//g;
+    if ($text =~ /\$|\{|\}/) {
+        note($source, $line, 'relay-policy-expansion-not-evaluated');
+        return;
+    }
+    my @tokens = grep { length } split /[\s,]+/, $text;
+    my $guard_at;
+    for my $i (0 .. $#tokens) {
+        if ($tokens[$i] eq 'reject_unauth_destination' ||
+            $tokens[$i] eq 'defer_unauth_destination') { $guard_at = $i; last; }
+    }
+    if (!defined $guard_at) {
+        note($source, $line, 'relay-boundary-not-provable');
+        return;
+    }
+    for my $i (0 .. $guard_at - 1) {
+        if ($tokens[$i] eq 'permit') {
+            issue($source, $line, 'unconditional-permit-before-relay-boundary');
+            return;
+        }
+        # permit_mynetworks and permit_sasl_authenticated are normal;
+        # other conditional permissions and access maps need human review.
+        if ($tokens[$i] =~ /\Apermit_/ &&
+            $tokens[$i] ne 'permit_mynetworks' &&
+            $tokens[$i] ne 'permit_sasl_authenticated') {
+            note($source, $line, 'complex-relay-permit-requires-review');
+            return;
+        }
+        if ($tokens[$i] =~ /\Acheck_(?:client|helo|sender|recipient|policy|reverse_client|etrn|sasl)_/) {
+            note($source, $line, 'relay-access-map-requires-review');
+            return;
+        }
+    }
+}
+sub review_main {
+    if (!exists $parameters{smtpd_relay_restrictions}) {
+        note('main', 0, 'relay-policy-implicit-default-not-evaluated');
+    } else {
+        my $raw = val('smtpd_relay_restrictions');
+        if (!length($raw)) {
+            note('main', $main_line{smtpd_relay_restrictions}, 'empty-relay-policy-review-recipient-restrictions');
+        } else {
+            guard($raw, 'main', $main_line{smtpd_relay_restrictions});
+        }
+    }
+    if (exists $parameters{smtpd_recipient_restrictions} &&
+        (!exists $parameters{smtpd_relay_restrictions} ||
+         !length(val('smtpd_relay_restrictions')))) {
+        guard(val('smtpd_recipient_restrictions'), 'main', $main_line{smtpd_recipient_restrictions});
+    }
+    if (exists $parameters{mynetworks}) {
+        my $value = val('mynetworks');
+        if ($value =~ /(?:\A|[\s,])(?:0\.0\.0\.0\/0|0\/0|::\/0)(?=\z|[\s,])/) {
+            issue('main', $main_line{mynetworks}, 'mynetworks-matches-all-addresses');
+        } elsif ($value =~ /\$|\{/ ) {
+            note('main', $main_line{mynetworks}, 'mynetworks-expansion-not-evaluated');
+        }
+    }
+    if (defined(val('mynetworks_style')) && val('mynetworks_style') eq 'subnet') {
+        note('main', $main_line{mynetworks_style}, 'mynetworks-style-subnet-review-trust-boundary');
+    }
+    my $auth = truth(val('smtpd_sasl_auth_enable'));
+    if (defined($auth) && $auth) {
+        my $auth_only = truth(val('smtpd_tls_auth_only'));
+        my $tls = val('smtpd_tls_security_level');
+        if ((!defined($auth_only) || !$auth_only) &&
+            (!defined($tls) || $tls ne 'encrypt')) {
+            issue('main', $main_line{smtpd_sasl_auth_enable}, 'sasl-auth-may-be-offered-without-tls');
+        }
+    } elsif (defined(val('smtpd_sasl_auth_enable')) && !defined $auth) {
+        note('main', $main_line{smtpd_sasl_auth_enable}, 'sasl-auth-setting-not-evaluated');
+    }
+    if (defined(val('smtpd_tls_security_level')) && val('smtpd_tls_security_level') eq 'none') {
+        note('main', $main_line{smtpd_tls_security_level}, 'inbound-tls-explicitly-disabled');
+    }
+    if (defined(val('smtp_tls_security_level')) && val('smtp_tls_security_level') eq 'none') {
+        note('main', $main_line{smtp_tls_security_level}, 'outbound-tls-explicitly-disabled');
+    }
+    if (defined(val('disable_vrfy_command')) &&
+        defined(truth(val('disable_vrfy_command'))) && !truth(val('disable_vrfy_command'))) {
+        note('main', $main_line{disable_vrfy_command}, 'vrfy-command-enabled');
+    }
+    # A static parser cannot prove that a TLS certificate is usable, that a
+    # listener exists, or whether a master.cf service override protects AUTH.
+    note('main', 0, 'runtime-defaults-maps-and-tls-not-verified');
+}
+
+sub parse_master {
+    my ($lines) = @_;
+    my ($service, $service_line, $overrides) = (undef, 0, 0);
+    for (my $idx = 0; $idx < @$lines; ++$idx) {
+        my $text = $lines->[$idx];
+        my $number = $idx + 1;
+        next if $text =~ /\A\s*(?:#|\z)/;
+        if ($text !~ /\A[ \t]/) {
+            # Service declarations are recognized only as context. We never
+            # assume an enabled service from a partial master.cf parse.
+            $service = $text =~ /\A\S+[ \t]+(?:inet|unix|fifo|pass|unix-dgram)[ \t]+/ ? 1 : undef;
+            $service_line = $number;
+            note('master', $number, 'master-service-syntax-not-recognized') unless $service;
+            next;
+        }
+        if (!$service) { note('master', $number, 'master-continuation-without-service'); next; }
+        # -o can be split in real master.cf and { name = value } is valid;
+        # to avoid pretending to understand all variants, report overrides
+        # as opaque human-review items without echoing their values.
+        if ($text =~ /(?:\A|[ \t])-o(?:[ \t]+|\z)/ || $text =~ /(?:\A|[ \t])-o[ \t]*\{/) {
+            note('master', $number, 'service-override-requires-review');
+            ++$overrides;
+        }
+    }
+    note('master', 0, 'master-configuration-not-semantically-evaluated');
+}
+sub fail {
+    my ($status, $message) = @_;
+    warn "mail-config-audit: $message\n";
+    exit $status;
+}
+sub usage {
+    my ($status) = @_;
+    my $out = $status ? *STDERR : *STDOUT;
+    print {$out} <<'USAGE';
+Usage: mail-config-audit [--main ABSOLUTE_PATH] [--master ABSOLUTE_PATH] [--null]
+       mail-config-audit --help | --version
+Static, read-only review of Postfix main.cf and optional master.cf.
+No postconf invocation, changes, logins or network traffic.
+Does not evaluate Postfix defaults, $variables, access maps or live services.
+--null emits four NUL-terminated fields per finding/summary record.
+Exit: 0 no definite static findings; 1 findings; 2 invalid CLI;
+      3 inaccessible/malformed/oversized input or unexpected failure.
+USAGE
+    exit $status;
+}

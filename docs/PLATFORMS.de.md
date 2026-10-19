@@ -16,6 +16,7 @@ SASD Freeware wird mit GitHub Actions unter Ubuntu Linux und macOS getestet. **B
 | `dns-query` | Optionaler `dig`-Client | Optionaler `dig`-Client | DNS direkt, nicht System-Resolver; ohne DNSSEC-Prüfung, ggf. Klartext. |
 | `nis-probe` | Optionaler `ypwhich`-Client | Ggf. nicht vorhanden | Prüft nur lokale NIS-Bindung; keine Map-Abfragen. |
 | `ldap-config-audit` | OpenLDAP-Clientkonfiguration | OpenLDAP-Clientkonfiguration, soweit vorhanden | Nur statische TLS-Hinweise; Includes und Umgebungsvariablen nicht berücksichtigt. |
+| `mail-config-audit` | Statische Postfix-Textdateien | Statische Postfix-Textdateien | Kein laufender Postfix nötig; Defaults, Maps, master.cf-Overrides und wirksames SMTP-Verhalten werden nicht verifiziert. |
 | `ldap-probe` | Optional `ldapsearch` | Optional `ldapsearch` | Nur anonyme LDAPS-Root-DSE-Abfrage; keine vollständige LDAP- oder NSS-Integrationsprüfung. Zertifikatsprüfung bleibt verpflichtend. |
 | `home-audit` | Standardmäßig lokale Dateien; UID ab 1000 | Standardmäßig NSS; UID ab 500 | UID-Bereiche sind Richtlinien. macOS-ACLs und Datenschutzregeln werden nicht berücksichtigt. |
 | `group-audit` / `account-audit` | Unix-Textdateien | Nur Unix-Textdateien | `/etc/passwd` und `/etc/group` sind unter macOS keine vollständige Open-Directory-Datenbank. |

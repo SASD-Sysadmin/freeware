@@ -17,7 +17,7 @@ and positive/negative tests before it can be considered complete.
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, resolver | Gap review and platform completion | Substantial, incomplete |
 | **6 – Directory Services** | LDAPS/NIS diagnostics, TLS configuration audit | Scope/platform gap analysis | Partial |
 | **7 – SQL Administration** | `db-probe` (M5.1), `db-health` (M5.2), `db-activity` (M5.3) for PostgreSQL/MySQL/MariaDB; MariaDB/MySQL `db-storage` (M5.4) | PostgreSQL storage backend, Oracle/SQL Server, MySQL blocker graph, growth reports and live cross-engine acceptance | In progress |
-| **8 – Electronic Mail** | `mail-probe` (M6.1; verified STARTTLS), `mail-queue` (M6.2; Postfix aggregate snapshot) | Configuration audit, 465/IPv6 and real SMTP/Postfix acceptance | In progress |
+| **8 – Electronic Mail** | `mail-probe` (M6.1; verified STARTTLS), `mail-queue` (M6.2; Postfix aggregate snapshot), `mail-config-audit` (M6.3; static text review) | M6.4 integration, effective Postfix configuration, 465/IPv6 and live SMTP/Postfix acceptance | In progress |
 | **9 – Log Files** | `log-summary` | Journal, error and authentication-log audits | Major gaps |
 | **10 – Security and Network Monitoring** | SSH, SUID, integrity and TCP checks | Network, service and firewall inventory | Partial |
 
