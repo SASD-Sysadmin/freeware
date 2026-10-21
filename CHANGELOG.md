@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 9 – Log Files (M7.2, offline structured syslog summary)
+
+- Add read-only `syslog-summary` for bounded RFC3164/RFC5424 priority
+  aggregation without MESSAGE-based severity guessing or data disclosure.
+- Count absent or unverifiable PRI as UNKNOWN; reject incomplete and
+  oversized inputs without partial output.
+- Add synthetic negative/positive tests, bilingual guides, manpage and
+  Ubuntu/macOS staged installation/uninstallation checks.
+
 ### Chapter 9 – Log Files (M7.1, offline systemd journal summary)
 
 - Add `journal-summary`: bounded structured `journalctl --output=json`
