@@ -1,0 +1,62 @@
+.TH SYSLOG-SUMMARY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+syslog-summary \- count structure-verified syslog severities without messages
+.SH SYNOPSIS
+.B syslog-summary
+.RB [ --input " FILE|-" ]
+.RB [ --format " auto|rfc3164|rfc5424" ]
+.RB [ --null ]
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Read a bounded, finite offline syslog input in classic BSD/RFC3164 or
+RFC5424 format. Count only 0..7 severities from a valid leading numeric PRI
+and matching envelope. PRI is facility times eight plus severity. Neither
+message keywords nor embedded angle-bracket values count as priority.
+Missing or invalid PRI/envelopes contribute to UNKNOWN (exit 1).
+No log messages, identities, paths or structured-data values are emitted.
+Does not invoke syslog utilities, open host logs by default or modify files.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read one ordinary readable file, or stdin (default). Rejects symlinks.
+.TP
+.BI --format " auto|rfc3164|rfc5424"
+Select expected message structure (auto by default).
+.TP
+.B --null
+Emit ten records, each with exactly three NUL-terminated fields, no heading.
+.TP
+.BR -h , " --help"
+Show usage and exit successfully.
+.TP
+.B --version
+Print command name and version.
+.SH OUTPUT
+Columns PRIORITY, LEVEL and COUNT. Eight priority rows plus UNKNOWN and
+TOTAL rows. Results are aggregates, not message samples.
+.SH EXIT STATUS
+.TP
+.B 0
+Complete input; every record had a recognized priority (or input was empty).
+.TP
+.B 1
+Complete input, but one or more rows had an absent/unverifiable PRI or header.
+.TP
+.B 2
+Invalid arguments.
+.TP
+.B 3
+Unreadable/symlink input, blank/truncated records, or input limits exceeded.
+No partial success-shaped output is produced.
+.SH LIMITS
+Maximum 16 MiB input, 128 KiB physical line and 50,000 records. A nonempty
+input must end with LF. Ordinary local syslog files commonly omit PRI and
+therefore produce UNKNOWN, not a guessed severity. No --follow.
+The sending application can choose PRI; the report is not intrusion detection.
+.SH EXAMPLE
+.B printf '%s\\n' '<34>Oct 21 08:30:04 host app: sample' | syslog-summary
+.SH SEE ALSO
+.BR journal-summary (1),
+.BR log-summary (1)
+.SH LICENSE
+MIT. An original SASD implementation.

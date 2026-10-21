@@ -18,7 +18,7 @@ DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
 | **6 – Directory Services** | LDAPS/NIS-Diagnose, TLS-Konfigurationsaudit | Funktions-/Plattformgrenzen und offene Aufgaben prüfen | Teilweise |
 | **7 – SQL Administration** | `db-probe` (M5.1), `db-health` (M5.2), `db-activity` (M5.3) für PostgreSQL/MySQL/MariaDB; MariaDB-/MySQL-`db-storage` (M5.4) | PostgreSQL-Storage, Oracle/SQL Server, MySQL-Sperrgraph, Wachstumsmessungen und echte übergreifende Integrationstests | In Arbeit |
 | **8 – Electronic Mail** | `mail-probe` (M6.1), `mail-queue` (M6.2), `mail-config-audit` (M6.3), Offline-Workflow (M6.4); [manueller Teil-Praxistest](MAIL-ACCEPTANCE.de.md) auf Debian 12/Postfix 3.7.11 am 20.10.2026 | Wirksame Service-Overrides, gefüllte Queue, isolierte VM, IPv6/465 und andere Plattformen offen | Technischer Umfang M6 umgesetzt, Betriebslücken offen |
-| **9 – Log Files** | `log-summary` (unstrukturierter Text), `journal-summary` (M7.1, strukturierte JSONL-Prioritäten) | Native Journal-Integration, Syslog-Syntax, Authentifizierungsereignisse, macOS Unified Log | In Arbeit |
+| **9 – Log Files** | `log-summary` (unstrukturierter Text), `journal-summary` (M7.1, JSONL), `syslog-summary` (M7.2, RFC3164/RFC5424 mit explizitem PRI) | Native Journal-Integration, lokale Syslog-Formate ohne PRI, Authentifizierungsereignisse, macOS Unified Log | In Arbeit |
 | **10 – Security and Network Monitoring** | SSH-, SUID-, Integritäts- und TCP-Prüfungen | Netzwerk-, Dienst- und Firewall-Inventar | Teilweise |
 
 **Geplante Reihenfolge:** M4 User Activity (zunächst aktuelle Sessions/Prozesse,
