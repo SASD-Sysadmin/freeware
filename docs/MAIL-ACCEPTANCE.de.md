@@ -102,6 +102,36 @@ Postfix-/TLS-Prüfungen separat durchgeführt und dokumentiert wurden. Kapitel 8
 darf durch Offline-Tests allein nicht als vollständig betrieblich abgenommen
 dargestellt werden.
 
+## Dokumentierter Praxistest am 20. Oktober 2026
+
+Der Betreiber führte die folgenden **manuellen** Prüfungen auf `dev102`
+(Debian 12, Postfix 3.7.11; kein isolierter VM-Lauf) mit der M6.4-Implementierung
+auf `main` (`6ff3ab3`) aus. Die Postfix-Instanz lauschte nur auf
+`127.0.0.1:25` und wurde nach den Tests gestoppt.
+
+| Nachweis | Beobachtung | Ergebnis |
+| --- | --- | --- |
+| Statisches `main.cf`/`master.cf`-Audit | 0 ISSUEs, 3 NOTEs | Exit `0` |
+| Reale `postqueue -j`-Abfrage | leere Queue, TOTAL 0/0/0 | Exit `0` |
+| SMTP STARTTLS mit eigener gültiger Test-CA | `verified-starttls`, `localhost:25` | Exit `0` |
+| SMTP STARTTLS ohne Vertrauen in diese CA | Zertifikatsprüfung schlug fehl, kein Downgrade | Exit `1` |
+| Zustand nach dem Test | kein Listener mehr auf TCP/25 | erfolgreich gestoppt |
+
+Diese Ergebnisse belegen die getesteten **Teilpfade**: Sie beweisen weder
+die Auswertung einer tatsächlich gefüllten Postfix-Queue noch die Sicherheit
+der wirksamen Relay-/TLS-Konfiguration. Insbesondere blieb der erkannte
+`master.cf`-Service-Override bei den drei NOTEs; `postconf -n`, `-M` und `-P`
+wurden hier nicht als fachlich bewertete Gegenprüfung dokumentiert. Die
+TLS-Negativprobe belegte die Ablehnung der unbekannten Test-CA, nicht jeden
+denkbaren Zertifikatsfehler. IPv6, implizites SMTPS/465 und weitere
+Plattformen wurden nicht praktisch abgenommen.
+
+**Betriebshinweis:** Die Laborinstallation ersetzte auf `dev102` Exim4 durch
+Postfix. Der lokale SMTP-Dienst wurde gestoppt, eine dauerhafte Entscheidung
+über MTA und Autostart ist separat nötig. Eine künftige abschließende Prüfung
+soll in einer isolierten VM erfolgen und keine echten Nachrichten verwenden.
+Die Laborzertifikate und privaten Schlüssel gehören nicht ins Repository.
+
 ## Offizielle Referenzen
 
 - [postqueue(1) – `-j` und nichtatomare Queue-Informationen](https://www.postfix.org/postqueue.1.html)

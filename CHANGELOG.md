@@ -4,6 +4,21 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 9 – Log Files (M7.1, offline systemd journal summary)
+
+- Add `journal-summary`: bounded structured `journalctl --output=json`
+  priority aggregation in Perl. No native journal access or message disclosure.
+- Add offline positive/negative regression tests, bilingual guides, a
+  manpage and Ubuntu/macOS staged installation checks.
+- Document limits and remaining Linux/macOS live journal integration gaps.
+
+### Chapter 8 – Electronic Mail (M6, limited native Postfix evidence)
+
+- Record operator-observed Debian 12/Postfix 3.7.11 live checks from
+  2026-10-20: empty queue, static audit, positive and negative STARTTLS.
+- Do not claim effective master.cf override review, populated queue,
+  isolated lab VM or 465/IPv6 acceptance; record MTA replacement caveat.
+
 ### Chapter 8 – Electronic Mail (M6.4, offline acceptance foundation)
 
 - Add a cross-tool mail workflow regression suite for safe and negative

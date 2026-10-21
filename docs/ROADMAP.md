@@ -17,8 +17,8 @@ and positive/negative tests before it can be considered complete.
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, resolver | Gap review and platform completion | Substantial, incomplete |
 | **6 – Directory Services** | LDAPS/NIS diagnostics, TLS configuration audit | Scope/platform gap analysis | Partial |
 | **7 – SQL Administration** | `db-probe` (M5.1), `db-health` (M5.2), `db-activity` (M5.3) for PostgreSQL/MySQL/MariaDB; MariaDB/MySQL `db-storage` (M5.4) | PostgreSQL storage backend, Oracle/SQL Server, MySQL blocker graph, growth reports and live cross-engine acceptance | In progress |
-| **8 – Electronic Mail** | `mail-probe` (M6.1; verified STARTTLS), `mail-queue` (M6.2; Postfix aggregate snapshot), `mail-config-audit` (M6.3; static text review) | M6.4 offline workflow and [acceptance guide](MAIL-ACCEPTANCE.md) added; effective Postfix configuration, 465/IPv6 and live SMTP/Postfix acceptance pending | In progress |
-| **9 – Log Files** | `log-summary` | Journal, error and authentication-log audits | Major gaps |
+| **8 – Electronic Mail** | `mail-probe` (M6.1), `mail-queue` (M6.2), `mail-config-audit` (M6.3), offline workflow (M6.4); [manual partial lab test](MAIL-ACCEPTANCE.md) on Debian 12/Postfix 3.7.11 (20 Oct 2026) | Effective overrides, populated queue, isolated VM, IPv6/465, other platforms outstanding | M6 engineering scope delivered; operational gaps remain |
+| **9 – Log Files** | `log-summary` (unstructured text); `journal-summary` (M7.1, structured JSONL priorities) | Native journal integration, syslog structure, authentication events and macOS Unified Log | In progress |
 | **10 – Security and Network Monitoring** | SSH, SUID, integrity and TCP checks | Network, service and firewall inventory | Partial |
 
 **Planned order:** M4 User Activity (live snapshots, then login history),

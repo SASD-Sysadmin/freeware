@@ -1,0 +1,56 @@
+.TH JOURNAL-SUMMARY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+journal-summary \- aggregate structured systemd journal priorities without messages
+.SH SYNOPSIS
+.B journal-summary
+.RB [ --input " FILE|-]"
+.RB [ --null ]
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Reads JSON Lines from a previously exported journalctl --output=json file
+or from standard input. Counts PRIORITY 0 through 7. Missing or invalid
+priority values are counted as UNKNOWN. Never prints original log contents,
+identities, paths or messages. Does not execute journalctl.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read the specified ordinary file, or standard input (default). Symlinks
+are rejected in file mode.
+.TP
+.B --null
+Emit exactly three NUL-terminated fields per record; no TSV heading.
+.TP
+.BR -h , " --help"
+Show usage and exit successfully.
+.TP
+.B --version
+Print the command name and version on standard output.
+.SH OUTPUT
+One row for each numeric priority in 0..7, one UNKNOWN row, and one TOTAL
+row. Ordinary output uses PRIORITY, LEVEL and COUNT TSV columns.
+.SH EXIT STATUS
+.TP
+.B 0
+All records parsed; all priorities valid (including empty input).
+.TP
+.B 1
+Fully parsed but at least one priority missing or invalid.
+.TP
+.B 2
+Invalid command line.
+.TP
+.B 3
+Unreadable, malformed, truncated or oversized input or missing JSON::PP.
+.SH LIMITS
+16 MiB total input; 128 KiB per line; 50,000 records. No partial output on
+parse error or limit exceedance. Requires bounded finite input, not --follow.
+Priority fields are client-controlled; results are not intrusion detection.
+.SH EXAMPLES
+.B journalctl --no-pager -n 100 --output=json | journal-summary
+.br
+.B journal-summary --input ./synthetic.jsonl --null
+.SH NOTES
+The tool is read-only. It does not access the native macOS Unified Log.
+See the bilingual command guides for security and privacy limitations.
+.SH LICENSE
+MIT. An original SASD implementation.
