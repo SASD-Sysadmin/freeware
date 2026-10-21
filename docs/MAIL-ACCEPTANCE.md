@@ -93,6 +93,33 @@ mail acceptance remains pending** until native Postfix/TLS checks are
 performed and recorded. Offline tests alone must not be presented as full
 operational certification of Chapter 8.
 
+## Recorded live test on 20 October 2026
+
+The operator performed the following **manual** tests on `dev102`
+(Debian 12, Postfix 3.7.11; **not** an isolated VM) using the M6.4
+implementation on `main` (`6ff3ab3`). Postfix listened only on
+`127.0.0.1:25` and was stopped after the tests.
+
+| Evidence | Observation | Result |
+| --- | --- | --- |
+| Static `main.cf`/`master.cf` review | 0 ISSUEs, 3 NOTEs | exit `0` |
+| Real `postqueue -j` snapshot | empty queue, TOTAL 0/0/0 | exit `0` |
+| SMTP STARTTLS with valid private test CA | `verified-starttls`, `localhost:25` | exit `0` |
+| SMTP STARTTLS without trusting test CA | certificate validation failed; no downgrade | exit `1` |
+| Post-test state | no listener on TCP/25 | stopped |
+
+This is evidence for these specific **paths**, not proof of handling a
+populated live Postfix queue or certifying effective relay/TLS security.
+The three static notes included a `master.cf` service override that has not
+been documented as manually evaluated using `postconf -n`, `-M` and `-P`.
+The negative TLS test covered an unknown CA, not every certificate fault.
+IPv6, implicit SMTPS/465 and other operating systems were not live-tested.
+
+**Host change:** The laboratory installation replaced Exim4 with Postfix on
+`dev102`. The SMTP daemon was stopped, but a permanent MTA/autostart decision
+is still pending. Any final operational acceptance should use an isolated VM
+with no real mail and should never commit lab keys or raw certificates.
+
 ## Official references
 
 - [postqueue(1) – `-j` and non-atomic queue listings](https://www.postfix.org/postqueue.1.html)

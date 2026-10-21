@@ -1,0 +1,118 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M7.1: bounded, read-only summary of journalctl --output=json (JSON Lines).
+# This is a structured alternative to log-summary's text keyword heuristic.
+# Deliberately never prints MESSAGE, SYSLOG_IDENTIFIER, hostnames or input paths.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 16 * 1024 * 1024;    # A whole input is held in memory in V1.
+my $MAX_LINE = 128 * 1024;           # Reject unusual/hostile oversize entries.
+my $MAX_RECORDS = 50_000;           # Avoid unbounded parsing and counting.
+my @levels = qw(EMERGENCY ALERT CRITICAL ERROR WARNING NOTICE INFO DEBUG);
+my ($help, $version, $null, $input) = (0, 0, 0, '-');
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "journal-summary $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($input) || !length($input);
+
+# JSON::PP belongs to modern Perl, but is explicitly checked: an absent
+# decoder must never turn a failed parse into a success-shaped report.
+eval { require JSON::PP; 1 }
+    or fail(3, 'JSON::PP is required to parse journal JSON Lines');
+
+my $fh;
+if ($input eq '-') {
+    $fh = *STDIN;
+} else {
+    # A pathname is only a local file. Do not follow a symlink to private
+    # system resources, and never echo an operator-supplied pathname.
+    -f $input && !-l $input && -r $input
+        or fail(3, 'input must be a readable regular file, not a symlink');
+    open $fh, '<', $input or fail(3, 'cannot open input file');
+}
+binmode($fh);
+
+# Read in bounded chunks rather than one unbounded line. The total limit is
+# verified *before* adding the next chunk, including for pipes from journalctl.
+# The report is only published AFTER all records and the EOF are validated.
+my $data = '';
+while (1) {
+    my $got = read($fh, my $chunk, 8192);
+    defined($got) or fail(3, 'cannot read input');
+    last if $got == 0;
+    length($data) + $got <= $MAX_BYTES
+        or fail(3, 'journal input exceeds byte limit');
+    $data .= $chunk;
+}
+if ($input ne '-') { close($fh) or fail(3, 'cannot close input file'); }
+
+# A journalctl -o json stream is one JSON object followed by LF per record.
+# Never silently ignore a final unfinished entry or a malformed JSON record.
+length($data) == 0 || $data =~ /\n\z/
+    or fail(3, 'unterminated JSON-Lines record');
+my @records = length($data) ? split(/\n/, $data, -1) : ();
+pop @records if @records;           # The last element is empty after final LF.
+@records <= $MAX_RECORDS or fail(3, 'journal record count exceeds limit');
+
+my $json = JSON::PP->new->utf8->max_depth(16);
+my @counts = (0) x 8;
+my $unknown = 0;
+for my $line (@records) {
+    length($line) > 0 && length($line) <= $MAX_LINE
+        or fail(3, 'empty or oversized journal record');
+    # Accept CRLF fixtures as well as journalctl's ordinary LF format.
+    $line =~ s/\r\z//;
+    length($line) or fail(3, 'empty journal record');
+    my $entry = eval { $json->decode($line) };
+    !$@ && ref($entry) eq 'HASH'
+        or fail(3, 'malformed journal JSON object');
+    my $priority = $entry->{PRIORITY};
+    # PRIORITY is an untrusted client-supplied field, not a guarantee of
+    # correct severity. Only a single scalar digit 0..7 is unambiguous.
+    if (defined($priority) && !ref($priority) && $priority =~ /\A[0-7]\z/) {
+        ++$counts[$priority];
+    } else {
+        ++$unknown;
+    }
+}
+
+# Report fields are exclusively constant tokens or bounded integer counts.
+# Even arbitrary terminal escape sequences in MESSAGE cannot reach stdout.
+my @rows;
+for my $i (0 .. 7) { push @rows, [$i, $levels[$i], $counts[$i]]; }
+push @rows, ['-', 'UNKNOWN', $unknown];
+push @rows, ['-', 'TOTAL', scalar(@records)];
+if ($null) {
+    print join("\0", @$_), "\0" for @rows;
+} else {
+    print "PRIORITY\tLEVEL\tCOUNT\n";
+    print join("\t", @$_), "\n" for @rows;
+}
+# Exit 1 highlights missing, non-scalar or invalid priority fields, not an
+# intrusion or an operational security failure. No unknowns means exit 0.
+exit($unknown ? 1 : 0);
+
+sub fail {
+    my ($status, $message) = @_;
+    warn "journal-summary: $message\n";
+    exit $status;
+}
+sub usage {
+    my ($status) = @_;
+    my $out = $status ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: journal-summary [--input FILE|-] [--null] [--help | --version]
+Read bounded journalctl --output=json JSON-Lines files or stdin (default).
+Only aggregates PRIORITY 0..7; does not print log messages or identities.
+Never invokes journalctl or changes the system. --null emits three NUL
+terminated fields per row, without a header.
+Exit: 0 all priorities valid; 1 unknown priorities; 2 invalid CLI;
+      3 malformed/incomplete/oversized input or missing prerequisites.
+HELP
+    exit $status;
+}
