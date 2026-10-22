@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 9 – Log Files (M7.3, offline SSHD authentication patterns)
+
+- Add read-only `ssh-auth-summary` for bounded, privacy-preserving
+  aggregation of OpenSSH sshd message patterns in RFC3164-like local logs.
+- Keep recognized SSHD patterns, other-service lines and unsupported
+  envelopes distinct; no claim of unique logins or verified incidents.
+- Add DE/EN guides, a manpage, offline negative/positive tests and
+  Ubuntu/macOS staging checks. Native host-log acceptance remains open.
+
 ### Chapter 9 – Log Files (M7.2, offline structured syslog summary)
 
 - Add read-only `syslog-summary` for bounded RFC3164/RFC5424 priority

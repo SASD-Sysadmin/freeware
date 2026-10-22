@@ -1,0 +1,59 @@
+.TH SSH-AUTH-SUMMARY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+ssh-auth-summary \- count offline OpenSSH server authentication message patterns
+.SH SYNOPSIS
+.B ssh-auth-summary
+.RB [ --input " FILE|-" ]
+.RB [ --null ]
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Summarize recognized sshd authentication message patterns within finite,
+RFC3164-like local syslog text, with or without a numeric leading PRI.
+This is a bounded, read-only log-message analysis, not a security verdict,
+a source of genuine unique logins or a guarantee of log completeness.
+No messages, identities, addresses, hostnames or input paths are emitted.
+Other programs and host log files are not accessed implicitly.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read an ordinary file without following symlinks, or stdin (default).
+.TP
+.B --null
+Emit seven pairs of NUL-terminated EVENT/COUNT fields without a heading.
+.TP
+.BR -h , " --help"
+Print usage on standard output.
+.TP
+.B --version
+Print the command and version.
+.SH OUTPUT
+TSV columns EVENT and COUNT with rows ACCEPTED, FAILED, INVALID_USER,
+OTHER_SSHD, OTHER_SERVICE, UNKNOWN, TOTAL. The first three are recognized
+OpenSSH message patterns; they do not count unique authentication attempts.
+No personal identifiers or raw log lines are shown.
+.SH EXIT STATUS
+.TP
+.B 0
+All input envelopes structurally recognized, or empty input.
+.TP
+.B 1
+At least one envelope was UNKNOWN; no other input failure.
+.TP
+.B 2
+Invalid command arguments.
+.TP
+.B 3
+Source unavailable, symlink, invalid framing, incomplete LF-terminated
+input, or resource limits exceeded. No partial report.
+.SH LIMITS
+At most 16 MiB, 128 KiB per physical line, 50,000 records. Accepts LF and
+CRLF. Does not follow live streams, parse RFC5424 or native macOS Unified
+Logging, handle rotations, or query PAM, sudo or SSH itself.
+.SH EXAMPLE
+.B printf '%s\\n' 'Oct 21 08:30:04 host sshd[1]: Invalid user test from 192.0.2.1 port 22' | ssh-auth-summary
+.SH SEE ALSO
+.BR syslog-summary (1),
+.BR journal-summary (1),
+.BR login-audit (1)
+.SH LICENSE
+MIT. An original SASD implementation.
