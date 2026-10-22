@@ -1,0 +1,55 @@
+.TH LOG-SUMMARY-NORMALIZE 1 "2026-10-22" "SASD Freeware 0.1.0" "User Commands"
+.SH NAME
+log-summary-normalize \- convert complete M7 log aggregate reports to JSON Lines
+.SH SYNOPSIS
+.B log-summary-normalize
+.B --source
+.I journal-summary|syslog-summary|ssh-auth-summary|auth-event-summary
+.RB [ --input " FILE|-" ]
+.RB [ --format " tsv|null" ]
+.br
+.B log-summary-normalize
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Converts a complete, bounded TSV or NUL summary report from one named SASD
+log utility into a stable JSONL schema. Never reads raw log content as a source,
+contacts services, or changes system state. Validation completes before output.
+.SS Schema
+Each JSON line contains schema=sasd.log-summary.v1, scope=source_summary,
+source, type, category, priority (integer or null), and numeric count. The
+TOTAL row has type=total. The complete source vocabulary and input column
+order are checked; duplicate/missing rows and inconsistent totals are rejected.
+.SH OPTIONS
+.TP
+.BI --source " NAME"
+Required. Must be exactly one of the four supported source tool names.
+.TP
+.BI --input " FILE|-"
+Read one report from a regular file or stdin (default). Named symlinks rejected.
+.TP
+.BI --format " tsv|null"
+Require the upstream tabular TSV output (default) or its --null form.
+.TP
+.B --help
+Show usage.
+.TP
+.B --version
+Show tool version.
+.SH EXIT STATUS
+0: valid complete report, no UNKNOWN. 1: valid report containing UNKNOWN.
+2: invalid CLI. 3: incomplete/malformed/oversized input or missing dependency.
+Fatal input errors never produce partial JSONL output.
+.SH SECURITY AND LIMITATIONS
+Maximum 8192 bytes, 16 report rows, counts up to 50000. All output source
+names and categories are fixed constants. Raw log content, host and identity
+data are not emitted. Reports from different tools may count the SAME
+underlying log records. Never sum them as a distinct-event count. There is
+no event-level timestamp, de-duplication, temporal correlation or claim of
+verified security incidents in this schema.
+.SH SEE ALSO
+.BR journal-summary (1),
+.BR syslog-summary (1),
+.BR ssh-auth-summary (1),
+.BR auth-event-summary (1)
+.SH AUTHOR
+SASD Freeware contributors.

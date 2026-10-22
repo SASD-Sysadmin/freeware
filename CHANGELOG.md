@@ -4,6 +4,17 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 9 – Log Files (M7.5, normalized summary contract)
+
+- Add read-only `log-summary-normalize` for exact TSV/NUL ingestion of
+  M7.1–M7.4 reports with stable, source-tagged `sasd.log-summary.v1` JSONL.
+- Reconcile every category against TOTAL before output; reject malformed,
+  truncated and inconsistent reports without partial disclosure.
+- Record that source summaries can overlap: no deduplication, timestamps,
+  event-level correlation or distinct-incident totals are claimed.
+- Add DE/EN guides, manpage, offline regression/compatibility tests and
+  Ubuntu/macOS staged installation checks.
+
 ### Chapter 9 – Log Files (M7.4, offline sudo/su/PAM patterns)
 
 - Add read-only `auth-event-summary` for bounded offline sudo, su and selected

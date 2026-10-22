@@ -125,7 +125,26 @@ SKIP: {
 }
 SKIP: {
     skip 'native ps not installed', 1 unless -x '/bin/ps' || -x '/usr/bin/ps';
-    ($rc) = run_cli('process-report', '--limit', '2');
-    is($rc, 0, 'native ps execution succeeds');
+    ($rc, $out, $err) = run_cli('process-report', '--limit', '2');
+
+    # On an active host the contents of ps can change between CI runs.
+    # An unusual backend record is a documented finding (exit 1), not a
+    # failure to execute ps. Accept that status ONLY with the exact skipped-
+    # record diagnostic. Exit 2/3 and any broken output remain test failures.
+    my $complete = $rc == 0 && $err eq '';
+    my $partial = $rc == 1 &&
+        $err =~ /\Aprocess-report: skipped [1-9][0-9]* malformed input record\(s\)\n\z/;
+    my $structured =
+        $out =~ /\APID\tPPID\tUSER\tSTATE\tELAPSED\tCOMMAND\n/ &&
+        $out =~ /Matching: [0-9]+\nShown: [0-2]\n\z/;
+    my $accepted = ($complete || $partial) && $structured;
+    unless ($accepted) {
+        # Diagnostics help identify unexpected macOS runner behavior. Limit
+        # and sanitize them so control bytes never escape into CI output.
+        my $safe = substr($err, 0, 300);
+        $safe =~ s/[^\x20-\x7e\n\t]/?/g;
+        diag("native ps exit=$rc; stderr=$safe");
+    }
+    ok($accepted, 'native ps succeeds or reports an explicit partial inventory');
 }
 done_testing();
