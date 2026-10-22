@@ -1,0 +1,182 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.2 – Read-only routing table inventory for Linux and macOS/BSD.
+#
+# Architecture: transport/backend selection lives HERE; pure parsing lives in
+# SASD::Freeware::NetworkRoutes. The program never edits routes or executes a
+# shell. Native collection is two explicit snapshots, IPv4 and IPv6, so a
+# missing family cannot be mistaken for a truly empty table.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use JSON::PP ();
+use File::Spec ();
+use SASD::Freeware::NetworkRoutes qw(parse_routes);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 8 * 1024 * 1024;
+my ($help, $version, $input, $format, $family, $null) =
+    (0, 0, undef, 'auto', 'all', 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'format=s' => \$format,
+           'family=s' => \$family, 'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "network-route-report $VERSION\n"; exit 0; }
+usage(2) if @ARGV || $format !~ /\A(?:auto|ip-json|netstat)\z/ ||
+            $family !~ /\A(?:all|inet|inet6)\z/ ||
+            (defined($input) && !length($input));
+
+# Native source selection is explicit and uses absolute paths. Operators may
+# still replay a saved snapshot from another OS through --input/--format.
+my $data;
+if (defined($input)) {
+    if ($input eq '-') {
+        binmode(STDIN);
+        $data = _read_bounded(*STDIN);
+    } else {
+        my @before = lstat($input);
+        @before && -f _ && !-l _ && -r _
+            or fail(3, 'input must be a readable regular file (not a symlink)');
+        open my $fh, '<', $input or fail(3, 'cannot open route snapshot');
+        my @after = stat($fh);
+        @after && -f $fh && $before[0] == $after[0] &&
+            $before[1] == $after[1]
+            or fail(3, 'route snapshot changed while opening');
+        binmode($fh);
+        $data = _read_bounded($fh);
+        close($fh) or fail(3, 'cannot finish route snapshot');
+    }
+} else {
+    my $os = $^O;
+    my ($native_format, @commands);
+    if ($os eq 'linux') {
+        $native_format = 'ip-json';
+        my ($ip) = grep { -f $_ && -x $_ }
+            qw(/usr/sbin/ip /sbin/ip /usr/bin/ip /bin/ip);
+        defined($ip) or fail(3, 'required iproute2 executable is unavailable');
+        @commands = ([$ip, '-j', '-4', 'route', 'show', 'table', 'all'],
+                     [$ip, '-j', '-6', 'route', 'show', 'table', 'all']);
+    } elsif ($os =~ /\A(?:darwin|freebsd|openbsd|netbsd|dragonfly)\z/) {
+        $native_format = 'netstat';
+        my ($netstat) = grep { -f $_ && -x $_ }
+            qw(/usr/sbin/netstat /sbin/netstat /usr/bin/netstat);
+        defined($netstat) or fail(3, 'required netstat executable is unavailable');
+        @commands = ([$netstat, '-rn', '-f', 'inet'],
+                     [$netstat, '-rn', '-f', 'inet6']);
+    } else {
+        fail(3, 'no supported native routing backend on this platform');
+    }
+    $format eq 'auto' || $format eq $native_format
+        or fail(2, 'format does not match native routing backend');
+    $format = $native_format;
+    # Always obtain both families for an all-family inventory. With --family
+    # inet|inet6 only invoke that family; neither result is guessed from the
+    # other. The same pure parser consumes native and fixture capture forms.
+    my @captures;
+    for my $i (0, 1) {
+        next if ($family eq 'inet' && $i == 1) ||
+                ($family eq 'inet6' && $i == 0);
+        push @captures, _capture(@{ $commands[$i] });
+    }
+    # Enforce the documented aggregate cap, not merely a per-command cap.
+    my $total_bytes = 0;
+    $total_bytes += length($_) for @captures;
+    $total_bytes <= $MAX_BYTES or fail(3, 'combined routing snapshot exceeds byte limit');
+    if ($format eq 'ip-json') {
+        if ($family eq 'all') {
+            # Each native output is an array, but the combined envelope also
+            # records which address family produced each `default` route.
+            my $json = JSON::PP->new->utf8->max_depth(24);
+            my @parsed;
+            for my $fragment (@captures) {
+                my $value = eval { $json->decode($fragment) };
+                !$@ && ref($value) eq 'ARRAY'
+                    or fail(3, 'native route command returned malformed JSON');
+                push @parsed, $value;
+            }
+            $data = $json->encode({inet=>$parsed[0], inet6=>$parsed[1]});
+        } else {
+            $data = $captures[0];
+        }
+    } else {
+        # netstat includes its own `Internet:`/`Internet6:` provenance.
+        $data = join("\n", @captures);
+    }
+}
+
+if ($format eq 'auto') {
+    # Container detection is safe: parsing/validation is still strict.
+    $format = $data =~ /\A\s*[\[{]/ ? 'ip-json' : 'netstat';
+}
+my $rows = eval { parse_routes($data, $format, $family) };
+!$@ && ref($rows) eq 'ARRAY'
+    or fail(3, 'malformed, incomplete or unsupported routing snapshot');
+
+# Both TSV and NUL are machine-readable and intentionally contain routing
+# metadata. Do not paste reports into public tickets without redaction.
+if ($null) {
+    for my $row (@$rows) { print join("\0", @$row), "\0"; }
+} else {
+    print "FAMILY\tDESTINATION\tGATEWAY\tINTERFACE\tTABLE\tMETRIC\tTYPE\tFLAGS\n";
+    for my $row (@$rows) { print join("\t", @$row), "\n"; }
+}
+exit 0;
+
+sub _read_bounded {
+    my ($fh) = @_;
+    my $data = '';
+    while (1) {
+        my $n = read($fh, my $chunk, 8192);
+        defined($n) or fail(3, 'cannot read routing snapshot');
+        last unless $n;
+        length($data) + $n <= $MAX_BYTES
+            or fail(3, 'routing snapshot exceeds byte limit');
+        $data .= $chunk;
+    }
+    return $data;
+}
+
+sub _capture {
+    my (@argv) = @_;
+    # List-form fork/exec has no shell interpolation. Capture stdout only;
+    # raw native stderr might contain host paths and must stay private.
+    # Fork explicitly so the child can discard raw native diagnostics. The
+    # parent never interpolates shell syntax, and the fixed argv is trusted.
+    my $pid = open my $fh, '-|';
+    defined($pid) or fail(3, 'cannot launch native routing command');
+    if (!$pid) {
+        open STDERR, '>', File::Spec->devnull or exit 127;
+        exec { $argv[0] } @argv;
+        exit 127;
+    }
+    binmode($fh);
+    my $data = _read_bounded($fh);
+    close($fh) or fail(3, 'native routing command failed');
+    return $data;
+}
+sub fail {
+    my ($code, $message) = @_;
+    warn "network-route-report: $message\n";
+    exit($code);
+}
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: network-route-report [--input FILE|-] [--format auto|ip-json|netstat]
+       [--family all|inet|inet6] [--null] [--help | --version]
+Read-only routing inventory: Linux ip -j -4/-6 route show table all;
+macOS/BSD netstat -rn -f inet/inet6. No network configuration changes.
+Linux offline --family all requires {"inet":[],"inet6":[]} JSON envelope;
+single-family captures are arrays used with --family inet|inet6.
+netstat offline input includes Internet: and/or Internet6: sections.
+Output: FAMILY DESTINATION GATEWAY INTERFACE TABLE METRIC TYPE FLAGS.
+'-' means unavailable, not zero. --null emits eight NUL fields per row.
+Exit: 0 validated inventory; 2 command-line error; 3 input/backend error.
+Route and gateway information may be sensitive; restrict report sharing.
+HELP
+    exit($code);
+}

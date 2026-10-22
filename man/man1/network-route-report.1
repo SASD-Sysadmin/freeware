@@ -1,0 +1,79 @@
+.TH NETWORK-ROUTE-REPORT 1 "October 2026" "SASD Freeware M8.2" "User Commands"
+.SH NAME
+network-route-report \- read-only IPv4/IPv6 routing inventory
+.SH SYNOPSIS
+.B network-route-report
+.RB [ --input " FILE|-" ]
+.RB [ --format " auto|ip-json|netstat" ]
+.RB [ --family " all|inet|inet6" ]
+.RB [ --null ]
+.br
+.B network-route-report
+.B --help | --version
+.SH DESCRIPTION
+Inventories a bounded routing-table snapshot without changing any network
+configuration. The native Linux backend reads both iproute2 JSON families;
+macOS/BSD reads two netstat address-family snapshots. The implementation
+validates the complete input before printing any output.
+.PP
+The output is an observation, not proof of reachability, routing-policy
+selection, or an atomic dual-family network state.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read an offline snapshot or standard input (dash). Files must be regular,
+readable and not symbolic links. If omitted, run the native system backend.
+.TP
+.BI --format " auto|ip-json|netstat"
+Select a parser. Auto recognizes JSON versus netstat text; it never guesses
+the address family of an ambiguous default route. Native format must match
+its platform backend.
+.TP
+.BI --family " all|inet|inet6"
+Select all (default), IPv4 or IPv6. A single iproute2 JSON array requires an
+explicit single-family selection. For both families a JSON object with keys
+.B inet
+and
+.B inet6
+is required.
+.TP
+.B --null
+Emit eight NUL-terminated fields per route instead of tabular TSV.
+.TP
+.B --help
+Display help and exit successfully.
+.TP
+.B --version
+Show version and exit successfully.
+.SH OUTPUT
+Tab-separated columns:
+.B FAMILY DESTINATION GATEWAY INTERFACE TABLE METRIC TYPE FLAGS
+(with literal tabs, not spaces). Hyphen means metadata unavailable from the
+source, not zero. A default route is labeled
+.B default
+and differentiated by the family column. BSD link-layer gateways such as
+.B link#4
+are preserved without representing them as IP addresses.
+.SH EXIT STATUS
+.TP
+.B 0
+Validated snapshot, including a fully identified empty routing table.
+.TP
+.B 2
+Invalid command line or incompatible native-format selection.
+.TP
+.B 3
+Missing backend, file error, malformed/incomplete/oversized snapshot or
+native command failure. No partial inventory is printed.
+.SH SAFETY AND LIMITATIONS
+Read-only, never shell-interpolates arguments; rejects ambiguous advanced
+Linux next-hop structures, unknown formats and incomplete BSD route tables.
+Input is limited to 8 MiB, with bounded records. Routing metadata may be
+sensitive. macOS/BSD live-output acceptance is pending; supported fixtures
+are not proof of every OS/version layout.
+.SH SEE ALSO
+.BR network-interface-report (1),
+.BR ip (8),
+.BR netstat (1)
+.SH AUTHORS
+SASD SysAdmin contributors.
