@@ -1,0 +1,89 @@
+.TH NETWORK-SERVICE-REPORT 1 "October 2026" "SASD Freeware M8.3" "User Commands"
+.SH NAME
+network-service-report \- read-only TCP listener and UDP binding inventory
+.SH SYNOPSIS
+.B network-service-report
+.RB [ --input " FILE|-" ]
+.RB [ --format " auto|ss|netstat" ]
+.RB [ --family " all|inet|inet6" ]
+.RB [ --protocol " all|tcp|udp" ]
+.RB [ --null ]
+.br
+.B network-service-report
+.B --help | --version
+.SH DESCRIPTION
+Produces a bounded snapshot of local TCP LISTEN sockets and locally bound,
+unconnected UDP sockets. It performs no remote scan or connection test,
+requires no administrative privileges and makes no network changes.
+.PP
+Local binding is not proof of reachability. A process may be hidden by host
+permissions or a different namespace; firewalls, NAT and routing are not
+examined. PID, executable name and username are deliberately unavailable.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read a saved text snapshot or standard input (dash). Paths must be readable
+regular files, not symbolic links. Omit this option for native collection.
+.TP
+.BI --format " auto|ss|netstat"
+Choose Linux ss or BSD-style netstat parser. Auto recognizes the Internet
+table heading or ss lines, not guessed address families. A native format
+must match the operating system backend.
+.TP
+.BI --family " all|inet|inet6"
+Include all, IPv4, or IPv6 entries. Wildcard-only ss sockets report
+.B unknown
+family and are excluded by single-family selection.
+.TP
+.BI --protocol " all|tcp|udp"
+Include both protocols (default), TCP listeners only, or unconnected UDP
+bindings only.
+.TP
+.B --null
+Output seven NUL-terminated fields per row, without a header.
+.TP
+.B --help
+Display usage and exit successfully.
+.TP
+.B --version
+Show version and exit successfully.
+.SH OUTPUT
+Default TSV fields:
+.B FAMILY PROTOCOL LOCAL_ADDRESS LOCAL_PORT STATE PEER_ADDRESS PEER_PORT
+(separated by literal TAB bytes).
+.B LISTEN
+is used only for TCP;
+.B BOUND
+is used for unconnected UDP, and does not imply application readiness.
+IPv6 zone identifiers are preserved. A wildcard address is written as
+.BR * .
+Each NUL output row comprises exactly seven NUL-terminated fields.
+.SH PLATFORMS
+Linux uses the absolute-path
+.B ss -H -n -l -t -u
+command; macOS/BSD uses
+.BR netstat -an .
+No shell or external DNS lookup is used. Version-specific native BSD
+layouts still require acceptance testing. Only Internet sockets are reported.
+.SH LIMITS
+Maximum 8 MiB input, 8192 physical lines, 65536 bytes per input line
+and 4096 reported rows. Malformed or partial snapshots are rejected without
+printing partial output. Raw socket data and input file paths are not quoted
+in error messages. Output may contain sensitive infrastructure metadata.
+.SH EXIT STATUS
+.TP
+.B 0
+Fully validated inventory, including a valid empty result.
+.TP
+.B 2
+Invalid options or incompatible native format.
+.TP
+.B 3
+Backend failure, invalid path, oversized, malformed or incomplete snapshot.
+.SH SEE ALSO
+.BR network-interface-report (1),
+.BR network-route-report (1),
+.BR ss (8),
+.BR netstat (1)
+.SH AUTHORS
+SASD SysAdmin contributors.

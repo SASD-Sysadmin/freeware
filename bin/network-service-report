@@ -1,0 +1,131 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.3 – Read-only inventory of local TCP listeners and unconnected UDP binds.
+#
+# Three intentionally separate stages:
+#   1. Acquire a finite native snapshot from a trusted absolute-path program,
+#      or from an offline regular file/STDIN. No shell is ever invoked.
+#   2. Validate ALL records with the pure NetworkServices parser. Do not print
+#      even the TSV header until validation succeeds (fail closed).
+#   3. Serialize the validated, consistently typed rows to TSV or NUL fields.
+#
+# The output is a local socket inventory, NOT a scan. Firewall policies, NAT,
+# routing, containers, privileges and external reachability are not tested.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::NetworkServices qw(parse_snapshot);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 8 * 1024 * 1024;
+my ($help,$version,$input,$format,$family,$protocol,$null) =
+    (0,0,undef,'auto','all','all',0);
+Getopt::Long::Configure('no_auto_abbrev','no_ignore_case');
+GetOptions('help|h'=>\$help,'version'=>\$version,'input=s'=>\$input,
+           'format=s'=>\$format,'family=s'=>\$family,
+           'protocol=s'=>\$protocol,'null'=>\$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "network-service-report $VERSION\n"; exit 0; }
+usage(2) if @ARGV || $format !~ /\A(?:auto|ss|netstat)\z/ ||
+            $family !~ /\A(?:all|inet|inet6)\z/ ||
+            $protocol !~ /\A(?:all|tcp|udp)\z/ ||
+            (defined($input) && !length($input));
+
+my ($fh,$backend);
+if (defined($input) && $input ne '-') {
+    # lstat rejects symlinks, while fstat verifies the exact object opened.
+    # Check both inode and device to defend against pathname replacement.
+    my @before = lstat($input);
+    @before && -f _ && !-l _ && -r _
+        or fail(3,'input must be a readable regular file, not a symlink');
+    open $fh,'<',$input or fail(3,'cannot open input');
+    my @after = stat($fh);
+    @after && -f $fh && $before[0] == $after[0] && $before[1] == $after[1]
+        or fail(3,'input changed while opening');
+} elsif (defined $input) {
+    $fh = *STDIN;
+} else {
+    my ($native_format,@candidates,@args);
+    if ($^O eq 'linux') {
+        # `-H` suppresses the header; `-n` prohibits DNS/service lookups;
+        # `-l -t -u` asks ss for local TCP/UDP listening/bound sockets.
+        # We deliberately omit -p: process ownership can require privileges
+        # and is outside the portable base contract.
+        $native_format='ss';
+        @candidates=qw(/usr/bin/ss /usr/sbin/ss /bin/ss /sbin/ss);
+        @args=('-H','-n','-l','-t','-u');
+    } elsif ($^O =~ /\A(?:darwin|freebsd|openbsd|netbsd|dragonfly)\z/) {
+        # Native BSD netstat usually includes Unix-domain sockets too. Only
+        # tcp4/udp4/tcp6/udp6 Internet rows are used; everything else stays
+        # outside the data model. Individual BSD releases need live checks.
+        $native_format='netstat';
+        @candidates=qw(/usr/sbin/netstat /usr/bin/netstat /sbin/netstat);
+        @args=('-an');
+    } else {
+        fail(3,'no supported native socket backend on this platform');
+    }
+    ($format eq 'auto' || $format eq $native_format)
+        or fail(2,'selected format does not match native backend');
+    $format = $native_format;
+    ($backend) = grep { -f $_ && -x $_ } @candidates;
+    defined $backend or fail(3,'required native socket command unavailable');
+    # List-form pipe open executes a fixed program with fixed arguments.
+    # Input file names never become shell command strings.
+    open $fh,'-|',$backend,@args or fail(3,'cannot launch native socket command');
+}
+binmode($fh);
+my $raw='';
+while (1) {
+    my $n=read($fh,my $chunk,8192);
+    defined $n or fail(3,'cannot read socket snapshot');
+    last if !$n;
+    length($raw)+$n <= $MAX_BYTES or fail(3,'socket snapshot exceeds byte limit');
+    $raw.=$chunk;
+}
+if (defined $backend) {
+    close($fh) or fail(3,'native socket command failed');
+} elsif (defined($input) && $input ne '-') {
+    close($fh) or fail(3,'cannot finish input file');
+}
+# A syntax marker is all we auto-detect; we never infer missing host data.
+if ($format eq 'auto') {
+    $format = $raw =~ /\A\s*Active Internet connections\b/ ? 'netstat' : 'ss';
+}
+my $rows=eval { parse_snapshot($raw,$format,$protocol,$family) };
+!$@ && ref($rows) eq 'ARRAY'
+    or fail(3,'malformed or unsupported socket snapshot');
+
+# No tab/newline can enter a field because the parser whitelists endpoints.
+# By default the header is printed once, even for an empty valid inventory.
+if ($null) {
+    for my $r (@$rows) { print join("\0",@$r),"\0"; }
+} else {
+    print "FAMILY\tPROTOCOL\tLOCAL_ADDRESS\tLOCAL_PORT\tSTATE\tPEER_ADDRESS\tPEER_PORT\n";
+    for my $r (@$rows) { print join("\t",@$r),"\n"; }
+}
+exit 0;
+
+sub fail {
+    my ($code,$message)=@_;
+    warn "network-service-report: $message\n";
+    exit $code;
+}
+sub usage {
+    my ($code)=@_;
+    my $out=$code ? *STDERR : *STDOUT;
+    print {$out} <<'USAGE';
+Usage: network-service-report [--input FILE|-] [--format auto|ss|netstat]
+       [--family all|inet|inet6] [--protocol all|tcp|udp]
+       [--null] [--help | --version]
+Read-only local TCP LISTEN and unconnected UDP BOUND socket inventory.
+Native Linux: ss -H -n -l -t -u; native macOS/BSD: netstat -an.
+TSV has seven columns; --null emits seven NUL-terminated fields per row.
+Family 'unknown' on wildcard-only ss endpoints is deliberate, not a guess.
+No PID/process names, remote scan, firewall, NAT or reachability checks.
+Exit: 0 valid snapshot; 2 invalid command line; 3 unavailable backend or
+      malformed, oversized or incomplete snapshot. No socket changes made.
+USAGE
+    exit $code;
+}
