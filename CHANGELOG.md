@@ -4,6 +4,17 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.3, local sockets)
+
+- Add read-only `network-service-report` for local TCP LISTEN sockets and
+  unconnected UDP BOUND endpoints; do not claim external reachability.
+- Separate fixed-path Linux ss/macOS-BSD netstat acquisition from a pure,
+  bounded Perl parser with strict address, port, family and state validation.
+- Preserve unknown family on ambiguous wildcard-only ss rows; never invent
+  process ownership, connection state or destination exposure.
+- Add DE/EN guides, manpage, synthetic security regression tests and
+  staged Ubuntu/macOS installation checks; native BSD acceptance is pending.
+
 ### Chapter 10 – Security and Network Monitoring (M8.2, route inventory)
 
 - Add read-only `network-route-report` with a standalone pure network-route
