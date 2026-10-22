@@ -1,0 +1,133 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.1 – Portable, read-only inventory of network interfaces and IP addresses.
+#
+# There are three deliberately separate responsibilities:
+# 1. Backend selection: run a trusted absolute-path binary without a shell.
+# 2. Snapshot validation: bound the complete input, then delegate to the
+#    pure SASD::Freeware::NetworkInterfaces parser.
+# 3. Presentation: output only validated inventory fields as TSV or NUL.
+#
+# Native commands are snapshots, NOT transactions. A device can change while
+# the command is running; this program never claims coherent network state.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::NetworkInterfaces qw(parse_snapshot);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 8 * 1024 * 1024;
+my ($help, $version, $input, $format, $family, $null) =
+    (0, 0, undef, 'auto', 'all', 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'format=s' => \$format,
+           'family=s' => \$family, 'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "network-interface-report $VERSION\n"; exit 0; }
+usage(2) if @ARGV || $format !~ /\A(?:auto|ip-json|ifconfig)\z/ ||
+            $family !~ /\A(?:all|inet|inet6)\z/ ||
+            (defined($input) && !length($input));
+
+my ($fh, $backend);
+if (defined $input && $input ne '-') {
+    # Both lstat and fstat are essential: `-f` alone follows symlinks. This
+    # also protects against a pathname replaced between validation and open.
+    my @before = lstat($input);
+    @before && -f _ && !-l _ && -r _
+        or fail(3, 'input must be a readable regular file, not a symlink');
+    open $fh, '<', $input or fail(3, 'cannot open input');
+    my @after = stat($fh);
+    @after && -f $fh && $before[0] == $after[0] && $before[1] == $after[1]
+        or fail(3, 'input changed while opening');
+} elsif (defined $input) {
+    $fh = *STDIN;
+} else {
+    # No PATH search or shell expansion. Linux iproute2 emits bounded JSON;
+    # macOS and BSD-family hosts commonly expose ifconfig text instead.
+    # A manually selected format must match its native backend; operators
+    # can always use --input for fixtures from another platform.
+    my $os = $^O;
+    my ($native_format, @candidates, @args);
+    if ($os eq 'linux') {
+        $native_format = 'ip-json';
+        @candidates = qw(/usr/sbin/ip /sbin/ip /usr/bin/ip /bin/ip);
+        @args = ('-j', 'address', 'show');
+    } elsif ($os =~ /\A(?:darwin|freebsd|openbsd|netbsd|dragonfly)\z/) {
+        $native_format = 'ifconfig';
+        @candidates = qw(/sbin/ifconfig /usr/sbin/ifconfig);
+        @args = ('-a');
+    } else {
+        fail(3, 'no supported native interface backend on this platform');
+    }
+    $format eq 'auto' || $format eq $native_format
+        or fail(2, 'selected format does not match native backend');
+    $format = $native_format;
+    ($backend) = grep { -f $_ && -x $_ } @candidates;
+    defined($backend) or fail(3, 'required native interface command is unavailable');
+    # Perl list-form pipe open invokes the binary directly, never /bin/sh.
+    open $fh, '-|', $backend, @args or fail(3, 'cannot launch native interface command');
+}
+binmode($fh);
+
+my $data = '';
+while (1) {
+    my $n = read($fh, my $chunk, 8192);
+    defined($n) or fail(3, 'cannot read interface snapshot');
+    last if !$n;
+    length($data) + $n <= $MAX_BYTES
+        or fail(3, 'interface snapshot exceeds byte limit');
+    $data .= $chunk;
+}
+# An unsuccessful native command must never produce a deceptively complete
+# inventory, even if it managed to print some valid JSON beforehand.
+if (defined($backend)) {
+    close($fh) or fail(3, 'native interface command failed');
+} elsif (defined($input) && $input ne '-') {
+    close($fh) or fail(3, 'cannot finish input file');
+}
+
+if ($format eq 'auto') {
+    # Unlike guessing field values, recognizing the container syntax is
+    # unambiguous for our two backends: JSON starts with '['; ifconfig never
+    # does. The selected parser still validates the entire input strictly.
+    $format = $data =~ /\A\s*\[/ ? 'ip-json' : 'ifconfig';
+}
+my $rows = eval { parse_snapshot($data, $format, $family) };
+!$@ && ref($rows) eq 'ARRAY' or fail(3, 'malformed or unsupported interface snapshot');
+
+# IP addresses and MAC addresses are intentionally exposed by an INVENTORY
+# tool; unlike authentication-log analysis, these fields are the purpose of
+# the report. Input paths, raw parser text, or arbitrary backend diagnostics
+# are NOT echoed. Operators should handle output as sensitive host metadata.
+if ($null) {
+    for my $r (@$rows) { print join("\0", @$r), "\0"; }
+} else {
+    print "INTERFACE\tINDEX\tSTATE\tFAMILY\tADDRESS\tPREFIX\tMAC\n";
+    for my $r (@$rows) { print join("\t", @$r), "\n"; }
+}
+exit 0;
+
+sub fail {
+    my ($code, $message) = @_;
+    warn "network-interface-report: $message\n";
+    exit $code;
+}
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'USAGE';
+Usage: network-interface-report [--input FILE|-] [--format auto|ip-json|ifconfig]
+       [--family all|inet|inet6] [--null] [--help | --version]
+Read-only network-interface inventory. Native Linux: ip -j address show;
+native macOS/BSD: ifconfig -a. Offline input accepts saved snapshots.
+TSV output is seven columns; --null emits seven NUL-terminated fields per row.
+An interface without matching addresses is emitted with FAMILY='-'.
+Output contains host IP and MAC addresses; handle as sensitive inventory.
+Exit: 0 valid snapshot; 2 invalid command line; 3 missing backend or
+      malformed/oversized/incomplete input. No network changes are made.
+USAGE
+    exit $code;
+}

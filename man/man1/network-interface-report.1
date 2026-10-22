@@ -1,0 +1,70 @@
+.TH NETWORK-INTERFACE-REPORT 1 "October 2026" "SASD Freeware 0.1.0" "User Commands"
+.SH NAME
+network-interface-report \- read-only network interface and IP address inventory
+.SH SYNOPSIS
+.B network-interface-report
+.RB [ --input " FILE|-]"]
+.RB [ --format " auto|ip-json|ifconfig]"]
+.RB [ --family " all|inet|inet6]"]
+.RB [ --null ]
+.br
+.B network-interface-report
+.RB [ --help " | " --version ]
+.SH DESCRIPTION
+Reports interfaces, operating states, optional indices, IPv4/IPv6 addresses,
+CIDR prefix lengths and Ethernet MAC addresses. No network configuration is
+changed. A device can change while the native snapshot is collected.
+.PP
+Linux native backend uses
+.B ip -j address show
+and macOS/BSD native backend uses
+.BR "ifconfig -a" .
+Both executables are selected from fixed absolute paths and run without a
+shell. Saved snapshots can be parsed offline on any supported Perl platform.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read a saved regular, non-symlink file or standard input. By default a
+native backend is used.
+.TP
+.BI --format " auto|ip-json|ifconfig"
+Select the snapshot parser; auto recognizes a JSON array or ifconfig text.
+A forced native parser must agree with the native OS backend.
+.TP
+.BI --family " all|inet|inet6"
+Select address families. Interfaces with no matching addresses remain in
+output with FAMILY, ADDRESS and PREFIX set to a dash.
+.TP
+.B --null
+Emit seven NUL-terminated fields per row without a header.
+.TP
+.B --help
+Print usage information.
+.TP
+.B --version
+Print the program version.
+.SH OUTPUT
+TSV columns, or corresponding NUL fields: INTERFACE, INDEX, STATE, FAMILY,
+ADDRESS, PREFIX, MAC. INDEX is unavailable for ifconfig and shown as a dash.
+IPv6 link-local scope identifiers are retained. IP and MAC fields are
+sensitive inventory metadata.
+.SH EXIT STATUS
+.TP
+.B 0
+Entire bounded snapshot parsed successfully.
+.TP
+.B 2
+Invalid arguments or incompatible native format selection.
+.TP
+.B 3
+Missing or failed backend, unsafe input file, malformed or oversized
+snapshot. No partial report is printed.
+.SH LIMITATIONS
+At most 8 MiB of input, 512 interfaces, and 4,096 address records are
+accepted. Optional ifconfig lines may be ignored. Native BSD execution has
+not been validated by the M8.1 offline fixtures. An inventory is not a
+reachability, routing, or intrusion assessment.
+.SH SEE ALSO
+.BR ip (8),
+.BR ifconfig (8),
+.BR tcp-check (1)
