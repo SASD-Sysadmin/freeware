@@ -1,0 +1,59 @@
+.TH AUTH-EVENT-SUMMARY 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+auth-event-summary \- summarize selected sudo, su and PAM message patterns privately
+.SH SYNOPSIS
+.B auth-event-summary
+.RB [ --input " FILE|-" ]
+.RB [ --null ]
+.RB [ --help | --version ]
+.SH DESCRIPTION
+Read finite, traditional RFC3164-like offline syslog data with optional
+canonical PRI. Classify selected sudo/su/pam_unix log MESSAGE patterns
+without outputting identities, commands, source paths or raw log text.
+This is message counting, not verification of privileged activity,
+successful command completion, login attempts or security incidents.
+No implicit host-log access or writes; no authentication or network traffic.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read regular file (reject symlinks), or stdin (default).
+.TP
+.B --null
+Emit eleven rows with exactly two NUL-terminated fields each, no heading.
+.TP
+.BR -h , " --help"
+Print usage.
+.TP
+.B --version
+Print tool version.
+.SH OUTPUT
+TSV columns EVENT and COUNT. Classes SUDO_COMMAND, SUDO_DENIED, SU_SUCCESS,
+SU_FAILED, PAM_AUTH_FAILURE, PAM_SESSION_OPEN, PAM_SESSION_CLOSE,
+OTHER_AUTH, OTHER_SERVICE, UNKNOWN and TOTAL. One class per input line.
+PAM sessions are not proof of password authentication; sudo COMMAND logs
+are not proof of command success. User/IP/host/command/message are never shown.
+.SH EXIT STATUS
+.TP
+.B 0
+Complete valid input, possibly including failure and OTHER events.
+.TP
+.B 1
+Unrecognized envelope/PRI counted as UNKNOWN in otherwise complete input.
+.TP
+.B 2
+Invalid arguments.
+.TP
+.B 3
+Input, framing, symlink or limits failure; no partial report.
+.SH LIMITS
+Maximum 16 MiB, 128 KiB per physical record, 50,000 records. Every nonempty
+input must end in LF; CRLF allowed. No follow/rotation, RFC5424/ISO timestamp,
+native macOS Unified Log or guaranteed complete authentication coverage.
+Only sudo, sudo-i, su, su-l tags and matching pam_unix service families are
+considered. Emitter-controlled messages are not forensic proof.
+.SH SEE ALSO
+.BR ssh-auth-summary (1),
+.BR syslog-summary (1),
+.BR journal-summary (1)
+.SH LICENSE
+MIT. An original SASD Freeware implementation.
