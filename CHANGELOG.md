@@ -4,6 +4,17 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.2, route inventory)
+
+- Add read-only `network-route-report` with a standalone pure network-route
+  parser and separate Linux iproute2 JSON and macOS/BSD netstat decoding.
+- Preserve IPv4/IPv6 provenance for default routes, gateways, devices,
+  routing-table/metric metadata, and validated text/NUL output.
+- Reject ambiguous multi-next-hop and incomplete snapshots rather than
+  silently manufacturing reachability or route-completeness claims.
+- Add DE/EN guides, manpage, synthetic negative/positive regression tests
+  and Ubuntu/macOS staged installation assertions; native acceptance pending.
+
 ### Chapter 10 – Security and Network Monitoring (M8.1, network interfaces)
 
 - Add read-only `network-interface-report` with a distinct pure parser module for
