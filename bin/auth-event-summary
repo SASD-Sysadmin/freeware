@@ -1,0 +1,190 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M7.4: Bounded, offline summary of selected sudo/su/PAM syslog patterns.
+#
+# This tool reports *log-message patterns*, never independently verified
+# privilege changes, successful commands, session ownership or intrusions.
+# A sender may forge an entire syslog line. In particular a sudo COMMAND log
+# means a command invocation was logged, NOT that its execution succeeded.
+# PAM 'session opened' is not proof of successful password authentication.
+#
+# Deliberately independent of ssh-auth-summary (M7.3): its SSHD events and
+# this tool's sudo/su/PAM events must not silently share an event ontology.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 16 * 1024 * 1024;
+my $MAX_LINE = 128 * 1024;
+my $MAX_RECORDS = 50_000;
+my @events = qw(SUDO_COMMAND SUDO_DENIED SU_SUCCESS SU_FAILED
+                PAM_AUTH_FAILURE PAM_SESSION_OPEN PAM_SESSION_CLOSE
+                OTHER_AUTH OTHER_SERVICE UNKNOWN);
+my ($help, $version, $input, $null) = (0, 0, '-', 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'input=s' => \$input, 'null' => \$null) or usage(2);
+usage(0) if $help;
+if ($version) { print "auth-event-summary $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($input) || !length($input);
+
+my $fh;
+if ($input eq '-') {
+    $fh = *STDIN;
+} else {
+    # Reject links before open, then verify device/inode on the actual opened
+    # handle. Neither the path nor the OS error is echoed to the terminal.
+    my @before = lstat($input);
+    @before && -f _ && !-l _ && -r _
+        or fail(3, 'input must be a readable regular file, not a symlink');
+    open $fh, '<', $input or fail(3, 'cannot open input');
+    my @after = stat($fh);
+    @after && -f $fh && $before[0] == $after[0] && $before[1] == $after[1]
+        or fail(3, 'input changed during open or is not a regular file');
+}
+binmode($fh);
+
+# A finite, bounded snapshot is buffered so *all* validation precedes any
+# output. Fatal input errors produce no partial report. This does not follow
+# active files and cannot promise an atomic snapshot of concurrently written
+# logs: callers should supply stable, exported files when accuracy matters.
+my $data = '';
+while (1) {
+    my $got = read($fh, my $chunk, 8192);
+    defined($got) or fail(3, 'cannot read input');
+    last if !$got;
+    length($data) + $got <= $MAX_BYTES
+        or fail(3, 'input exceeds byte limit');
+    $data .= $chunk;
+}
+close($fh) or fail(3, 'cannot close input') if $input ne '-';
+length($data) == 0 || $data =~ /\n\z/
+    or fail(3, 'unterminated final record');
+my @records = length($data) ? split(/\n/, $data, -1) : ();
+pop @records if @records; # discard only the empty field after final LF
+@records <= $MAX_RECORDS or fail(3, 'record count exceeds limit');
+
+my %counts = map { $_ => 0 } @events;
+for my $line (@records) {
+    # Check physical bytes before CRLF normalization to avoid bypassing line
+    # bounds. NUL or an embedded bare CR means framing is unsafe to interpret.
+    length($line) && length($line) <= $MAX_LINE
+        or fail(3, 'empty or oversized record');
+    $line =~ s/\r\z//;
+    length($line) && $line !~ /[\x00\r]/
+        or fail(3, 'invalid record framing');
+    ++$counts{classify($line)};
+}
+
+# Fixed field vocabulary, numeric counts only: usernames, hostnames, IPs,
+# commands, timestamps, paths and arbitrary terminal control bytes never leave
+# the input parser. The stable TSV/NUL formats can be consumed by automation.
+if ($null) {
+    print "$_\0$counts{$_}\0" for @events;
+    print "TOTAL\0", scalar(@records), "\0";
+} else {
+    print "EVENT\tCOUNT\n";
+    print "$_\t$counts{$_}\n" for @events;
+    print "TOTAL\t", scalar(@records), "\n";
+}
+# UNKNOWN denotes unrecognized *envelopes*, not an authentication failure.
+# Actual failed-event labels are informational findings, not program errors.
+exit($counts{UNKNOWN} ? 1 : 0);
+
+sub classify {
+    my ($line) = @_;
+    # Optional PRI is bounded and canonical. We never search for <N> later
+    # in a message: such strings are not trustworthy metadata.
+    if ($line =~ /\A</) {
+        $line =~ s/\A<((?:0|[1-9][0-9]{0,2}))>//
+            or return 'UNKNOWN';
+        $1 <= 191 or return 'UNKNOWN';
+    }
+
+    # M7.4 accepts only *traditional* RFC3164-like local log envelopes.
+    # Without a valid month/day/time, hostname, application tag and message,
+    # an occurrence of sudo or 'session opened' is NEVER accepted as evidence.
+    $line =~ /\A(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[ ]+
+                ([0-9]{1,2})[ ]+([0-9]{2}):([0-9]{2}):([0-9]{2})[ ]+
+                ([A-Za-z0-9][A-Za-z0-9_.:-]{0,254})[ ]+
+                ([A-Za-z0-9_.\/-]{1,128})(?:\[([0-9]{1,10})\])?:[ ]+(.+)\z/sx
+        or return 'UNKNOWN';
+    my ($month, $day, $hour, $minute, $second, $app, $msg) =
+        ($1, $2, $3, $4, $5, $7, $9);
+    my %days = (Jan=>31, Feb=>29, Mar=>31, Apr=>30, May=>31,
+                Jun=>30, Jul=>31, Aug=>31, Sep=>30, Oct=>31,
+                Nov=>30, Dec=>31);
+    return 'UNKNOWN' unless $day >= 1 && $day <= $days{$month} &&
+                            $hour <= 23 && $minute <= 59 && $second <= 59;
+
+    # This slice excludes sshd PAM messages (covered independently in M7.3),
+    # and does not guess whether arbitrary program tags are PAM services.
+    # PAM messages are considered only from a supported sudo/su emitter and
+    # only when the PAM service name agrees with that emitter's family.
+    return 'OTHER_SERVICE' unless $app =~ /\A(?:sudo|sudo-i|su|su-l)\z/;
+
+    # Handle PAM before generic sudo/su messages. Do not double count a PAM
+    # failure as a sudo denial or a PAM session as a successful 'su'. The
+    # service part of pam_unix(sudo:auth) must match the logging application.
+    if ($msg =~ /\Apam_unix\((sudo|sudo-i|su|su-l):(auth|session)\):[ ]+(.+)\z/s) {
+        my ($service, $stage, $body) = ($1, $2, $3);
+        my $emitter_is_sudo = $app =~ /\Asudo/;
+        my $service_is_sudo = $service =~ /\Asudo/;
+        if (!!$service_is_sudo == !!$emitter_is_sudo) {
+            return 'PAM_AUTH_FAILURE'
+                if $stage eq 'auth' && $body =~ /\Aauthentication failure(?:;|\z)/;
+            return 'PAM_SESSION_OPEN'
+                if $stage eq 'session' && $body =~ /\Asession opened for user[ ]+\S+/;
+            return 'PAM_SESSION_CLOSE'
+                if $stage eq 'session' && $body =~ /\Asession closed for user[ ]+\S+/;
+        }
+        return 'OTHER_AUTH';
+    }
+
+    if ($app eq 'sudo' || $app eq 'sudo-i') {
+        # Require canonical structured sudo command fields in order.
+        # COMMAND can contain arbitrary private text and is never printed.
+        # The record proves *logging*, not that the command was successful.
+        return 'SUDO_COMMAND'
+            if $msg =~ /\A\S+[ ]+:[ ]+TTY=\S+[ ]+;[ ]+
+                       (?:CHROOT=\S+[ ]+;[ ]+)?PWD=\S+[ ]+;[ ]+USER=\S+[ ]+;[ ]+
+                       (?:GROUP=\S+[ ]+;[ ]+)?(?:TSID=\S+[ ]+;[ ]+)?
+                       COMMAND=\S.*\z/sx;
+        # A denial must be the operator's own top-level message, not a word
+        # embedded in COMMAND= or a forwarded arbitrary syslog payload.
+        return 'SUDO_DENIED'
+            if $msg =~ /\A\S+[ ]+:[ ]+(?:user NOT in sudoers|user NOT authorized on host|command not allowed|[0-9]+ incorrect password attempts)(?:[ ]*;[ ]+|\z)/;
+        return 'OTHER_AUTH';
+    }
+
+    # util-linux su's explicit LOG_AUTH messages, as emitted by su-common.c.
+    # A successful authentication *message* is not proof that a session was
+    # opened or that any requested command subsequently completed.
+    return 'SU_FAILED'
+        if $msg =~ /\AFAILED SU[ ]+\(to[ ]+\S+\)[ ]+\S+[ ]+on[ ]+\S+(?:[ ]|\z)/;
+    return 'SU_SUCCESS'
+        if $msg =~ /\A\(to[ ]+\S+\)[ ]+\S+[ ]+on[ ]+\S+(?:[ ]|\z)/;
+    return 'OTHER_AUTH';
+}
+
+sub fail {
+    my ($status, $reason) = @_;
+    warn "auth-event-summary: $reason\n";
+    exit $status;
+}
+sub usage {
+    my ($status) = @_;
+    my $out = $status ? *STDERR : *STDOUT;
+    print {$out} <<'USAGE';
+Usage: auth-event-summary [--input FILE|-] [--null] [--help | --version]
+Read finite RFC3164-like local syslog logs with optional leading PRI.
+Count selected sudo/su/PAM log patterns, not verified security incidents.
+Only aggregate counts; never display usernames, commands or IP addresses.
+Named input must be a regular file, not a symlink; stdin is default.
+--null: eleven rows of two NUL-terminated fields, without a TSV header.
+Exit: 0 complete; 1 unrecognized envelope(s); 2 invalid CLI;
+      3 unreadable, incomplete or oversized input.
+USAGE
+    exit $status;
+}

@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 9 – Log Files (M7.4, offline sudo/su/PAM patterns)
+
+- Add read-only `auth-event-summary` for bounded offline sudo, su and selected
+  pam_unix message-pattern counts in traditional syslog exports.
+- Keep command logs, explicit su authentication messages, PAM sessions,
+  unrecognized authentication messages and unsupported envelopes distinct.
+- Add DE/EN docs, manpage, negative/positive offline tests and staged
+  Ubuntu/macOS installation checks; native host-log acceptance is pending.
+
 ### Chapter 9 – Log Files (M7.3, offline SSHD authentication patterns)
 
 - Add read-only `ssh-auth-summary` for bounded, privacy-preserving
