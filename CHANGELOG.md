@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.1, network interfaces)
+
+- Add read-only `network-interface-report` with a distinct pure parser module for
+  bounded Linux iproute2 JSON and macOS-style ifconfig snapshots.
+- Report validated IPv4/IPv6 addresses, CIDR prefixes, Ethernet MACs and
+  interface state via TSV/NUL, including addressless interfaces.
+- Add DE/EN command guides, manpage, synthetic positive/negative tests and
+  Ubuntu/macOS staged installation checks. Native BSD acceptance remains open.
+
 ### Chapter 9 – Log Files (M7.5, normalized summary contract)
 
 - Add read-only `log-summary-normalize` for exact TSV/NUL ingestion of
