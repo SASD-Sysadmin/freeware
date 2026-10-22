@@ -1,0 +1,203 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M7.5: Normalize the existing M7.1-M7.4 aggregate reports to JSON Lines.
+#
+# DESIGN BOUNDARY: Input is one *complete report*, NOT individual log records.
+# A journal severity counter and an SSH authentication counter may describe
+# the same underlying log line. We therefore preserve the report's source,
+# refuse implicit joining/summing, and never claim event-level correlation.
+# For actual temporal correlation, later milestones need a distinct raw-event
+# schema with timestamps, provenance and documented overlap handling.
+#
+# All output values are constants, enumerated category names, or integers.
+# Never copy arbitrary log content, paths, host names or operator-supplied
+# labels into stdout. Validate the entire input before printing any JSONL.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 8192;
+my $MAX_RECORDS = 16;
+my $MAX_COUNT = 50_000;  # Compatible with existing bounded M7 summaries.
+my @levels = qw(EMERGENCY ALERT CRITICAL ERROR WARNING NOTICE INFO DEBUG);
+my @ssh = qw(ACCEPTED FAILED INVALID_USER OTHER_SSHD OTHER_SERVICE UNKNOWN);
+my @auth = qw(SUDO_COMMAND SUDO_DENIED SU_SUCCESS SU_FAILED
+              PAM_AUTH_FAILURE PAM_SESSION_OPEN PAM_SESSION_CLOSE
+              OTHER_AUTH OTHER_SERVICE UNKNOWN);
+my %sources = (
+    'journal-summary'    => 'severity',
+    'syslog-summary'     => 'severity',
+    'ssh-auth-summary'   => 'event',
+    'auth-event-summary' => 'event',
+);
+my ($source, $input, $format, $help, $version) = (undef, '-', 'tsv', 0, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('source=s' => \$source, 'input=s' => \$input,
+           'format=s' => \$format, 'help|h' => \$help,
+           'version' => \$version) or usage(2);
+usage(0) if $help;
+if ($version) { print "log-summary-normalize $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($source) || !exists($sources{$source}) ||
+            !defined($input) || !length($input) ||
+            !defined($format) || $format !~ /\A(?:tsv|null)\z/;
+
+# The source is an allowlisted program name, not an untrusted output label.
+# The records are emitted in the established upstream sequence; complete
+# enumeration makes missing or duplicated counters a fatal input error.
+my $severity = $sources{$source} eq 'severity';
+my @kinds = $severity ? (@levels, 'UNKNOWN') :
+            $source eq 'ssh-auth-summary' ? @ssh : @auth;
+my @expected = (@kinds, 'TOTAL');
+
+my $fh;
+if ($input eq '-') {
+    $fh = *STDIN;
+} else {
+    # Refuse named pipes, devices and symbolic links. Recheck the opened
+    # descriptor by dev/inode against lstat to reduce path-replacement races.
+    # Error text does not reveal an operator-supplied pathname.
+    my @before = lstat($input);
+    @before && -f _ && !-l _ && -r _
+        or fail(3, 'input must be a readable regular file, not a symlink');
+    open $fh, '<', $input or fail(3, 'cannot open input');
+    my @after = stat($fh);
+    @after && -f $fh && $before[0] == $after[0] &&
+        $before[1] == $after[1]
+        or fail(3, 'input changed during open or is not a regular file');
+}
+binmode($fh);
+
+# A report contains at most eleven rows and is intentionally small.
+# Limit bytes even for stdin (which can otherwise be an unbounded pipe), and
+# require complete framing before any stdout is written.
+my $data = '';
+while (1) {
+    my $got = read($fh, my $chunk, 2048);
+    defined($got) or fail(3, 'cannot read input');
+    last if !$got;
+    length($data) + $got <= $MAX_BYTES
+        or fail(3, 'report exceeds byte limit');
+    $data .= $chunk;
+}
+close($fh) or fail(3, 'cannot close input') if $input ne '-';
+
+my @rows;
+if ($format eq 'tsv') {
+    # Exact header is essential: the source CLI could change its schema in
+    # the future, in which case a silent shift of columns is dangerous.
+    length($data) && $data =~ /\n\z/ && $data !~ /\0/
+        or fail(3, 'incomplete or invalid TSV framing');
+    my @lines = split(/\n/, $data, -1);
+    pop @lines;                # Final element, made empty by last LF.
+    my $header = shift @lines;
+    my $needed = $severity ? "PRIORITY\tLEVEL\tCOUNT" : "EVENT\tCOUNT";
+    $header eq $needed or fail(3, 'unexpected report header');
+    @lines == @expected && @lines <= $MAX_RECORDS
+        or fail(3, 'unexpected report row count');
+    for my $line (@lines) {
+        length($line) && length($line) <= 256 && $line !~ /[\x00\r]/
+            or fail(3, 'invalid TSV record');
+        my @fields = split(/\t/, $line, -1);
+        push @rows, \@fields;
+    }
+} else {
+    # Source --null emits *fields*, each NUL terminated, with no header.
+    # The severity tools emit triples, auth tools pairs. NUL framing avoids
+    # any special handling of TAB or LF, but still requires exact row count.
+    length($data) && $data =~ /\0\z/
+        or fail(3, 'incomplete NUL framing');
+    my @fields = split(/\0/, $data, -1);
+    pop @fields;
+    my $width = $severity ? 3 : 2;
+    @fields == @expected * $width
+        or fail(3, 'unexpected NUL field count');
+    while (@fields) {
+        my @row = splice(@fields, 0, $width);
+        for my $field (@row) {
+            length($field) && length($field) <= 256 &&
+                $field !~ /[\x00-\x1f\x7f]/
+                or fail(3, 'invalid NUL field');
+        }
+        push @rows, \@row;
+    }
+}
+
+# Exact order, exact labels, strict decimal notation and bounded counts are
+# checked independently of source-reported TOTAL. An incorrect TOTAL must
+# not be exported as trusted data. Leading zeros and signs are rejected to
+# ensure a single canonical count representation.
+my @counts;
+for my $index (0 .. $#expected) {
+    my $row = $rows[$index];
+    my $kind = $expected[$index];
+    my ($reported, $number);
+    if ($severity) {
+        @$row == 3 or fail(3, 'unexpected severity field count');
+        my $priority = $index < 8 ? "$index" : '-';
+        $row->[0] eq $priority or fail(3, 'invalid severity priority');
+        $reported = $row->[1];
+        $number = $row->[2];
+    } else {
+        @$row == 2 or fail(3, 'unexpected event field count');
+        $reported = $row->[0];
+        $number = $row->[1];
+    }
+    $reported eq $kind or fail(3, 'unexpected or duplicate category');
+    defined($number) && $number =~ /\A(?:0|[1-9][0-9]{0,4})\z/ &&
+        $number <= $MAX_COUNT
+        or fail(3, 'invalid or excessive count');
+    push @counts, 0 + $number;
+}
+my $total = pop @counts;
+my $calculated = 0;
+$calculated += $_ for @counts;
+$calculated == $total or fail(3, 'TOTAL differs from category counts');
+
+# JSON::PP is core on contemporary Perl. Loading it after validation keeps
+# a missing dependency from producing partial JSONL or an empty success report.
+eval { require JSON::PP; 1 }
+    or fail(3, 'JSON::PP is required');
+my $encoder = JSON::PP->new->canonical->utf8;
+my @result;
+for my $index (0 .. $#kinds) {
+    my $priority = $severity && $index < 8 ? $index : undef;
+    push @result, {
+        schema => 'sasd.log-summary.v1', scope => 'source_summary',
+        source => $source, type => 'category', category => $kinds[$index],
+        priority => $priority, count => $counts[$index],
+    };
+}
+push @result, {
+    schema => 'sasd.log-summary.v1', scope => 'source_summary',
+    source => $source, type => 'total', category => 'TOTAL',
+    priority => undef, count => $total,
+};
+# The canonical JSON encoder quotes fixed strings and serializes real numeric
+# scalars. No input metadata is reflected, even in warning/error text.
+print $encoder->encode($_), "\n" for @result;
+exit($counts[$#counts] && $kinds[$#kinds] eq 'UNKNOWN' ? 1 : 0);
+
+sub fail {
+    my ($status, $reason) = @_;
+    warn "log-summary-normalize: $reason\n";
+    exit $status;
+}
+sub usage {
+    my ($status) = @_;
+    my $out = $status ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: log-summary-normalize --source NAME [--input FILE|-] [--format tsv|null]
+       log-summary-normalize --help | --version
+Read a COMPLETE M7.1-M7.4 summary (not raw logs) and output JSON Lines.
+NAME: journal-summary, syslog-summary, ssh-auth-summary, auth-event-summary.
+The input format must match the upstream command's default TSV or --null.
+Only whitelisted source/category strings and counts are exported.
+Do NOT sum output from different sources: the same log line may be counted
+by more than one source. No timestamps, identity, deduplication, or temporal
+correlation are implied. Input is bounded and fully validated first.
+Exit: 0 report valid; 1 report valid with UNKNOWN > 0; 2 invalid CLI;
+      3 invalid/incomplete/oversized input or missing dependency.
+HELP
+    exit $status;
+}
