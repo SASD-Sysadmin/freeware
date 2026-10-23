@@ -214,3 +214,10 @@ Für produktiven Einsatz sind Tests in isolierten BSD-VMs erforderlich.
 - [OpenBSD pfctl(8)](https://man.openbsd.org/pfctl)
 - [FreeBSD Firewall-/IPFW-Handbuch](https://docs.freebsd.org/de/books/handbook/firewalls/)
 - [NetBSD npfctl(8)](https://man.netbsd.org/NetBSD-9.5/npfctl.8)
+
+
+## M8.4.3 – Oracle Solaris (vorläufig)
+
+Für die getrennten **Solaris-PF-/IPFilter-/SMF-Quellen**, die festen
+Leseaufrufe, Datenschutzgrenzen und spätere native Abnahme siehe
+[Solaris-Abnahme](firewall-solaris-acceptance.de.md).

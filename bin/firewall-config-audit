@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # SPDX-License-Identifier: MIT
-# M8.4 – Conservative, read-only Linux/BSD firewall snapshot audit.
+# M8.4 – Conservative, read-only Linux/BSD/Solaris firewall snapshot audit.
 #
 # Architecture boundaries:
 #   * CLI: explicit source selection, safe descriptor ownership, 8 MiB limit.
@@ -28,7 +28,7 @@ GetOptions('help|h' => \$help, 'version' => \$version,
 usage(0) if $help;
 if ($version) { print "firewall-config-audit $VERSION\n"; exit 0; }
 usage(2) if @ARGV || !defined($source) ||
-    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show)\z/ ||
+    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show|solaris-pf-service|solaris-pf-rules|solaris-ipf-service|solaris-ipf-rules4|solaris-ipf-rules6)\z/ ||
     (defined($input) && !length($input));
 
 # A fixture file and an actual kernel snapshot use the identical parser.
@@ -46,7 +46,11 @@ if (defined($input)) {
     # Native capabilities depend on the actual OS, not the presence of a
     # similarly named executable. macOS PF, for example, has differences from
     # the OpenBSD/FreeBSD output contract and remains offline-only here.
-    if ($source =~ /\A(?:pf-info|pf-rules|ipfw-list|npf-show)\z/) {
+    if ($source =~ /\Asolaris-(?:pf|ipf)-/) {
+        # Solaris 10/11 IPFilter and 11.3+ PF share no reliable enablement
+        # flag. SMF service state is deliberately captured separately.
+        $^O =~ /\A(?:solaris|sunos)\z/ or fail(3, 'native Solaris firewall backend is unsupported on this OS; use --input');
+    } elsif ($source =~ /\A(?:pf-info|pf-rules|ipfw-list|npf-show)\z/) {
         my %platforms = (
             'pf-info'  => { openbsd => 1, freebsd => 1 },
             'pf-rules' => { openbsd => 1, freebsd => 1 },
@@ -62,7 +66,21 @@ if (defined($input)) {
         $fh = open_regular('/etc/ufw/ufw.conf');
     } else {
         my (@candidates, @args);
-        if ($source eq 'ufw-status') {
+        if ($source eq 'solaris-pf-service' || $source eq 'solaris-ipf-service') {
+            # The Solaris Service Management Facility is READ ONLY here.
+            # We do not issue svcadm or change the service repository.
+            @candidates = qw(/usr/bin/svcs /usr/sbin/svcs /bin/svcs);
+            my $fmri = $source eq 'solaris-pf-service'
+                ? 'svc:/network/firewall:default'
+                : 'svc:/network/ipfilter:default';
+            @args = ('-H', '-o', 'state', $fmri);
+        } elsif ($source eq 'solaris-pf-rules') {
+            @candidates = qw(/usr/sbin/pfctl /sbin/pfctl);
+            @args = ('-sr');
+        } elsif ($source eq 'solaris-ipf-rules4' || $source eq 'solaris-ipf-rules6') {
+            @candidates = qw(/usr/sbin/ipfstat /sbin/ipfstat);
+            @args = ($source eq 'solaris-ipf-rules6' ? '-6io' : '-io');
+        } elsif ($source eq 'ufw-status') {
             @candidates = qw(/usr/sbin/ufw /sbin/ufw /usr/bin/ufw /bin/ufw);
             @args = ('status', 'verbose');
         } elsif ($source eq 'nft-json') {
@@ -157,14 +175,18 @@ Usage: firewall-config-audit --source SOURCE [--input FILE|-] [--null]
        firewall-config-audit --help | --version
 Linux sources: ufw-config, ufw-status, nft-json, iptables-save, ip6tables-save
 BSD sources:   pf-info, pf-rules, ipfw-list, npf-show
-Native: PF on OpenBSD/FreeBSD; IPFW on FreeBSD; NPF on NetBSD.
+Solaris:       solaris-pf-service, solaris-pf-rules, solaris-ipf-service,
+               solaris-ipf-rules4, solaris-ipf-rules6
+Native: PF on OpenBSD/FreeBSD; IPFW on FreeBSD; NPF on NetBSD;
+        Solaris SMF, PF and IPFilter sources on Solaris only.
 Read-only, source-tagged snapshots; --source is required and never guessed.
 Without --input, run only a fixed read-only native command or read UFW config.
 --input safely replays offline fixtures on Linux, macOS and other Unix systems.
 TSV has eight columns; --null emits eight NUL-terminated fields per record.
 PF rules and IPFW counts are PARTIAL; PF anchors and dynamic IPFW rules are
 not expanded. NPF reports filtering and configuration state separately.
-None of these sources proves whole-host firewall protection.
+Solaris SMF state is not kernel state; IPFilter and Solaris PF counts are
+PARTIAL. None of these sources proves whole-host firewall protection.
 Exit: 0 validated source summary; 2 invalid options; 3 unavailable/denied/malformed.
 HELP
     exit $code;
