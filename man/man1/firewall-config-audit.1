@@ -1,0 +1,80 @@
+.TH FIREWALL-CONFIG-AUDIT 1 "October 2026" "SASD Freeware M8.4.1" "User Commands"
+.SH NAME
+firewall-config-audit \- read-only Linux firewall configuration and runtime inventory
+.SH SYNOPSIS
+.B firewall-config-audit
+.BI --source " ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save"
+.RB [ --input " FILE|-" ]
+.RB [ --null ]
+.br
+.B firewall-config-audit
+.B --help | --version
+.SH DESCRIPTION
+Reads and validates one explicitly selected firewall source. No firewall
+configuration or runtime state is modified. The command never escalates
+privileges or interprets input as shell code. Native inspection supports
+Linux only; offline source-specific fixtures can be read on other platforms.
+.PP
+Configuration and runtime observations are never equated. UFW INACTIVE
+is not proof that kernel packet filtering is absent; nftables/iptables
+snapshots can overlap when using iptables-nft.
+.SH OPTIONS
+.TP
+.BI --source " NAME"
+Required explicit parser and native acquisition source. Supported values are
+.BR ufw-config ,
+.BR ufw-status ,
+.BR nft-json ,
+.B iptables-save
+and
+.BR ip6tables-save .
+.TP
+.BI --input " FILE|-"
+Read a stored firewall snapshot; a single dash means standard input.
+Regular files are accepted only when not symlinks. If omitted, the chosen
+native Linux source is read using a fixed absolute path and read-only args.
+.TP
+.B --null
+Emit eight NUL-terminated fields per row, with no header.
+.TP
+.B --help
+Display help and exit successfully.
+.TP
+.B --version
+Display version and exit successfully.
+.SH OUTPUT
+Tab-separated columns:
+.B ENGINE SCOPE STATE FAMILY TABLE CHAIN POLICY RULES
+(literal TAB separators). A dash means not available. Runtime nftables and
+iptables inventories use state OBSERVED: a readable snapshot, not a claim
+of successful firewall enforcement. UFW configuration uses ENABLED/DISABLED
+and UFW management status uses ACTIVE/INACTIVE.
+.PP
+RULES counts source-specific rule objects, -A entries, or UFW display lines.
+Do not combine counts or infer network reachability, firewall absence,
+packet behavior, compliance, or host security from these rows.
+.SH EXIT STATUS
+.TP
+.B 0
+One complete, validated snapshot, including empty sources.
+.TP
+.B 2
+Invalid command line or missing/unsupported source.
+.TP
+.B 3
+Missing backend, denied access, unsafe input file, command failure,
+oversized, malformed or unsupported snapshot. No partial output.
+.SH SAFETY AND LIMITATIONS
+Only fixed read-only acquisition operations. Entire input is bounded to
+8 MiB and validated before output. No individual filter rules, source or
+destination addresses, comments or input paths are printed. Capture records
+are not atomic across sources or kernel policy namespaces. Native BSD,
+Solaris, HP-UX and IRIX firewall support is planned but NOT implemented.
+.SH SEE ALSO
+.BR ufw (8),
+.BR nft (8),
+.BR iptables-save (8),
+.BR ip6tables-save (8),
+.BR network-service-report (1)
+.SH AUTHORS
+SASD SysAdmin contributors.
