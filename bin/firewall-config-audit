@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # SPDX-License-Identifier: MIT
-# M8.4.1 – Conservative, read-only Linux firewall snapshot audit.
+# M8.4 – Conservative, read-only Linux/BSD firewall snapshot audit.
 #
 # Architecture boundaries:
 #   * CLI: explicit source selection, safe descriptor ownership, 8 MiB limit.
@@ -28,7 +28,7 @@ GetOptions('help|h' => \$help, 'version' => \$version,
 usage(0) if $help;
 if ($version) { print "firewall-config-audit $VERSION\n"; exit 0; }
 usage(2) if @ARGV || !defined($source) ||
-    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save)\z/ ||
+    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show)\z/ ||
     (defined($input) && !length($input));
 
 # A fixture file and an actual kernel snapshot use the identical parser.
@@ -43,7 +43,21 @@ if (defined($input)) {
         $fh = open_regular($input);
     }
 } else {
-    $^O eq 'linux' or fail(3, 'native firewall inspection requires Linux; use --input for offline fixtures');
+    # Native capabilities depend on the actual OS, not the presence of a
+    # similarly named executable. macOS PF, for example, has differences from
+    # the OpenBSD/FreeBSD output contract and remains offline-only here.
+    if ($source =~ /\A(?:pf-info|pf-rules|ipfw-list|npf-show)\z/) {
+        my %platforms = (
+            'pf-info'  => { openbsd => 1, freebsd => 1 },
+            'pf-rules' => { openbsd => 1, freebsd => 1 },
+            'ipfw-list' => { freebsd => 1 },
+            'npf-show'  => { netbsd => 1 },
+        );
+        $platforms{$source}{$^O}
+            or fail(3, 'native BSD firewall backend is unsupported on this OS; use --input');
+    } else {
+        $^O eq 'linux' or fail(3, 'native Linux firewall backend is unsupported on this OS; use --input');
+    }
     if ($source eq 'ufw-config') {
         $fh = open_regular('/etc/ufw/ufw.conf');
     } else {
@@ -56,8 +70,19 @@ if (defined($input)) {
             @args = ('--json', 'list', 'ruleset');
         } elsif ($source eq 'iptables-save') {
             @candidates = qw(/usr/sbin/iptables-save /sbin/iptables-save /usr/bin/iptables-save);
-        } else {
+        } elsif ($source eq 'ip6tables-save') {
             @candidates = qw(/usr/sbin/ip6tables-save /sbin/ip6tables-save /usr/bin/ip6tables-save);
+        } elsif ($source eq 'pf-info' || $source eq 'pf-rules') {
+            @candidates = qw(/sbin/pfctl /usr/sbin/pfctl);
+            @args = ('-s', $source eq 'pf-info' ? 'info' : 'rules');
+        } elsif ($source eq 'ipfw-list') {
+            @candidates = qw(/sbin/ipfw /usr/sbin/ipfw);
+            @args = ('list');
+        } elsif ($source eq 'npf-show') {
+            @candidates = qw(/sbin/npfctl /usr/sbin/npfctl);
+            @args = ('show');
+        } else {
+            fail(2, 'unsupported firewall source');
         }
         # No shell, user-provided executable or arbitrary command arguments.
         # We never use an operation that changes, reloads or saves rules.
@@ -128,15 +153,19 @@ sub usage {
     my ($code) = @_;
     my $fh = $code ? *STDERR : *STDOUT;
     print {$fh} <<'HELP';
-Usage: firewall-config-audit --source ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save
-       [--input FILE|-] [--null] [--help | --version]
-Read-only Linux firewall inventory; --source is required and never guessed.
-Without --input, run only a fixed, read-only native command or read UFW config.
-Use --input for safe offline replay on Linux, macOS, or other Unix platforms.
+Usage: firewall-config-audit --source SOURCE [--input FILE|-] [--null]
+       firewall-config-audit --help | --version
+Linux sources: ufw-config, ufw-status, nft-json, iptables-save, ip6tables-save
+BSD sources:   pf-info, pf-rules, ipfw-list, npf-show
+Native: PF on OpenBSD/FreeBSD; IPFW on FreeBSD; NPF on NetBSD.
+Read-only, source-tagged snapshots; --source is required and never guessed.
+Without --input, run only a fixed read-only native command or read UFW config.
+--input safely replays offline fixtures on Linux, macOS and other Unix systems.
 TSV has eight columns; --null emits eight NUL-terminated fields per record.
-UFW configuration ENABLED is not UFW runtime ACTIVE; neither is proof of
-whole-host filtering. nftables/iptables counters may describe the same rules.
-Exit: 0 fully validated; 2 invalid options; 3 unavailable/denied/malformed.
+PF rules and IPFW counts are PARTIAL; PF anchors and dynamic IPFW rules are
+not expanded. NPF reports filtering and configuration state separately.
+None of these sources proves whole-host firewall protection.
+Exit: 0 validated source summary; 2 invalid options; 3 unavailable/denied/malformed.
 HELP
     exit $code;
 }

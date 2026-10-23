@@ -4,6 +4,17 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.4.2, BSD firewall inventory)
+
+- Add independently testable PF status/main filter, FreeBSD IPFW static listing
+  and NetBSD NPF status/configuration parsers in `FirewallBSD.pm`.
+- Use fixed read-only native commands only on supported BSD platform families;
+  retain portable offline `--input` replay and the eight-field output schema.
+- Explicitly mark incomplete PF/IPFW listings PARTIAL, keep NPF filtering
+  separate from loaded configuration, and avoid leaking individual rules.
+- Add 225 hostile-input/offline tests, bilingual guide updates and CI staging
+  coverage for the new library module; native BSD acceptance remains open.
+
 ### Chapter 10 – Security and Network Monitoring (M8.4.1, Linux firewall inventory)
 
 - Add `firewall-config-audit` with pure, bounded, source-specific UFW status/config,
