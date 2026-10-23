@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.4.1, Linux firewall inventory)
+
+- Add `firewall-config-audit` with pure, bounded, source-specific UFW status/config,
+  nftables JSON and IPv4/IPv6 iptables-save parsers.
+- Keep management configuration, UFW runtime status and kernel rulesets separate;
+  never infer whole-host firewall protection or count overlapping backends.
+- Redact individual rules, reject incomplete snapshots before output, add
+  DE/EN guides, manpage, hostile-input tests and staged CI installation checks.
+
 ### Chapter 10 – Security and Network Monitoring (M8.3, local sockets)
 
 - Add read-only `network-service-report` for local TCP LISTEN sockets and

@@ -1,0 +1,142 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.4.1 – Conservative, read-only Linux firewall snapshot audit.
+#
+# Architecture boundaries:
+#   * CLI: explicit source selection, safe descriptor ownership, 8 MiB limit.
+#   * Native acquisition: trusted absolute path and fixed, read-only args.
+#   * Pure parser: source-specific interpretation and bounded output rows.
+#   * Presentation: no addresses, comments or untrusted rules are disclosed.
+#
+# We do not infer host-wide firewall safety from UFW status, nftables chains,
+# or iptables-save output. Different tools can describe overlapping backends.
+# A missing command, denied access, or parse failure is UNKNOWN, not INACTIVE.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::FirewallAudit qw(parse_snapshot);
+
+my $VERSION = '0.1.0';
+my $MAX_BYTES = 8 * 1024 * 1024;
+my ($help, $version, $source, $input, $null) = (0, 0, undef, undef, 0);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'source=s' => \$source, 'input=s' => \$input, 'null' => \$null)
+    or usage(2);
+usage(0) if $help;
+if ($version) { print "firewall-config-audit $VERSION\n"; exit 0; }
+usage(2) if @ARGV || !defined($source) ||
+    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save)\z/ ||
+    (defined($input) && !length($input));
+
+# A fixture file and an actual kernel snapshot use the identical parser.
+# This makes portability testing independent from root privileges, test
+# machines and live firewall services. The operator must name the source;
+# guessing a firewall dialect from arbitrary text would be misleading.
+my ($fh, $backend);
+if (defined($input)) {
+    if ($input eq '-') {
+        $fh = *STDIN;
+    } else {
+        $fh = open_regular($input);
+    }
+} else {
+    $^O eq 'linux' or fail(3, 'native firewall inspection requires Linux; use --input for offline fixtures');
+    if ($source eq 'ufw-config') {
+        $fh = open_regular('/etc/ufw/ufw.conf');
+    } else {
+        my (@candidates, @args);
+        if ($source eq 'ufw-status') {
+            @candidates = qw(/usr/sbin/ufw /sbin/ufw /usr/bin/ufw /bin/ufw);
+            @args = ('status', 'verbose');
+        } elsif ($source eq 'nft-json') {
+            @candidates = qw(/usr/sbin/nft /sbin/nft /usr/bin/nft /bin/nft);
+            @args = ('--json', 'list', 'ruleset');
+        } elsif ($source eq 'iptables-save') {
+            @candidates = qw(/usr/sbin/iptables-save /sbin/iptables-save /usr/bin/iptables-save);
+        } else {
+            @candidates = qw(/usr/sbin/ip6tables-save /sbin/ip6tables-save /usr/bin/ip6tables-save);
+        }
+        # No shell, user-provided executable or arbitrary command arguments.
+        # We never use an operation that changes, reloads or saves rules.
+        ($backend) = grep { -f $_ && -x $_ } @candidates;
+        defined($backend) or fail(3, 'selected native firewall backend is unavailable');
+        {
+            # Ensure status headings remain English in native captures, even
+            # when the operator uses a localized terminal environment.
+            local $ENV{LC_ALL} = 'C';
+            open $fh, '-|', $backend, @args
+                or fail(3, 'cannot launch firewall inspection backend');
+        }
+    }
+}
+binmode($fh);
+
+# Collect ALL input in bounded memory. No output at all until both the native
+# command's exit status and the parser's entire snapshot are verified.
+my $text = '';
+while (1) {
+    my $n = read($fh, my $chunk, 8192);
+    defined($n) or fail(3, 'cannot read firewall snapshot');
+    last unless $n;
+    length($text) + $n <= $MAX_BYTES or fail(3, 'firewall snapshot exceeds byte limit');
+    $text .= $chunk;
+}
+# close() waits for a native child's termination and propagates failure.
+# Never mistake command output before an error for a complete ruleset.
+if (defined($backend)) {
+    close($fh) or fail(3, 'native firewall backend failed or denied access');
+} elsif (defined($input) && $input ne '-') {
+    close($fh) or fail(3, 'cannot finish firewall input file');
+} elsif (!defined($input) && $source eq 'ufw-config') {
+    close($fh) or fail(3, 'cannot finish UFW configuration file');
+}
+
+my $rows = eval { parse_snapshot($text, $source) };
+!$@ && ref($rows) eq 'ARRAY' or fail(3, 'malformed or unsupported firewall snapshot');
+
+if ($null) {
+    for my $r (@$rows) { print join("\0", @$r), "\0"; }
+} else {
+    print "ENGINE\tSCOPE\tSTATE\tFAMILY\tTABLE\tCHAIN\tPOLICY\tRULES\n";
+    for my $r (@$rows) { print join("\t", @$r), "\n"; }
+}
+exit 0;
+
+sub open_regular {
+    my ($path) = @_;
+    # lstat() rejects symlinks; stat(fh) after open guards against pathname
+    # replacement between validation and opening the input file. Never print
+    # the supplied name; paths may be private infrastructure metadata.
+    my @before = lstat($path);
+    @before && -f _ && !-l _ && -r _
+        or fail(3, 'input must be a readable regular file, not a symlink');
+    open my $local, '<', $path or fail(3, 'cannot open firewall input');
+    my @after = stat($local);
+    @after && -f $local && $before[0] == $after[0] && $before[1] == $after[1]
+        or fail(3, 'firewall input changed while opening');
+    return $local;
+}
+sub fail {
+    my ($code, $reason) = @_;
+    warn "firewall-config-audit: $reason\n";
+    exit $code;
+}
+sub usage {
+    my ($code) = @_;
+    my $fh = $code ? *STDERR : *STDOUT;
+    print {$fh} <<'HELP';
+Usage: firewall-config-audit --source ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save
+       [--input FILE|-] [--null] [--help | --version]
+Read-only Linux firewall inventory; --source is required and never guessed.
+Without --input, run only a fixed, read-only native command or read UFW config.
+Use --input for safe offline replay on Linux, macOS, or other Unix platforms.
+TSV has eight columns; --null emits eight NUL-terminated fields per record.
+UFW configuration ENABLED is not UFW runtime ACTIVE; neither is proof of
+whole-host filtering. nftables/iptables counters may describe the same rules.
+Exit: 0 fully validated; 2 invalid options; 3 unavailable/denied/malformed.
+HELP
+    exit $code;
+}
