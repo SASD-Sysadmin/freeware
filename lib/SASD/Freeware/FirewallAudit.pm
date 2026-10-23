@@ -1,6 +1,6 @@
 package SASD::Freeware::FirewallAudit;
 # SPDX-License-Identifier: MIT
-# M8.4.1 – Read-only, format-aware Linux firewall snapshot interpretation.
+# M8.4 – Read-only, format-aware Linux/BSD firewall snapshot interpretation.
 #
 # This module NEVER opens files, invokes system utilities, or changes firewall
 # rules. The CLI selects a trusted acquisition adapter and bounds the input;
@@ -25,12 +25,19 @@ my $MAX_LINE = 128 * 1024;
 sub parse_snapshot {
     my ($data, $source) = @_;
     defined($data) && !ref($data) && length($data) <= $MAX_BYTES &&
-        defined($source) && $source =~ /\A(?:ufw-status|ufw-config|nft-json|iptables-save|ip6tables-save)\z/
+        defined($source) && $source =~ /\A(?:ufw-status|ufw-config|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show)\z/
         or die "invalid firewall parser arguments\n";
     # Reject binary/control framing before interpreting even the first row.
     # CRLF is accepted for exported fixtures; isolated CR is not.
     $data !~ /\x00|\r(?!\n)|[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]/
         or die "invalid firewall snapshot framing\n";
+    # BSD adapters are pure format parsers isolated in their own module.
+    # Dispatch only after the common framing, size, and source whitelist
+    # checks so Linux and BSD share the same safety boundary.
+    if ($source =~ /\A(?:pf-info|pf-rules|ipfw-list|npf-show)\z/) {
+        require SASD::Freeware::FirewallBSD;
+        return SASD::Freeware::FirewallBSD::parse_bsd_snapshot($data, $source);
+    }
     if ($source eq 'nft-json') { return _nft($data); }
     if ($source =~ /\A(?:ip6?tables-save)\z/) { return _iptables($data, $source); }
     if ($source eq 'ufw-status') { return _ufw_status($data); }

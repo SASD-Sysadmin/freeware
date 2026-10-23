@@ -1,11 +1,11 @@
-# `firewall-config-audit` – conservative Linux firewall inventory (M8.4.1)
+# `firewall-config-audit` – conservative Linux and BSD firewall inventory (M8.4.1/M8.4.2)
 
 ## Purpose
 
-The command reads **one explicitly selected Linux firewall source**, validates
+The command reads **one explicitly selected Linux or BSD firewall source**, validates
 its entire snapshot and prints a deliberately narrow, read-only inventory. The
 implementation separates the native acquisition layer (`bin/firewall-config-audit`)
-from the pure Perl parser (`lib/SASD/Freeware/FirewallAudit.pm`). The parser can
+from the pure Perl parser (`lib/SASD/Freeware/FirewallAudit.pm` with a separate pure BSD adapter (`lib/SASD/Freeware/FirewallBSD.pm`). The parser can
 be exercised on macOS, BSD or other platforms using stored Linux snapshots;
 this does **not** make it a native firewall adapter for those platforms.
 
@@ -24,6 +24,10 @@ contacted intentionally.
 | `nft-json` | `nft --json list ruleset` | **runtime**: observed nftables tables/chains/policies/rule-object counts |
 | `iptables-save` | `iptables-save` | **runtime**: IPv4 iptables chains, policies and `-A` rule counts |
 | `ip6tables-save` | `ip6tables-save` | **runtime**: IPv6 iptables chains, policies and `-A` rule counts |
+| `pf-info` | `pfctl -s info` (OpenBSD/FreeBSD) | **runtime**: PF reported `ACTIVE` or `INACTIVE`; **not** proof of coverage |
+| `pf-rules` | `pfctl -s rules` (OpenBSD/FreeBSD) | **runtime**: `PARTIAL` main filter-rule and anchor-reference counts; anchor bodies omitted |
+| `ipfw-list` | `ipfw list` (FreeBSD) | **runtime**: `PARTIAL` numbered static listing count; includes rule 65535, not dynamic states |
+| `npf-show` | `npfctl show` (NetBSD) | **runtime** filtering `ACTIVE`/`INACTIVE` **and** separate **configuration** `LOADED`/`EMPTY` |
 
 These are **different observations** and are not merged or added together.
 `ufw-config ENABLED` does **not** prove that UFW is running. `ufw-status
@@ -50,15 +54,24 @@ bin/firewall-config-audit --source ufw-status
 bin/firewall-config-audit --source nft-json
 bin/firewall-config-audit --source iptables-save
 bin/firewall-config-audit --source ip6tables-save
+# Run only on the matching BSD host (if permissions permit):
+bin/firewall-config-audit --source pf-info
+bin/firewall-config-audit --source pf-rules
+bin/firewall-config-audit --source ipfw-list
+bin/firewall-config-audit --source npf-show
 
 # Replay safely captured data, independent of host platform.
 bin/firewall-config-audit --source nft-json --input /path/to/nft-export.json
 bin/firewall-config-audit --source ufw-config --input /path/to/ufw.conf
 bin/firewall-config-audit --source iptables-save --input - --null
+bin/firewall-config-audit --source pf-info --input /path/to/pf-info.txt
+bin/firewall-config-audit --source npf-show --input /path/to/npf-show.txt
 ```
 
 Only one source is inspected per invocation. Native execution is limited to
-Linux; offline snapshots are portable. Use **trusted paths** for sensitive
+Linux for Linux sources, OpenBSD/FreeBSD for PF, FreeBSD for IPFW, and
+NetBSD for NPF; offline snapshots are portable. BSD native compatibility is
+**provisional until real-host acceptance**, particularly across OS versions. Use **trusted paths** for sensitive
 firewall exports. `--input FILE` accepts only a readable ordinary file and
 rejects symlinks (lstat + descriptor identity checks); `--input -` reads stdin.
 A native backend that exits unsuccessfully invalidates the entire snapshot.
@@ -72,6 +85,8 @@ A native backend that exits unsuccessfully invalidates the entire snapshot.
    An incomplete or unsupported snapshot is rejected, not silently truncated.
 3. **Source-specific pure parsers:** UFW config/status, nft JSON and
    iptables-save each use their own grammar and independently bounded counts.
+   BSD parsing is isolated in `FirewallBSD.pm`; its source-specific status
+   and partial-count rules do not modify the Linux parsers.
 4. **Presentation:** only validated structural metadata, not individual rule
    expressions, source/destination IP addresses, comments, paths or secrets.
    Output is emitted **only after** the complete snapshot was accepted.
@@ -82,10 +97,12 @@ Default TSV header (literal tab separators):
 ENGINE  SCOPE  STATE  FAMILY  TABLE  CHAIN  POLICY  RULES
 ```
 
-- `ENGINE`: `ufw`, `nftables`, `iptables`, `ip6tables`.
+- `ENGINE`: `ufw`, `nftables`, `iptables`, `ip6tables`, `pf`, `ipfw`, `npf`.
 - `SCOPE`: `configuration` versus `runtime`, never conflated.
 - `STATE`: `ENABLED` / `DISABLED` for UFW configuration;
-  `ACTIVE` / `INACTIVE` for the UFW frontend; `OBSERVED` for nft/iptables.
+  `ACTIVE` / `INACTIVE` for the UFW frontend or PF/NPF runtime,
+  `LOADED` / `EMPTY` for NPF configuration, `PARTIAL` for PF/IPFW listings,
+  and `OBSERVED` for nft/iptables.
   `OBSERVED` describes a readable snapshot, **not an active firewall**.
 - `FAMILY`: nftables kernel family (`ip`, `ip6`, `inet`, `bridge`, etc.) or
   `inet`/`inet6` for iptables. `-` denotes unavailable metadata.
@@ -173,6 +190,8 @@ not a reason to guess.
 perl -c bin/firewall-config-audit
 perl -c lib/SASD/Freeware/FirewallAudit.pm
 prove -v tests/test_firewall_config_audit.t
+prove -v tests/test_firewall_bsd_audit.t
+perl -c lib/SASD/Freeware/FirewallBSD.pm
 make test
 make shellcheck
 ```
@@ -180,13 +199,52 @@ make shellcheck
 All ordinary regression fixtures are synthetic and run without root or
 firewall changes. Check native output in isolated Linux laboratories before
 production acceptance. CI checks packaging/install/uninstall on Ubuntu/macOS.
-Future OpenBSD/FreeBSD PF, IPFW, NetBSD NPF, Solaris PF/IPFilter, HP-UX
-IPFilter and IRIX `ipfilterd` should have **separate acquisition adapters and
-parsers** with explicitly scoped evidence, not be mapped onto Linux grammar.
-Do not claim those platforms are supported by M8.4.1.
+M8.4.2 adds **provisional** native OpenBSD/FreeBSD PF, FreeBSD IPFW and
+NetBSD NPF acquisition; its offline parser is tested on Ubuntu/macOS but
+requires actual BSD acceptance. Solaris PF/IPFilter, HP-UX IPFilter, and IRIX
+`ipfilterd` remain planned. No source is a whole-host security score.
+
+## M8.4.2 – BSD-specific interpretation and limits
+
+* **PF status:** `pf-info` uses only the first `Status: Enabled` or
+  `Status: Disabled` field in `pfctl -s info`. It does **not** count rules.
+  `pf-rules` counts recognized `pass`, `block`, `match` statements and main
+  ruleset anchor references separately. Both rows are `PARTIAL`, because
+  anchor contents are not traversed, and NAT/rdr/tables are outside scope.
+  An empty main ruleset is not interpreted as PF disabled.
+* **IPFW:** `ipfw-list` counts numbered static listing lines, including
+  the default rule `65535`, retaining duplicate numbers if printed.
+  It does not include dynamic state (`-d`), rule-set enablement, NAT or
+  module/kernel activity. The state is always `PARTIAL`, never `ACTIVE`.
+* **NPF:** `npf-show` accepts both modern `# filtering:` / `# config:` and
+  historical `Filtering:` / `Configuration:` headers. Two rows report
+  runtime filter activity and whether a configuration is loaded independently.
+  The rest of the text is **not** treated as a complete parseable rule
+  language; no unsupported rule counts are invented.
+
+Example sanitized output:
+
+```text
+ENGINE  SCOPE          STATE     FAMILY TABLE CHAIN   POLICY RULES
+pf      runtime        ACTIVE    -      -     -       -      -
+pf      runtime        PARTIAL   -      main  filter  -      3
+pf      runtime        PARTIAL   -      main  anchors -      1
+npf     runtime        INACTIVE  -      -     -       -      -
+npf     configuration  LOADED    -      -     -       -      -
+```
+
+(The actual default format uses tabs.) These observations do not tell you
+whether traffic will pass or drop. The parsers reject malformed, oversized,
+truncated or contradictory snapshots; native command failure also exits 3.
+For real-host testing use an isolated BSD VM, inspect only with listed read
+commands, and compare with the OS's native tools before production use.
 
 ### Source references
 
 - [UFW manual](https://manpages.debian.org/ufw/ufw.8.en.html)
 - [nftables ruleset export](https://wiki.nftables.org/wiki-nftables/index.php/Operations_at_ruleset_level)
 - [iptables-save manual](https://manpages.debian.org/iptables/iptables-save.8.en.html)
+
+- [OpenBSD pfctl(8)](https://man.openbsd.org/pfctl)
+- [FreeBSD firewall/IPFW handbook](https://docs.freebsd.org/en/books/handbook/firewalls/)
+- [NetBSD npfctl(8)](https://man.netbsd.org/NetBSD-9.5/npfctl.8)
