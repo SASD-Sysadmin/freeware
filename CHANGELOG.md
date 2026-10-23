@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.4.3, Solaris)
+
+- Add pure, bounded Solaris SMF, PF-root and IPFilter IPv4/IPv6 active-ruleset
+  parsers with fixed, read-only native acquisition on SunOS.
+- Separate SMF service health from kernel rules and mark rule totals PARTIAL;
+  never treat service ONLINE or DEGRADED as a firewall-protection verdict.
+- Add English/German acceptance guides and offline hostile-input regression
+  coverage. Native Solaris verification remains explicitly deferred.
+
 ### Chapter 10 – Security and Network Monitoring (M8.4.2, BSD firewall inventory)
 
 - Add independently testable PF status/main filter, FreeBSD IPFW static listing

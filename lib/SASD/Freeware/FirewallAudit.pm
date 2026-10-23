@@ -25,7 +25,7 @@ my $MAX_LINE = 128 * 1024;
 sub parse_snapshot {
     my ($data, $source) = @_;
     defined($data) && !ref($data) && length($data) <= $MAX_BYTES &&
-        defined($source) && $source =~ /\A(?:ufw-status|ufw-config|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show)\z/
+        defined($source) && $source =~ /\A(?:ufw-status|ufw-config|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show|solaris-pf-service|solaris-pf-rules|solaris-ipf-service|solaris-ipf-rules4|solaris-ipf-rules6)\z/
         or die "invalid firewall parser arguments\n";
     # Reject binary/control framing before interpreting even the first row.
     # CRLF is accepted for exported fixtures; isolated CR is not.
@@ -37,6 +37,12 @@ sub parse_snapshot {
     if ($source =~ /\A(?:pf-info|pf-rules|ipfw-list|npf-show)\z/) {
         require SASD::Freeware::FirewallBSD;
         return SASD::Freeware::FirewallBSD::parse_bsd_snapshot($data, $source);
+    }
+    # Solaris has a distinct SMF control plane and an IPFilter grammar.
+    # Keep its parser separate, even though its later PF resembles BSD PF.
+    if ($source =~ /\Asolaris-(?:pf|ipf)-/) {
+        require SASD::Freeware::FirewallSolaris;
+        return SASD::Freeware::FirewallSolaris::parse_solaris_snapshot($data, $source);
     }
     if ($source eq 'nft-json') { return _nft($data); }
     if ($source =~ /\A(?:ip6?tables-save)\z/) { return _iptables($data, $source); }

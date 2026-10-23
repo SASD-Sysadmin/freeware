@@ -1,6 +1,6 @@
-.TH FIREWALL-CONFIG-AUDIT 1 "October 2026" "SASD Freeware M8.4.2" "User Commands"
+.TH FIREWALL-CONFIG-AUDIT 1 "October 2026" "SASD Freeware M8.4.3" "User Commands"
 .SH NAME
-firewall-config-audit \- read-only Linux/BSD firewall configuration and runtime inventory
+firewall-config-audit \- read-only Linux/BSD/Solaris read-only firewall source inventory
 .SH SYNOPSIS
 .B firewall-config-audit
 .BI --source " SOURCE"
@@ -14,7 +14,8 @@ Reads and validates one explicitly selected firewall source. No firewall
 configuration or runtime state is modified. The command never escalates
 privileges or interprets input as shell code. Native inspection supports
 Linux for the Linux sources and OpenBSD/FreeBSD/NetBSD for their
-supported BSD sources; offline fixtures work on any Perl test host.
+supported BSD sources; Oracle Solaris SMF/PF/IPFilter sources on SunOS.
+Offline fixtures work on any Perl test host.
 .PP
 Configuration and runtime observations are never equated. UFW INACTIVE
 is not proof that kernel packet filtering is absent; nftables/iptables
@@ -33,7 +34,13 @@ and
 .BR pf-rules ,
 .BR ipfw-list
 and
-.BR npf-show .
+.BR npf-show ,
+.BR solaris-pf-service ,
+.BR solaris-pf-rules ,
+.BR solaris-ipf-service ,
+.BR solaris-ipf-rules4
+and
+.BR solaris-ipf-rules6 .
 .TP
 .BI --input " FILE|-"
 Read a stored firewall snapshot; a single dash means standard input.
@@ -62,7 +69,9 @@ RULES counts source-specific rule objects, -A entries, or UFW display lines.
 Do not combine counts or infer network reachability, firewall absence,
 packet behavior, compliance, or host security from these rows. PF anchors,
 IPFW dynamic state and the effective rules across multiple engines are NOT
-reconstructed. BSD native output compatibility needs real-host acceptance.
+reconstructed. Solaris SMF service states are NOT kernel activity,
+IPFilter and Solaris PF counts are PARTIAL. Native BSD and Solaris output
+compatibility needs real-host acceptance.
 .SH EXIT STATUS
 .TP
 .B 0
@@ -79,8 +88,8 @@ Only fixed read-only acquisition operations. Entire input is bounded to
 8 MiB and validated before output. No individual filter rules, source or
 destination addresses, comments or input paths are printed. Capture records
 are not atomic across sources or kernel policy namespaces. Native BSD PF,
-IPFW and NPF sources are provided provisionally; Solaris, HP-UX and IRIX are
-not yet implemented.
+IPFW, NPF and Solaris SMF/PF/IPFilter sources are provisional.
+HP-UX and IRIX are not yet implemented. Solaris 11.4 has PF, not IPFilter.
 .SH SEE ALSO
 .BR ufw (8),
 .BR nft (8),
@@ -89,6 +98,8 @@ not yet implemented.
 .BR network-service-report (1),
 .BR pfctl (8),
 .BR ipfw (8),
-.BR npfctl (8)
+.BR npfctl (8),
+.BR svcs (1),
+.BR ipfstat (1M)
 .SH AUTHORS
 SASD SysAdmin contributors.

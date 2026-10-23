@@ -248,3 +248,10 @@ commands, and compare with the OS's native tools before production use.
 - [OpenBSD pfctl(8)](https://man.openbsd.org/pfctl)
 - [FreeBSD firewall/IPFW handbook](https://docs.freebsd.org/en/books/handbook/firewalls/)
 - [NetBSD npfctl(8)](https://man.netbsd.org/NetBSD-9.5/npfctl.8)
+
+
+## M8.4.3 – Oracle Solaris (provisional)
+
+For the separate **Solaris PF/IPFilter/SMF sources**, fixed read-only
+commands, privacy boundaries and deferred native acceptance, see
+[Solaris acceptance](firewall-solaris-acceptance.md).
