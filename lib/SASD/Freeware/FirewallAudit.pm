@@ -1,6 +1,6 @@
 package SASD::Freeware::FirewallAudit;
 # SPDX-License-Identifier: MIT
-# M8.4 – Read-only, format-aware Linux/BSD firewall snapshot interpretation.
+# M8.4 – Read-only, format-aware multi-platform firewall snapshot interpretation.
 #
 # This module NEVER opens files, invokes system utilities, or changes firewall
 # rules. The CLI selects a trusted acquisition adapter and bounds the input;
@@ -25,7 +25,7 @@ my $MAX_LINE = 128 * 1024;
 sub parse_snapshot {
     my ($data, $source) = @_;
     defined($data) && !ref($data) && length($data) <= $MAX_BYTES &&
-        defined($source) && $source =~ /\A(?:ufw-status|ufw-config|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show|solaris-pf-service|solaris-pf-rules|solaris-ipf-service|solaris-ipf-rules4|solaris-ipf-rules6)\z/
+        defined($source) && $source =~ /\A(?:ufw-status|ufw-config|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show|solaris-pf-service|solaris-pf-rules|solaris-ipf-service|solaris-ipf-rules4|solaris-ipf-rules6|firewalld-state|firewalld-active-zones|firewalld-runtime-zones|firewalld-permanent-zones)\z/
         or die "invalid firewall parser arguments\n";
     # Reject binary/control framing before interpreting even the first row.
     # CRLF is accepted for exported fixtures; isolated CR is not.
@@ -43,6 +43,13 @@ sub parse_snapshot {
     if ($source =~ /\Asolaris-(?:pf|ipf)-/) {
         require SASD::Freeware::FirewallSolaris;
         return SASD::Freeware::FirewallSolaris::parse_solaris_snapshot($data, $source);
+    }
+    # firewalld is a Linux management daemon, not an extra independent set
+    # of nftables/iptables kernel rules. Dispatch to a pure control-plane
+    # parser and never aggregate its counts with kernel rule snapshots.
+    if ($source =~ /\Afirewalld-/) {
+        require SASD::Freeware::FirewallFirewalld;
+        return SASD::Freeware::FirewallFirewalld::parse_firewalld_snapshot($data, $source);
     }
     if ($source eq 'nft-json') { return _nft($data); }
     if ($source =~ /\A(?:ip6?tables-save)\z/) { return _iptables($data, $source); }

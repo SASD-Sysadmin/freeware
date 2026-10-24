@@ -1,6 +1,6 @@
-.TH FIREWALL-CONFIG-AUDIT 1 "October 2026" "SASD Freeware M8.4.3" "User Commands"
+.TH FIREWALL-CONFIG-AUDIT 1 "October 2026" "SASD Freeware M8.4.5" "User Commands"
 .SH NAME
-firewall-config-audit \- read-only Linux/BSD/Solaris read-only firewall source inventory
+firewall-config-audit \- read-only Linux/BSD/Solaris/firewalld source inventory
 .SH SYNOPSIS
 .B firewall-config-audit
 .BI --source " SOURCE"
@@ -40,7 +40,12 @@ and
 .BR solaris-ipf-service ,
 .BR solaris-ipf-rules4
 and
-.BR solaris-ipf-rules6 .
+.BR solaris-ipf-rules6 ,
+.BR firewalld-state ,
+.BR firewalld-active-zones ,
+.BR firewalld-runtime-zones
+and
+.BR firewalld-permanent-zones .
 .TP
 .BI --input " FILE|-"
 Read a stored firewall snapshot; a single dash means standard input.
@@ -72,6 +77,14 @@ IPFW dynamic state and the effective rules across multiple engines are NOT
 reconstructed. Solaris SMF service states are NOT kernel activity,
 IPFilter and Solaris PF counts are PARTIAL. Native BSD and Solaris output
 compatibility needs real-host acceptance.
+firewalld daemon RUNNING is not a verdict about kernel filtering.
+Active zone bindings show neither individual source CIDRs nor interfaces.
+firewalld runtime and permanent zone listings are separate PARTIAL views;
+RULES is the count of explicitly displayed Rich Rules per zone only, not
+services, ports, policies, direct rules, or all kernel rules. A zero count
+and a zone target do not prove that any traffic is permitted or blocked.
+.PP
+See the English and German firewalld acceptance guides in docs/commands.
 .SH EXIT STATUS
 .TP
 .B 0
@@ -100,6 +113,7 @@ HP-UX and IRIX are not yet implemented. Solaris 11.4 has PF, not IPFilter.
 .BR ipfw (8),
 .BR npfctl (8),
 .BR svcs (1),
-.BR ipfstat (1M)
+.BR ipfstat (1M),
+.BR firewall-cmd (1)
 .SH AUTHORS
 SASD SysAdmin contributors.

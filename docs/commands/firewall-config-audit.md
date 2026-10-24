@@ -255,3 +255,16 @@ commands, and compare with the OS's native tools before production use.
 For the separate **Solaris PF/IPFilter/SMF sources**, fixed read-only
 commands, privacy boundaries and deferred native acceptance, see
 [Solaris acceptance](firewall-solaris-acceptance.md).
+
+
+## Linux firewalld (M8.4.5)
+
+Four explicit firewalld sources supplement UFW/nftables/iptables:
+`firewalld-state`, `firewalld-active-zones`, `firewalld-runtime-zones`
+and `firewalld-permanent-zones`. Daemon health, zone bindings, runtime
+and permanent configuration are distinct observations. `RULES` in a zone
+row counts **displayed Rich Rules only**, not services, ports, direct rules
+or effective nftables policy. The result is `PARTIAL`; it is never a
+whole-host filtering verdict. Consult the dedicated
+[firewalld Linux acceptance guide](firewall-firewalld-acceptance.md).
+Native Arch/AlmaLinux/Rocky Linux validation is still pending.
