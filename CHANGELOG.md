@@ -4,6 +4,19 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Security and Network Monitoring (M8.4.5, Linux firewalld)
+
+- Add pure, bounded `FirewallFirewalld.pm` readers for daemon status, active
+  zone bindings and runtime versus permanent zone snapshots.
+- Count only explicit displayed Rich Rules per zone; suppress interfaces,
+  source networks, services, ports and individual Rich Rule expressions.
+- Never equate firewalld daemon RUNNING, an active zone binding or a zone
+  target with effective kernel policy; reject incomplete snapshots before
+  emitting the eight-field report.
+- Add 278 synthetic hostile-input tests, DE/EN usage and native Linux
+  acceptance notes for Debian/Ubuntu, Arch, AlmaLinux and Rocky Linux.
+
+
 ### Chapter 10 – Security and Network Monitoring (M8.4.3, Solaris)
 
 - Add pure, bounded Solaris SMF, PF-root and IPFilter IPv4/IPv6 active-ruleset

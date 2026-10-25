@@ -221,3 +221,18 @@ Für produktiven Einsatz sind Tests in isolierten BSD-VMs erforderlich.
 Für die getrennten **Solaris-PF-/IPFilter-/SMF-Quellen**, die festen
 Leseaufrufe, Datenschutzgrenzen und spätere native Abnahme siehe
 [Solaris-Abnahme](firewall-solaris-acceptance.de.md).
+
+
+## Linux firewalld (M8.4.5)
+
+Neben UFW/nftables/iptables stehen nun vier **getrennte** Quellen zur
+Verfügung: `firewalld-state`, `firewalld-active-zones`,
+`firewalld-runtime-zones`, `firewalld-permanent-zones`. Der Daemonzustand,
+die aktiven Schnittstellen-/Quell-Zuordnungen und die gespeicherte
+Konfiguration werden nicht gleichgesetzt. Bei Zonenausgaben zählt `RULES`
+**ausschließlich ausdrücklich gelistete Rich Rules**; Dienste und Ports
+werden nicht als solche mitgezählt. Vollständigkeit bzw. Filterwirkung wird
+nicht behauptet (`PARTIAL`). Bitte die zusätzliche
+[firewalld-Abnahme- und Betriebsanleitung](firewall-firewalld-acceptance.de.md)
+beachten. Die native Abnahme auf AlmaLinux, Rocky, Arch und weiteren
+Linux-Distributionen steht aus.

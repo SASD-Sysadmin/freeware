@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 # SPDX-License-Identifier: MIT
-# M8.4 – Conservative, read-only Linux/BSD/Solaris firewall snapshot audit.
+# M8.4 – Conservative, read-only Linux/BSD/Solaris/firewalld audit.
 #
 # Architecture boundaries:
 #   * CLI: explicit source selection, safe descriptor ownership, 8 MiB limit.
@@ -28,7 +28,7 @@ GetOptions('help|h' => \$help, 'version' => \$version,
 usage(0) if $help;
 if ($version) { print "firewall-config-audit $VERSION\n"; exit 0; }
 usage(2) if @ARGV || !defined($source) ||
-    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show|solaris-pf-service|solaris-pf-rules|solaris-ipf-service|solaris-ipf-rules4|solaris-ipf-rules6)\z/ ||
+    $source !~ /\A(?:ufw-config|ufw-status|nft-json|iptables-save|ip6tables-save|pf-info|pf-rules|ipfw-list|npf-show|solaris-pf-service|solaris-pf-rules|solaris-ipf-service|solaris-ipf-rules4|solaris-ipf-rules6|firewalld-state|firewalld-active-zones|firewalld-runtime-zones|firewalld-permanent-zones)\z/ ||
     (defined($input) && !length($input));
 
 # A fixture file and an actual kernel snapshot use the identical parser.
@@ -80,6 +80,22 @@ if (defined($input)) {
         } elsif ($source eq 'solaris-ipf-rules4' || $source eq 'solaris-ipf-rules6') {
             @candidates = qw(/usr/sbin/ipfstat /sbin/ipfstat);
             @args = ($source eq 'solaris-ipf-rules6' ? '-6io' : '-io');
+        } elsif ($source =~ /\Afirewalld-/) {
+            # Restrict execution to a fixed absolute firewall-cmd binary and
+            # literal query-only arguments. No --reload, --set-*, --add-*,
+            # --runtime-to-permanent or user-selected flags are reachable.
+            # All four variants are Linux-only via the platform gate above.
+            @candidates = qw(/usr/bin/firewall-cmd /bin/firewall-cmd
+                             /usr/sbin/firewall-cmd /sbin/firewall-cmd);
+            if ($source eq 'firewalld-state') {
+                @args = ('--state');
+            } elsif ($source eq 'firewalld-active-zones') {
+                @args = ('--get-active-zones');
+            } elsif ($source eq 'firewalld-runtime-zones') {
+                @args = ('--list-all-zones');
+            } else {
+                @args = ('--permanent', '--list-all-zones');
+            }
         } elsif ($source eq 'ufw-status') {
             @candidates = qw(/usr/sbin/ufw /sbin/ufw /usr/bin/ufw /bin/ufw);
             @args = ('status', 'verbose');
@@ -174,11 +190,15 @@ sub usage {
 Usage: firewall-config-audit --source SOURCE [--input FILE|-] [--null]
        firewall-config-audit --help | --version
 Linux sources: ufw-config, ufw-status, nft-json, iptables-save, ip6tables-save
+firewalld:     firewalld-state, firewalld-active-zones,
+               firewalld-runtime-zones, firewalld-permanent-zones
 BSD sources:   pf-info, pf-rules, ipfw-list, npf-show
 Solaris:       solaris-pf-service, solaris-pf-rules, solaris-ipf-service,
                solaris-ipf-rules4, solaris-ipf-rules6
 Native: PF on OpenBSD/FreeBSD; IPFW on FreeBSD; NPF on NetBSD;
         Solaris SMF, PF and IPFilter sources on Solaris only.
+firewalld: daemon RUNNING is not proof of host filtering; zone lists are
+          PARTIAL, rich-rule counts exclude services, ports, and kernel rules.
 Read-only, source-tagged snapshots; --source is required and never guessed.
 Without --input, run only a fixed read-only native command or read UFW config.
 --input safely replays offline fixtures on Linux, macOS and other Unix systems.
