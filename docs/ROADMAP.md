@@ -26,6 +26,12 @@ M5 SQL, M6 Mail, M7 Logs, M8 Security/Network, M9 chapter gap closure and
 platform acceptance, M10 release artifacts. These are scope goals, not
 commitments about dates or production readiness.
 
+**M8.5 Linux acceptance:** M8.5.1 adds `linux-platform-report` and a parser
+fixture matrix for Debian, Ubuntu, Arch, AlmaLinux and Rocky Linux. Native
+package manager and firewall checks, distro-specific CI and VM acceptance
+remain **pending**. See [acceptance matrix](commands/linux-platform-acceptance.md).
+
+
 **M4 part 1 contract:** `session-report` uses `who`; `process-report` uses
 `ps`. Both are read-only, run without root, and accept offline test fixtures
 through `--input`. They are snapshots, not exhaustive history or guaranteed

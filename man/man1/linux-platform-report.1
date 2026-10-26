@@ -1,0 +1,50 @@
+.TH LINUX-PLATFORM-REPORT 1 "October 2026" "SASD Freeware M8.5.1" "User Commands"
+.SH NAME
+linux-platform-report \- report conservative Linux distribution identity
+.SH SYNOPSIS
+.B linux-platform-report
+.RB [ --input " FILE|-" ]
+.RB [ --null ]
+.RB [ --version ]
+.RB [ --help ]
+.SH DESCRIPTION
+Read a bounded os-release snapshot without evaluating shell syntax. Native
+Linux acquisition prefers /etc/os-release and falls back to /usr/lib/os-release
+only if the former is absent. An explicit input file (or stdin) enables offline
+replay on other operating systems.
+.SH OPTIONS
+.TP
+.BI --input " FILE|-"
+Read a regular non-symlink fixture file or use a dash for stdin.
+.TP
+.B --null
+Emit seven NUL-terminated fields with no header.
+.TP
+.B --version
+Print utility version.
+.TP
+.B --help
+Print usage and exit.
+.SH OUTPUT
+TSV columns are SOURCE, ID, ID_LIKE, VERSION_ID, FAMILY, EVIDENCE,
+VERSION_MODE. This report is not a package-manager, firewall or support-status
+probe. Family hints from ID_LIKE can be ambiguous and are never presented as
+installed capabilities.
+.SH LIMITS
+64 KiB input, at most 512 lines, at most 4096 bytes per line. No partial
+report is printed for malformed snapshots. No root privileges or mutations.
+.SH EXIT STATUS
+.TP
+.B 0
+Validated snapshot.
+.TP
+.B 2
+Bad arguments.
+.TP
+.B 3
+Unsafe, inaccessible, oversized or invalid input; unsupported native OS.
+.SH SEE ALSO
+.BR os-release (5),
+.BR firewall-config-audit (1)
+.SH AUTHORS
+SASD SysAdmin contributors.

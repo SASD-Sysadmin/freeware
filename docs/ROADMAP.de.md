@@ -26,6 +26,12 @@ danach Anmeldehistorie), M5 SQL, M6 Mail, M7 Logs, M8 Sicherheit und Netzwerk,
 M9 Kapitel-Lücken und plattformbezogene Qualitätsabnahme, M10 Release-Artefakte.
 Diese Reihenfolge ist eine Arbeitsplanung, keine Aussage über Produktreife oder Termine.
 
+**M8.5 Linux-Abnahme:** M8.5.1 führt `linux-platform-report` und Parser-Fixtures
+für Debian, Ubuntu, Arch, AlmaLinux und Rocky Linux ein. Native Paketmanager-
+und Firewall-Tests, distributionsspezifische CI und VM-Abnahme sind **offen**.
+Siehe [Abnahmematrix](commands/linux-platform-acceptance.de.md).
+
+
 **M4 Teil 1 – Prüfumfang:** `session-report` nutzt `who`, `process-report` nutzt
 `ps`; beide sind lesend, brauchen keine Root-Rechte und unterstützen
 synthetische Eingaben über `--input`. Ergebnisse sind Momentaufnahmen:
