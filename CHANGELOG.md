@@ -3,6 +3,11 @@
 Significant changes to this repository are documented here. Dates use ISO 8601 format.
 
 ## [Unreleased]
+### Chapter 10 – Linux platform identity (M8.5.1)
+
+- Add a bounded, data-only os-release parser and a read-only Linux identity CLI.
+- Record source provenance, conservative family hints and explicit uncertainty.
+- Add bilingual guides, a pending native acceptance matrix and offline hostile-input tests.
 
 ### Chapter 10 – Security and Network Monitoring (M8.4.5, Linux firewalld)
 

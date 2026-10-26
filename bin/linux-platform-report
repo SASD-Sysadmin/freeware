@@ -1,0 +1,78 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.5.1: safe, read-only Linux distro identity report.
+#
+# This CLI owns file acquisition and presentation. Parsing/classification
+# belongs to LinuxPlatform.pm and is independently testable with fixtures.
+# We never `source` /etc/os-release: sourcing would execute shell content.
+use strict;
+use warnings;
+use Fcntl qw(O_RDONLY O_NOFOLLOW);
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::LinuxPlatform qw(parse_os_release summarize_os_release);
+
+my $MAX_BYTES = 64 * 1024;
+my ($help, $version, $null, $input) = (0, 0, 0, undef);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions('help|h' => \$help, 'version' => \$version,
+           'null' => \$null, 'input=s' => \$input) or usage(2);
+usage(0) if $help;
+if ($version) { print "linux-platform-report 0.1.0\n"; exit 0; }
+@ARGV == 0 && (!defined($input) || length($input)) or usage(2);
+
+my ($fh, $source);
+if (defined($input)) {
+    # Operator-selected fixture files must be plain regular files, never
+    # symlinks, FIFOs or devices. '-' is bounded standard-input replay.
+    if ($input eq '-') { $fh = *STDIN; }
+    else {
+        -f $input && !-l $input or fail('unsafe input file');
+        sysopen($fh, $input, O_RDONLY | O_NOFOLLOW) or fail('cannot open input');
+        -f $fh or fail('unsafe input descriptor');
+    }
+    $source = 'INPUT';
+} else {
+    $^O eq 'linux' or fail('native detection requires Linux; use --input');
+    # Per os-release(5), /etc wins; only if it is absent may /usr/lib be
+    # consulted. A missing target of an existing symlink is an error, NOT
+    # permission to silently fall back to another file.
+    my $path = (-e '/etc/os-release' || -l '/etc/os-release')
+             ? '/etc/os-release' : '/usr/lib/os-release';
+    $source = $path eq '/etc/os-release' ? 'ETC' : 'USR_LIB';
+    -f $path or fail('native os-release unavailable');
+    # Native os-release paths are system-defined and may legitimately be
+    # symlinks; unlike --input they are not user-supplied arbitrary paths.
+    sysopen($fh, $path, O_RDONLY) or fail('cannot read native os-release');
+    -f $fh or fail('native os-release is not a regular file');
+}
+binmode $fh;
+my $data = '';
+while (1) {
+    my $got = read($fh, my $chunk, 4096);
+    defined($got) or fail('os-release read failure');
+    last unless $got;
+    length($data) + $got <= $MAX_BYTES or fail('os-release exceeds 64 KiB');
+    $data .= $chunk;
+}
+close $fh or fail('os-release close failure');
+my $row = eval { summarize_os_release(parse_os_release($data), $source) };
+$row && !$@ or fail('invalid os-release content');
+
+if ($null) {
+    print join("\0", @$row), "\0" or fail('write failure');
+} else {
+    print join("\t", qw(SOURCE ID ID_LIKE VERSION_ID FAMILY EVIDENCE VERSION_MODE)), "\n"
+        or fail('write failure');
+    print join("\t", @$row), "\n" or fail('write failure');
+}
+exit 0;
+
+sub fail { print STDERR "linux-platform-report: $_[0]\n"; exit 3; }
+sub usage {
+    my ($code) = @_;
+    my $fh = $code ? *STDERR : *STDOUT;
+    print {$fh} "Usage: linux-platform-report [--input FILE|-] [--null] [--version] [--help]\n";
+    exit $code;
+}
