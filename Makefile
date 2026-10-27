@@ -13,7 +13,7 @@ check:
 		case "$$(head -n 1 "$$script")" in *perl*) perl -c "$$script" ;; esac; \
 	done
 	@set -eu; for module in lib/SASD/Freeware/*.pm; do \
-		[ -f "$$module" ] || continue; perl -c "$$module"; \
+		[ -f "$$module" ] || continue; perl -Ilib -c "$$module"; \
 	done
 
 test: check

@@ -31,6 +31,11 @@ fixture matrix for Debian, Ubuntu, Arch, AlmaLinux and Rocky Linux. Native
 package manager and firewall checks, distro-specific CI and VM acceptance
 remain **pending**. See [acceptance matrix](commands/linux-platform-acceptance.md).
 
+**M8.5.2:** `linux-distro-matrix` adds hermetic fixtures, one-host identity
+evidence and optional pre-cached digest-pinned container smoke checks. Native
+firewall/MAC, package-manager, distribution-specific CI and VM acceptance
+remain **pending**. See [matrix protocol](commands/linux-distro-acceptance.md).
+
 
 **M4 part 1 contract:** `session-report` uses `who`; `process-report` uses
 `ps`. Both are read-only, run without root, and accept offline test fixtures

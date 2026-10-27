@@ -31,6 +31,11 @@ für Debian, Ubuntu, Arch, AlmaLinux und Rocky Linux ein. Native Paketmanager-
 und Firewall-Tests, distributionsspezifische CI und VM-Abnahme sind **offen**.
 Siehe [Abnahmematrix](commands/linux-platform-acceptance.de.md).
 
+**M8.5.2:** `linux-distro-matrix` ergänzt synthetische Tests, Host-ID-
+Nachweise und optionale Containerprüfungen mit festem Image-Digest. Native
+Firewall-/MAC-, Paketmanager-, distributionsspezifische CI- und VM-Abnahmen
+sind weiterhin **offen**. Siehe [Protokoll](commands/linux-distro-acceptance.de.md).
+
 
 **M4 Teil 1 – Prüfumfang:** `session-report` nutzt `who`, `process-report` nutzt
 `ps`; beide sind lesend, brauchen keine Root-Rechte und unterstützen

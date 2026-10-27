@@ -1,0 +1,68 @@
+.TH LINUX-DISTRO-MATRIX 1 "October 2026" "SASD Freeware M8.5.2" "User Commands"
+.SH NAME
+linux-distro-matrix \- read-only Linux distribution acceptance evidence
+.SH SYNOPSIS
+.B linux-distro-matrix
+.RB [ --mode " offline|host|container" ]
+.RB [ --format " tsv|jsonl" ]
+.RB [ --target " debian|ubuntu|arch|almalinux|rocky" ]...
+.RB [ --require-complete ]
+.RB [ --engine " docker|podman" ]
+.RB [ --image " distro=repository@sha256:HEX" ]...
+.SH DESCRIPTION
+Reports only identity-level evidence. Offline mode exercises synthetic
+os-release fixtures and makes no claim about running systems. Host mode checks
+the actual Linux distribution. Container mode requires an explicit engine and
+pre-cached digest-pinned images with Perl; it does not pull images or install
+packages. Native firewall and host security policy tests are outside scope.
+.SH OPTIONS
+.TP
+.B --mode offline|host|container
+Choose fixture, host or explicit container evidence. Default is offline.
+.TP
+.B --format tsv|jsonl
+Choose tab-separated seven-field output or schema-versioned JSON Lines.
+.TP
+.BI --target " DISTRO"
+Filter to one or more supported distributions. Default: all five.
+.TP
+.B --require-complete
+Return nonzero when any target was SKIP, even when there is no FAIL.
+.TP
+.BI --engine " docker|podman"
+Required only for container mode. The executable is selected from fixed paths.
+.TP
+.BI --image " DISTRO=REPO@sha256:DIGEST"
+Provide a pre-cached immutable image reference. Repeat per target.
+.TP
+.B --help
+Show usage.
+.TP
+.B --version
+Show tool version.
+.SH OUTPUT
+TARGET, MODE, STATUS, OBSERVED_ID, FAMILY, EVIDENCE, REASON.
+PASS implies an exact ID match. SKIP is not a passing platform acceptance.
+.SH EXIT STATUS
+.TP
+.B 0
+No failed checks; may still include SKIP without --require-complete.
+.TP
+.B 1
+At least one attempted check failed.
+.TP
+.B 2
+Invalid command-line arguments.
+.TP
+.B 4
+Incomplete coverage (SKIP) when --require-complete was requested.
+.SH SECURITY
+No shell interpolation of user-supplied paths or images. Containers run with
+network disabled, no extra capabilities, no new privileges, a read-only root
+and repository mount, unprivileged UID, and bounded resources. Evaluate images
+and container daemon privileges separately; prefer isolated VMs for
+untrusted images and native firewall acceptance.
+.SH SEE ALSO
+.BR linux-platform-report (1)
+.SH AUTHORS
+SASD SysAdmin contributors.
