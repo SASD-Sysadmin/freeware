@@ -1,0 +1,200 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.5.3: opt-in, non-privileged Linux container acceptance runner.
+#
+# The default is PLAN, which NEVER talks to Docker or Podman. --run is
+# required to contact a container engine. We do not fetch images, install
+# packages, enable networking, bind host device nodes or alter firewall rules.
+# Image selection is explicit and digest pinned; missing dependencies/images
+# are reported as SKIP, not manufactured success. Kernel/MAC/VM acceptance
+# is intentionally OUT OF SCOPE for this container-only evidence.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use Cwd qw(abs_path);
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::LinuxDistroMatrix qw(targets valid_image);
+use SASD::Freeware::LinuxContainerAcceptance qw(
+    stages container_argv assess_identity evidence report_tsv report_jsonl
+);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $run, $require_complete, $format, $engine) =
+    (0, 0, 0, 0, 'tsv', undef);
+my (@target_args, @image_args);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h' => \$help, 'version' => \$version,
+    'run' => \$run, 'require-complete' => \$require_complete,
+    'format=s' => \$format, 'engine=s' => \$engine,
+    'target=s@' => \@target_args, 'image=s@' => \@image_args,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "linux-container-acceptance $VERSION\n"; exit 0; }
+@ARGV == 0 && $format =~ /\A(?:tsv|jsonl)\z/ &&
+    (!defined($engine) || $engine =~ /\A(?:docker|podman)\z/) &&
+    (!$run || defined($engine)) or usage(2);
+
+my @all = targets();
+my %valid = map { $_ => 1 } @all;
+my %selected;
+for my $target (@target_args) {
+    $valid{$target // ''} && !$selected{$target}++ or usage(2);
+}
+my @targets = @target_args ? grep { $selected{$_} } @all : @all;
+my %images;
+for my $setting (@image_args) {
+    my ($target, $image) = split /=/, $setting, 2;
+    defined($image) && $valid{$target // ''} && !exists($images{$target}) &&
+        valid_image($image) or usage(2);
+    $images{$target} = $image;
+}
+
+# Absolute paths prevent PATH injection of programs holding daemon access.
+# A symlink to another executable is deliberately not trusted here.
+sub fixed_executable {
+    for my $candidate (@_) {
+        return $candidate if -f $candidate && -x $candidate && !-l $candidate;
+    }
+    return undef;
+}
+my ($engine_path, $timeout_path);
+if ($run && $^O eq 'linux') {
+    $engine_path = fixed_executable(
+        "/usr/bin/$engine", "/usr/local/bin/$engine", "/bin/$engine");
+    $timeout_path = fixed_executable('/usr/bin/timeout', '/bin/timeout');
+}
+my $repository = abs_path("$FindBin::Bin/..");
+
+# All engine subprocesses are argv-only. Never call system('shell string').
+# Their stdout is capped to 8 KiB and stderr is discarded (daemon messages
+# may contain private registry locations or sensitive host paths).
+sub capture {
+    my ($max_seconds, @argv) = @_;
+    my $pid = open(my $pipe, '-|');
+    return (255, '') unless defined $pid;
+    if ($pid == 0) {
+        open STDIN, '<', '/dev/null' or exit 127;
+        open STDERR, '>', '/dev/null' or exit 127;
+        exec { $argv[0] } @argv;
+        exit 127;
+    }
+    binmode($pipe);
+    my ($out, $ok) = ('', 0);
+    $ok = eval {
+        local $SIG{ALRM} = sub { die "deadline\n" };
+        alarm $max_seconds;
+        while (1) {
+            my $n = read($pipe, my $chunk, 4096);
+            defined($n) or die "subprocess read error\n";
+            last unless $n;
+            length($out) + $n <= 8192 or die "oversized subprocess output\n";
+            $out .= $chunk;
+        }
+        alarm 0;
+        1;
+    };
+    alarm 0;
+    kill('TERM', $pid) unless $ok;
+    close($pipe); # Reap child; nonzero child status is expected for FAIL/SKIP.
+    return (124, '') unless $ok;
+    return (255, '') if $? == -1 || ($? & 127);
+    return ($? >> 8, $out);
+}
+
+sub row {
+    my ($target, $stage, $status, $reason) = @_;
+    return evidence(target=>$target, stage=>$stage,
+        mode=>$run ? 'CONTAINER' : 'PLAN', status=>$status, reason=>$reason);
+}
+
+my @rows;
+for my $target (@targets) {
+    if (!$run) {
+        push @rows, row($target, $_, 'SKIP', 'NOT_EXECUTED') for stages();
+        next;
+    }
+    if (!exists($images{$target})) {
+        push @rows, row($target, $_, 'SKIP', 'NOT_CONFIGURED') for stages();
+        next;
+    }
+    if (!$engine_path || !$timeout_path || $^O ne 'linux') {
+        push @rows, row($target, $_, 'FAIL', 'ENGINE_UNAVAILABLE') for stages();
+        next;
+    }
+    # Docker/Podman must already have the EXACT image ref cached. Inspect
+    # does not contact a registry or make an implicit image pull.
+    my ($inspect, $inspect_output) = capture(20,
+        $timeout_path, '--kill-after=2s', '12s', $engine_path,
+        'image', 'inspect', '--format', '{{.Id}}', $images{$target});
+    if ($inspect != 0 || $inspect_output !~ /\Asha256:[0-9a-f]{64}\n?\z/) {
+        push @rows, row($target, $_, 'SKIP', 'IMAGE_UNAVAILABLE') for stages();
+        next;
+    }
+    # Positive IDENTITY evidence is mandatory before testing anything else.
+    my @identity = container_argv($timeout_path, $engine_path,
+        $repository, $images{$target}, 'IDENTITY');
+    my ($identity_exit, $identity_output) = capture(320, @identity);
+    my $identity_row;
+    if ($identity_exit == 77) {
+        $identity_row = row($target, 'IDENTITY', 'SKIP', 'MISSING_DEPENDENCY');
+    } elsif ($identity_exit == 124 || $identity_exit == 137) {
+        $identity_row = row($target, 'IDENTITY', 'FAIL', 'TIMEOUT');
+    } elsif ($identity_exit != 0) {
+        $identity_row = row($target, 'IDENTITY', 'FAIL', 'CHECK_FAILED');
+    } else {
+        $identity_row = assess_identity($target, $identity_output);
+    }
+    push @rows, $identity_row;
+    if ($identity_row->{status} ne 'PASS') {
+        push @rows, row($target, $_, 'SKIP', 'PRIOR_STAGE_FAILED')
+            for qw(TOOLCHAIN TEST INSTALL SMOKE);
+        next;
+    }
+    my @prereq = container_argv($timeout_path, $engine_path,
+        $repository, $images{$target}, 'TOOLCHAIN');
+    my ($prereq_exit) = capture(320, @prereq);
+    my $prereq_row = $prereq_exit == 0
+        ? row($target, 'TOOLCHAIN', 'PASS', 'CHECK_OK')
+        : $prereq_exit == 77
+        ? row($target, 'TOOLCHAIN', 'SKIP', 'MISSING_DEPENDENCY')
+        : ($prereq_exit == 124 || $prereq_exit == 137)
+        ? row($target, 'TOOLCHAIN', 'FAIL', 'TIMEOUT')
+        : row($target, 'TOOLCHAIN', 'FAIL', 'CHECK_FAILED');
+    push @rows, $prereq_row;
+    if ($prereq_row->{status} ne 'PASS') {
+        push @rows, row($target, $_, 'SKIP', 'PRIOR_STAGE_FAILED')
+            for qw(TEST INSTALL SMOKE);
+        next;
+    }
+    # These stages are independent after TOOLCHAIN. A test failure does not
+    # hide whether staging installation and command smoke checks work.
+    for my $stage (qw(TEST INSTALL SMOKE)) {
+        my @argv = container_argv($timeout_path, $engine_path,
+            $repository, $images{$target}, $stage);
+        my ($exit_code) = capture(320, @argv);
+        push @rows, $exit_code == 0
+            ? row($target, $stage, 'PASS', 'CHECK_OK')
+            : ($exit_code == 124 || $exit_code == 137)
+            ? row($target, $stage, 'FAIL', 'TIMEOUT')
+            : row($target, $stage, 'FAIL', 'CHECK_FAILED');
+    }
+}
+
+print($format eq 'jsonl' ? report_jsonl(@rows) : report_tsv(@rows))
+    or die "linux-container-acceptance: failed to write report\n";
+exit 1 if grep { $_->{status} eq 'FAIL' } @rows;
+exit 4 if $require_complete && grep { $_->{status} eq 'SKIP' } @rows;
+exit 0;
+
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} "Usage: linux-container-acceptance [--run --engine docker|podman]\n",
+        "  [--target debian|ubuntu|arch|almalinux|rocky]...\n",
+        "  [--image distro=repository\@sha256:HEX]... [--format tsv|jsonl]\n",
+        "  [--require-complete] [--help] [--version]\n",
+        "Default PLAN only reports SKIP; --run enables local pinned-image checks.\n";
+    exit $code;
+}
