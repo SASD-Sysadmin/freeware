@@ -1,0 +1,56 @@
+.TH LINUX-CONTAINER-EVIDENCE-AUDIT 1 "2026-10-28" "SASD Freeware" "User Commands"
+.SH NAME
+linux-container-evidence-audit \- validate and summarize offline container acceptance evidence
+.SH SYNOPSIS
+.B linux-container-evidence-audit
+.RB [ --input " REPORT.jsonl" ]...
+.RB [ --format " tsv|jsonl" ]
+.RB [ --require-complete ]
+.RB [ --help ]
+.RB [ --version ]
+.SH DESCRIPTION
+Summarize JSON Lines from the opt-in
+.B linux-container-acceptance
+runner for five Linux distribution targets. No Docker/Podman connection,
+network access, package installation or configuration modification occurs.
+All five container stages must pass before a target is reported PASS.
+Unreported targets remain explicitly SKIP/NO_REPORT.
+.SH OPTIONS
+.TP
+.BI --input " REPORT.jsonl"
+Read one local JSONL report (at most five options). Files must be regular,
+not symlinks, at most 32 KiB, and contain exactly five canonical evidence rows.
+.TP
+.BI --format " tsv|jsonl"
+Write tab-delimited output (default) or schema-versioned JSON Lines.
+.TP
+.B --require-complete
+Return status 4 when any target is missing or has skipped stages.
+.TP
+.B --help
+Display command-line usage.
+.TP
+.B --version
+Display command version.
+.SH EXIT STATUS
+.TP
+.B 0
+Valid reports, without FAIL; unless strict completion is requested,
+SKIP is permitted and remains visible.
+.TP
+.B 1
+At least one target failed a reported stage.
+.TP
+.B 4
+Strict completion required but one or more targets are incomplete.
+.TP
+.B Other nonzero
+Invalid arguments or malformed/contradictory evidence.
+.SH SECURITY AND LIMITATIONS
+The reports are not cryptographic attestations. This command cannot prove
+a source Git commit, image digest, host identity or container-engine version.
+Successful container reports do not establish native kernel, firewall,
+SELinux/AppArmor, systemd or VM compatibility.
+.SH SEE ALSO
+.BR linux-container-acceptance (1),
+.BR linux-distro-matrix (1)

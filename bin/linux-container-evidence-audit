@@ -1,0 +1,81 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.5.3a: offline aggregation and strict validation of container evidence.
+#
+# Deliberately no Docker/Podman dependency: acceptance reports are validated
+# separately from their acquisition. This program never changes the system
+# and never turns missing targets or PLAN-only output into success.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use Fcntl qw(O_RDONLY O_NOFOLLOW S_ISREG);
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::LinuxContainerEvidence qw(
+    parse_batch summarize_batches summary_tsv summary_jsonl
+);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $require_complete, $format) = (0, 0, 0, 'tsv');
+my @inputs;
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h' => \$help, 'version' => \$version,
+    'input=s@' => \@inputs, 'format=s' => \$format,
+    'require-complete' => \$require_complete,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "linux-container-evidence-audit $VERSION\n"; exit 0; }
+!@ARGV && @inputs <= 5 && $format =~ /\A(?:tsv|jsonl)\z/
+    or usage(2);
+
+# Input paths are operator-selected; refuse symlinks, directories and special
+# files (FIFO/devices) that might block or change while we are reading them.
+# A report may be at most 32 KiB. No report filenames enter the output.
+my @batches;
+for my $path (@inputs) {
+    defined($path) && !ref($path) && length($path) <= 1024 &&
+        $path !~ /[\x00-\x1f\x7f]/
+        or die "linux-container-evidence-audit: invalid input path\n";
+    # Open with O_NOFOLLOW to close the symlink replacement race between
+    # pathname checks and open(). Compare inode/device before and after the
+    # open, reject special files, and bound the read itself to 32 KiB.
+    my @before = lstat($path);
+    @before && S_ISREG($before[2]) && $before[7] <= 32 * 1024
+        or die "linux-container-evidence-audit: invalid input file\n";
+    sysopen my $fh, $path, O_RDONLY | O_NOFOLLOW
+        or die "linux-container-evidence-audit: cannot open regular input\n";
+    my @after = stat($fh);
+    @after && S_ISREG($after[2]) &&
+        $after[0] == $before[0] && $after[1] == $before[1]
+        or die "linux-container-evidence-audit: input changed while opening\n";
+    binmode $fh;
+    my $text = '';
+    while (1) {
+        my $n = read($fh, my $chunk, 4096);
+        defined($n) or die "linux-container-evidence-audit: read failed\n";
+        last if $n == 0;
+        length($text) + $n <= 32 * 1024
+            or die "linux-container-evidence-audit: oversized input\n";
+        $text .= $chunk;
+    }
+    close $fh or die "linux-container-evidence-audit: close failed\n";
+    push @batches, parse_batch($text);
+}
+
+# Missing targets are explicitly emitted as SKIP/NO_REPORT, not omitted.
+my @summary = summarize_batches(@batches);
+print($format eq 'jsonl' ? summary_jsonl(@summary) : summary_tsv(@summary))
+    or die "linux-container-evidence-audit: cannot write output\n";
+exit 1 if grep { $_->{status} eq 'FAIL' } @summary;
+exit 4 if $require_complete && grep { $_->{status} eq 'SKIP' } @summary;
+exit 0;
+
+sub usage {
+    my ($status) = @_;
+    my $fh = $status ? *STDERR : *STDOUT;
+    print {$fh} "Usage: linux-container-evidence-audit [--input REPORT.jsonl]...\n",
+        "  [--format tsv|jsonl] [--require-complete] [--help] [--version]\n",
+        "No inputs means five SKIP/NO_REPORT rows. Reports are local M8.5.3 JSONL.\n";
+    exit $status;
+}

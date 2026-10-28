@@ -42,6 +42,11 @@ tests, staged installation and selected command smoke checks. Actual image
 runs, per-distro evidence and native kernel/firewall/MAC VM acceptance are
 **pending**. See [container protocol](commands/linux-container-acceptance-protocol.md).
 
+**M8.5.3a:** `linux-container-evidence-audit` validates canonical, per-target
+JSONL reports and produces a five-distribution PASS/FAIL/SKIP overview.
+Real image runs and native VM acceptance are still **pending**. See
+[operator guide](commands/linux-container-evidence-audit.md).
+
 
 **M4 part 1 contract:** `session-report` uses `who`; `process-report` uses
 `ps`. Both are read-only, run without root, and accept offline test fixtures

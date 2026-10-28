@@ -42,6 +42,11 @@ und Kommando-Smoke-Checks. Echte Image-Testläufe, distributionsspezifische
 Nachweise und native Kernel-/Firewall-/MAC-VM-Abnahmen bleiben **offen**.
 Siehe [Container-Protokoll](commands/linux-container-acceptance-protocol.de.md).
 
+**M8.5.3a:** `linux-container-evidence-audit` prüft die JSONL-Einzelnachweise
+und erstellt eine vollständige Übersicht für fünf Distributionen.
+Echte Image-Testläufe und native VM-Abnahmen bleiben **offen**. Siehe
+[Anleitung](commands/linux-container-evidence-audit.de.md).
+
 
 **M4 Teil 1 – Prüfumfang:** `session-report` nutzt `who`, `process-report` nutzt
 `ps`; beide sind lesend, brauchen keine Root-Rechte und unterstützen
