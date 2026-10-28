@@ -1,0 +1,78 @@
+.TH TEXT-EOL-NORMALIZE 1 "October 2026" "SASD Freeware" "User Commands"
+.SH NAME
+text-eol-normalize \- safely inspect and normalize DOS CRLF line endings
+.SH SYNOPSIS
+.B text-eol-normalize
+.RI [ --check | --dry-run | --apply ]
+.RI [ OPTIONS ]
+.I FILE_OR_DIR
+.SH DESCRIPTION
+Inspects selected text files for CRLF line endings. Defaults to read-only
+inspection. Files already using LF are not rewritten. Requires explicit
+.B --apply
+to replace CRLF with LF. Mixed CRLF/LF is supported; standalone CR is skipped.
+.SH OPTIONS
+.TP
+.B --check
+Read-only inspection (default).
+.TP
+.B --dry-run
+Report planned conversions without writing.
+.TP
+.B --apply
+Allow replacement of eligible input files.
+.TP
+.B --recursive
+Descend into subdirectories without following symbolic links.
+.TP
+.B --one-file-system
+Do not cross device boundaries during recursive traversal.
+.TP
+.B --include EXT
+Select extension; repeatable, overriding the default text allowlist.
+.TP
+.B --exclude EXT
+Exclude extension; repeatable. bin and Excel formats are always excluded.
+.TP
+.B --min-age SECONDS
+Skip files whose modification time is too recent.
+.TP
+.B --max-bytes N
+Maximum permitted file size in bytes; default 16777216.
+.TP
+.B --verbose
+Show skipped files and the reason.
+.TP
+.B --help
+Show help and exit.
+.TP
+.B --version
+Show command and version, then exit.
+.SH EXAMPLES
+.TP
+.B text-eol-normalize --check --recursive /srv/import
+Find candidate files; no writes.
+.TP
+.B text-eol-normalize --apply --recursive --min-age 120 /srv/import
+Convert established files in an import staging directory.
+.SH EXIT STATUS
+0: successful operation (even if DOS files were found).
+1: file processing errors.
+2: invalid arguments.
+.SH SAFETY
+No write unless --apply is provided. Symlinks, hardlinks, setuid/setgid
+files, unsupported encodings, binary data and standalone CR text are skipped.
+Only current-user-owned files are replaced. Conversion uses a private staging
+file and same-directory rename. Inodes and timestamps change; ACLs, extended
+attributes, special flags and sparse layout are not preserved. Concurrent
+noncooperating writers are not protected by the rename operation. Use completed
+files in a controlled staging directory and an external cooperative scheduler
+lock. No fsync durability guarantee is provided.
+.SH SEE ALSO
+.BR dos2unix (1),
+.BR crontab (5),
+.BR flock (1)
+.SH AUTHOR
+SASD-SysAdmin contributors.
+.SH LICENSE
+MIT License.
