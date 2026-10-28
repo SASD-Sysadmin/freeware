@@ -4,6 +4,16 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 10 – Linux container acceptance (M8.5.3)
+
+- Add an opt-in five-stage container acceptance runner with strict PASS/FAIL/SKIP
+  records and safe default planning; never claim VM or host firewall acceptance.
+- Require pre-cached digest-pinned images, disabled networking, unprivileged
+  execution and read-only source mounts; document remaining native VM tests.
+- Add bilingual guides, a manpage, 100+ offline security/contract tests and CI
+  staged installation coverage.
+
+
 ### Chapter 10 – Linux distribution acceptance evidence (M8.5.2)
 
 - Add pure identity/evidence validation for five Linux targets with synthetic

@@ -36,6 +36,12 @@ evidence and optional pre-cached digest-pinned container smoke checks. Native
 firewall/MAC, package-manager, distribution-specific CI and VM acceptance
 remain **pending**. See [matrix protocol](commands/linux-distro-acceptance.md).
 
+**M8.5.3:** `linux-container-acceptance` provides opt-in, pre-cached,
+digest-pinned container tests for exact distro identity, toolchain, offline
+tests, staged installation and selected command smoke checks. Actual image
+runs, per-distro evidence and native kernel/firewall/MAC VM acceptance are
+**pending**. See [container protocol](commands/linux-container-acceptance-protocol.md).
+
 
 **M4 part 1 contract:** `session-report` uses `who`; `process-report` uses
 `ps`. Both are read-only, run without root, and accept offline test fixtures

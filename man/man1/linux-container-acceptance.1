@@ -1,0 +1,68 @@
+.TH LINUX-CONTAINER-ACCEPTANCE 1 "October 2026" "SASD Freeware M8.5.3" "User Commands"
+.SH NAME
+linux-container-acceptance \- record opt-in container test evidence for Linux distributions
+.SH SYNOPSIS
+.B linux-container-acceptance
+.RB [ --run ]
+.RB [ --engine " docker|podman" ]
+.RB [ --target " distro" ]...
+.RB [ --image " distro=repository@sha256:digest" ]...
+.RB [ --format " tsv|jsonl" ]
+.RB [ --require-complete ]
+.SH DESCRIPTION
+Default PLAN mode never contacts a container daemon and emits SKIP records.
+Only explicit --run enables local, pre-cached digest-pinned container checks.
+Five independent stages: IDENTITY, TOOLCHAIN, TEST, INSTALL, and SMOKE.
+A matching ID is not proof of kernel or host security compatibility.
+.SH OPTIONS
+.TP
+.B --run
+Explicitly enable container execution. Requires --engine.
+.TP
+.BI --engine " docker|podman"
+Select container engine; only fixed trusted executable paths are accepted.
+.TP
+.BI --target " distro"
+Select one or more of debian, ubuntu, arch, almalinux, rocky.
+.TP
+.BI --image " distro=reference@sha256:hex"
+Select locally cached immutable image; does not pull or build images.
+.TP
+.BI --format " tsv|jsonl"
+Print five-field TSV (default) or JSON Lines.
+.TP
+.B --require-complete
+Exit 4 if any test is skipped.
+.TP
+.B --help
+Print usage.
+.TP
+.B --version
+Print version.
+.SH SECURITY
+Source mount read-only; network disabled; no capabilities; no new privileges;
+UID/GID 65534; container read-only root and temporary /tmp; bounded resources
+and execution time. Docker daemon access may itself be privileged.
+The tool never invokes sudo, downloads images, or changes host configuration.
+After a timeout verify daemon-side cleanup manually.
+.SH EXIT STATUS
+.TP
+.B 0
+No FAIL; SKIPs allowed unless --require-complete.
+.TP
+.B 1
+At least one FAIL.
+.TP
+.B 2
+Invalid options.
+.TP
+.B 4
+Skipped checks and --require-complete requested.
+.SH LIMITATIONS
+No native firewall, SELinux, AppArmor, systemd, package-manager, VM,
+or production readiness certification.
+.SH SEE ALSO
+.BR linux-distro-matrix (1),
+.BR linux-platform-report (1)
+.SH AUTHORS
+SASD SysAdmin contributors.

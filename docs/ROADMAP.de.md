@@ -36,6 +36,12 @@ Nachweise und optionale Containerprüfungen mit festem Image-Digest. Native
 Firewall-/MAC-, Paketmanager-, distributionsspezifische CI- und VM-Abnahmen
 sind weiterhin **offen**. Siehe [Protokoll](commands/linux-distro-acceptance.de.md).
 
+**M8.5.3:** `linux-container-acceptance` ergänzt optionale, mit Digest festgelegte
+Container-Prüfungen für Distributions-ID, Werkzeuge, Offline-Tests, Installation
+und Kommando-Smoke-Checks. Echte Image-Testläufe, distributionsspezifische
+Nachweise und native Kernel-/Firewall-/MAC-VM-Abnahmen bleiben **offen**.
+Siehe [Container-Protokoll](commands/linux-container-acceptance-protocol.de.md).
+
 
 **M4 Teil 1 – Prüfumfang:** `session-report` nutzt `who`, `process-report` nutzt
 `ps`; beide sind lesend, brauchen keine Root-Rechte und unterstützen
