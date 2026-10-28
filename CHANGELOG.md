@@ -3,6 +3,15 @@
 Significant changes to this repository are documented here. Dates use ISO 8601 format.
 
 ## [Unreleased]
+
+### Chapter 10 – Linux distribution acceptance evidence (M8.5.2)
+
+- Add pure identity/evidence validation for five Linux targets with synthetic
+  fixture, native-host and explicit digest-pinned container modes.
+- Report PASS/FAIL/SKIP in TSV or schema-versioned JSONL without claiming
+  native firewall/SELinux/AppArmor acceptance; add 100+ offline regression tests.
+- Provide bilingual guides, pending native VM matrix and staged CI checks.
+
 ### Chapter 10 – Linux platform identity (M8.5.1)
 
 - Add a bounded, data-only os-release parser and a read-only Linux identity CLI.

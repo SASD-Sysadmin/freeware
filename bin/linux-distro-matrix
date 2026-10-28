@@ -1,0 +1,204 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# M8.5.2: Linux distribution evidence runner; no host configuration changes.
+#
+# OFFLINE runs fixed synthetic fixtures through the M8.5.1 parser.
+# HOST    checks only the running Linux system, marking other IDs SKIP.
+# CONTAINER (explicit opt-in) executes the repository's read-only report in
+#           user-supplied digest-pinned images already cached locally.
+#
+# The runner NEVER installs packages, pulls an image, starts a firewall,
+# modifies a sysctl, or uses sudo. Container results DO NOT certify native
+# host firewall behavior, SELinux, AppArmor or overall distro support.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use FindBin;
+use Cwd qw(abs_path);
+use lib "$FindBin::Bin/../lib";
+use SASD::Freeware::LinuxDistroMatrix qw(
+    targets offline_snapshot assess_snapshot parse_report_tsv record
+    report_tsv report_jsonl valid_image container_command
+);
+
+my $VERSION = '0.1.0';
+my ($help, $version, $require_complete, $mode, $format, $engine) = (0, 0, 0, 'offline', 'tsv', undef);
+my (@target_args, @image_args);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h' => \$help, 'version' => \$version,
+    'require-complete' => \$require_complete,
+    'mode=s' => \$mode, 'format=s' => \$format,
+    'target=s@' => \@target_args, 'engine=s' => \$engine,
+    'image=s@' => \@image_args,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "linux-distro-matrix $VERSION\n"; exit 0; }
+@ARGV == 0 && $mode =~ /\A(?:offline|host|container)\z/ &&
+    $format =~ /\A(?:tsv|jsonl)\z/ or usage(2);
+
+my @all = targets();
+my %valid = map { $_ => 1 } @all;
+my %chosen;
+for my $target (@target_args) {
+    $valid{$target // ''} && !$chosen{$target}++ or usage(2);
+}
+my @selected = @target_args ? grep { $chosen{$_} } @all : @all;
+
+my %images;
+for my $entry (@image_args) {
+    my ($target, $image) = split /=/, $entry, 2;
+    defined($image) && $valid{$target // ''} && !exists($images{$target}) &&
+        valid_image($image) or usage(2);
+    $images{$target} = $image;
+}
+# Keep potentially dangerous parameters completely unavailable outside the
+# explicit CONTAINER mode. No accidental daemon contact in offline/host mode.
+if ($mode eq 'container') {
+    defined($engine) && $engine =~ /\A(?:docker|podman)\z/ or usage(2);
+} else {
+    !defined($engine) && !@image_args or usage(2);
+}
+
+my @rows;
+my $repo = abs_path("$FindBin::Bin/..");
+if ($mode eq 'offline') {
+    # Deterministic parser exercises, NOT observations of target machines.
+    for my $target (@selected) {
+        push @rows, assess_snapshot($target, offline_snapshot($target), 'INPUT');
+    }
+} elsif ($mode eq 'host') {
+    my $observed;
+    if ($^O eq 'linux') {
+        # Spawn as argv, never via shell. This enforces the existing CLI's
+        # /etc priority, bounded reads and symlink validation in one place.
+        my ($status, $output) = capture_command(10,
+            $^X, "$repo/bin/linux-platform-report");
+        $observed = eval { parse_report_tsv($output) } if $status == 0;
+    }
+    for my $target (@selected) {
+        if (!$observed) {
+            push @rows, empty_row($target, 'HOST',
+                $^O eq 'linux' ? 'FAIL' : 'SKIP', 'HOST_UNAVAILABLE');
+        } elsif ($observed->[1] ne $target) {
+            # This machine is not the requested distro. A SKIP is much more
+            # informative than a failing assertion about an absent machine.
+            push @rows, empty_row($target, 'HOST', 'SKIP', 'NOT_THIS_HOST');
+        } else {
+            push @rows, record(target => $target, mode => 'HOST', status => 'PASS',
+                observed_id => $observed->[1], family => $observed->[4],
+                evidence => $observed->[5], reason => 'ID_MATCH');
+        }
+    }
+} else {
+    # Fixed allowlisted program paths avoid running an attacker-controlled
+    # executable placed earlier on PATH. timeout bounds an unresponsive daemon
+    # or container command. Neither command is ever passed to a shell.
+    my $program = first_executable("/usr/bin/$engine", "/bin/$engine", "/usr/local/bin/$engine");
+    my $timeout = first_executable('/usr/bin/timeout', '/bin/timeout');
+    for my $target (@selected) {
+        if (!exists $images{$target}) {
+            push @rows, empty_row($target, 'CONTAINER', 'SKIP', 'NOT_CONFIGURED');
+            next;
+        }
+        if (!defined($program) || !defined($timeout) || $^O ne 'linux') {
+            push @rows, empty_row($target, 'CONTAINER', 'FAIL', 'ENGINE_UNAVAILABLE');
+            next;
+        }
+        # Only read-only repository files are mounted; image root filesystem
+        # is read-only, network is disabled, capabilities dropped, and UID is
+        # unprivileged. SELinux enforcing hosts may deny this read-only mount;
+        # that is a FAIL, not a reason to disable security protections.
+        my @argv = container_command($timeout, $program, $repo, $images{$target});
+        my ($status, $output) = capture_command(40, @argv);
+        if ($status == 77) {
+            push @rows, empty_row($target, 'CONTAINER', 'SKIP', 'MISSING_PERL');
+        } elsif ($status == 124 || $status == 137) {
+            push @rows, empty_row($target, 'CONTAINER', 'FAIL', 'TIMEOUT');
+        } elsif ($status != 0) {
+            push @rows, empty_row($target, 'CONTAINER', 'FAIL', 'ENGINE_FAILED');
+        } else {
+            my $observed = eval { parse_report_tsv($output) };
+            if (!$observed) {
+                push @rows, empty_row($target, 'CONTAINER', 'FAIL', 'INVALID_OUTPUT');
+            } else {
+                push @rows, record(
+                    target => $target, mode => 'CONTAINER',
+                    status => $observed->[1] eq $target ? 'PASS' : 'FAIL',
+                    observed_id => $observed->[1], family => $observed->[4],
+                    evidence => $observed->[5],
+                    reason => $observed->[1] eq $target ? 'ID_MATCH' : 'ID_MISMATCH',
+                );
+            }
+        }
+    }
+}
+
+my $payload = $format eq 'jsonl' ? report_jsonl(@rows) : report_tsv(@rows);
+print $payload or die "linux-distro-matrix: write failure\n";
+# FAIL indicates a real test failure. SKIP is not a PASS; the calling CI must
+# choose whether incomplete coverage is acceptable. No absent target is ever
+# silently included in a 100%-passing evidence claim.
+exit 1 if grep { $_->{status} eq 'FAIL' } @rows;
+exit 4 if $require_complete && grep { $_->{status} eq 'SKIP' } @rows;
+exit 0;
+
+sub empty_row {
+    my ($target, $name, $status, $reason) = @_;
+    return record(target => $target, mode => $name, status => $status,
+                  observed_id => '-', family => '-', evidence => '-',
+                  reason => $reason);
+}
+sub first_executable {
+    for my $candidate (@_) { return $candidate if -f $candidate && -x $candidate && !-l $candidate; }
+    return undef;
+}
+sub capture_command {
+    my ($max_seconds, @cmd) = @_;
+    # The runner deliberately suppresses stderr from container tooling: it
+    # may include network addresses, private registry details, or host paths.
+    # Result codes retain the distinction between missing runtime and timeout.
+    my $pid = open(my $pipe, '-|');
+    return (255, '') unless defined $pid;
+    if ($pid == 0) {
+        open STDIN, '<', '/dev/null';
+        open STDERR, '>', '/dev/null';
+        exec { $cmd[0] } @cmd;
+        exit 127;
+    }
+    binmode $pipe;
+    my ($output, $timed_out) = ('', 0);
+    my $ok = eval {
+        local $SIG{ALRM} = sub { die "deadline\n"; };
+        alarm $max_seconds;
+        while (1) {
+            my $size = read($pipe, my $part, 4096);
+            defined($size) or die "read error\n";
+            last unless $size;
+            length($output) + $size <= 4096 or die "output limit\n";
+            $output .= $part;
+        }
+        alarm 0;
+        1;
+    };
+    alarm 0;
+    if (!$ok) {
+        # The engine itself is bounded by GNU timeout; TERM is additional
+        # defensive cleanup if the output limit or read deadline fired.
+        kill 'TERM', $pid;
+        $timed_out = 1;
+    }
+    close $pipe;
+    return (124, '') if $timed_out;
+    return (255, '') if $? == -1 || ($? & 127);
+    return ($? >> 8, $output);
+}
+sub usage {
+    my ($status) = @_;
+    my $fh = $status ? *STDERR : *STDOUT;
+    print {$fh} "Usage: linux-distro-matrix [--mode offline|host|container] [--format tsv|jsonl] [--require-complete]\n",
+        "  [--target debian|ubuntu|arch|almalinux|rocky]...\n",
+        "  [--engine docker|podman --image distro=repository\@sha256:HEX]...\n",
+        "Offline is the default; container execution is an explicit opt-in.\n";
+    exit $status;
+}
