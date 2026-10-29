@@ -4,6 +4,18 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Chapter 2 – Safe CRLF-to-LF normalization (`text-eol-normalize`)
+
+- Add a Perl-based, opt-in CLI and reusable `SASD::Freeware::TextEOL` module;
+  default `--check` and `--dry-run` never modify files.
+- Constrain writes to selected regular text files, reject hardlinks, symlinks,
+  unsupported encodings and binary content, and avoid rewriting existing LF.
+- Use same-directory staging and rename, with explicit warnings about lost
+  ACLs/xattrs, changed inode/timestamps and uncooperative concurrent writers;
+  unattended cron use requires a controlled completed-import directory.
+- Add 50 offline regression tests, bilingual guides, manpage and explicit
+  installed-command/install-uninstall checks in Ubuntu and macOS CI.
+
 ### Chapter 10 – Cross-distribution container evidence audit (M8.5.3a)
 
 - Add a purely offline verifier for the five-stage canonical JSONL evidence

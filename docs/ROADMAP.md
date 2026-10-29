@@ -11,7 +11,7 @@ and positive/negative tests before it can be considered complete.
 
 | Chapter | Available coverage | Gaps | Status |
 | --- | --- | --- | --- |
-| **2 – Filesystem** | Inventory, permissions, links, quotas, integrity | Evaluate mounts, ACLs and storage diagnostics | Substantial, incomplete |
+| **2 – Filesystem** | Inventory, permissions, links, quotas, integrity, opt-in `text-eol-normalize` for staged text imports | Evaluate mounts, ACLs, storage diagnostics and native EOL-conversion acceptance | Substantial, incomplete |
 | **3 – User Accounts** | Inventory, group/home audits, guarded writes | Privileged VM acceptance, gap audit | Substantial, incomplete |
 | **4 – User Activity** | `session-report`, `process-report`; `login-audit` (Linux `last`/`lastb`) | macOS native login history, attribution and completeness review | In progress |
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, resolver | Gap review and platform completion | Substantial, incomplete |
@@ -25,6 +25,14 @@ and positive/negative tests before it can be considered complete.
 M5 SQL, M6 Mail, M7 Logs, M8 Security/Network, M9 chapter gap closure and
 platform acceptance, M10 release artifacts. These are scope goals, not
 commitments about dates or production readiness.
+
+**Chapter 2 – Text line endings:** `text-eol-normalize` adds conservative
+CRLF-to-LF detection and optional replacement for completed text-file imports.
+The read-only default, file-type allowlist, binary screening, hardlink/symlink
+handling and same-directory staging are covered by offline tests. Filesystem
+metadata (ACLs, xattrs, inode, timestamps), concurrent writers and native
+cron/WSL/other-platform acceptance remain documented limitations. See
+[command guide](commands/text-eol-normalize.md).
 
 **M8.5 Linux acceptance:** M8.5.1 adds `linux-platform-report` and a parser
 fixture matrix for Debian, Ubuntu, Arch, AlmaLinux and Rocky Linux. Native
