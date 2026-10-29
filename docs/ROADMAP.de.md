@@ -11,7 +11,7 @@ DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
 
 | Kapitel | Bereits verfügbare Schwerpunkte | Noch zu bearbeiten | Status |
 | --- | --- | --- | --- |
-| **2 – Filesystem** | Inventar, Berechtigungen, Links, Quotas, Integrität | Mounts, ACLs und Storage-Analyse bewerten | Gut ausgebaut, offen |
+| **2 – Filesystem** | Inventar, Berechtigungen, Links, Quotas, Integrität, `text-eol-normalize` für kontrollierte Textimporte | Mounts, ACLs, Storage-Analyse und native EOL-Praxistests offen | Gut ausgebaut, offen |
 | **3 – User Accounts** | Konten, Gruppen, Home-Audit, eingeschränkte Verwaltung | Privilegierte VM-Abnahme, weitere Abdeckungsprüfung | Gut ausgebaut, offen |
 | **4 – User Activity** | `session-report`, `process-report`; `login-audit` (Linux `last`/`lastb`) | macOS-Anmeldehistorie, Zuordnung und Vollständigkeit prüfen | In Arbeit |
 | **5 – TCP/IP Name Services** | Hosts, DNS, NSS, Resolver | Abschlussprüfung und sinnvolle Ergänzungen | Gut ausgebaut, offen |
@@ -25,6 +25,14 @@ DE/EN-Anleitungen, Manpages und negative/positive Tests geprüft wurden.
 danach Anmeldehistorie), M5 SQL, M6 Mail, M7 Logs, M8 Sicherheit und Netzwerk,
 M9 Kapitel-Lücken und plattformbezogene Qualitätsabnahme, M10 Release-Artefakte.
 Diese Reihenfolge ist eine Arbeitsplanung, keine Aussage über Produktreife oder Termine.
+
+**Kapitel 2 – Zeilenenden:** `text-eol-normalize` erkennt CRLF und wandelt
+fertig übertragene Textdateien nur auf ausdrücklichen Wunsch nach LF um.
+Lesender Standard, Erweiterungs-Whitelist, Binärdateiprüfung, Hardlink-/Symlink-
+Schutz und temporäre Datei im selben Verzeichnis sind offline getestet.
+ACLs/Xattrs, Inode, Zeitstempel, gleichzeitige Schreibzugriffe und native
+Cron-/WSL-/andere Plattformabnahmen bleiben Einschränkungen bzw. offene Tests.
+Siehe [Anleitung](commands/text-eol-normalize.de.md).
 
 **M8.5 Linux-Abnahme:** M8.5.1 führt `linux-platform-report` und Parser-Fixtures
 für Debian, Ubuntu, Arch, AlmaLinux und Rocky Linux ein. Native Paketmanager-

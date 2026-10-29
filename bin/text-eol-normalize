@@ -1,0 +1,125 @@
+#!/usr/bin/env perl
+# SPDX-License-Identifier: MIT
+# Safe, opt-in CRLF-to-LF normalization for staged text files.
+use strict;
+use warnings;
+use Getopt::Long qw(GetOptions);
+use File::Spec;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
+use Fcntl qw(S_ISREG S_ISDIR S_ISLNK);
+use SASD::Freeware::Walk qw(walk_tree display_path);
+use SASD::Freeware::TextEOL qw(inspect_file convert_file);
+
+my ($help, $version, $check, $dry_run, $apply, $recursive, $one_fs, $verbose);
+my ($min_age, $max_bytes) = (0, 16777216);
+my (@include, @exclude);
+Getopt::Long::Configure('no_auto_abbrev', 'no_ignore_case');
+GetOptions(
+    'help|h' => \$help, 'version' => \$version,
+    'check' => \$check, 'dry-run' => \$dry_run, 'apply' => \$apply,
+    'recursive' => \$recursive, 'one-file-system' => \$one_fs,
+    'include=s@' => \@include, 'exclude=s@' => \@exclude,
+    'min-age=s' => \$min_age, 'max-bytes=s' => \$max_bytes,
+    'verbose' => \$verbose,
+) or usage(2);
+usage(0) if $help;
+if ($version) { print "text-eol-normalize 0.1.0\n"; exit 0; }
+usage(2) unless @ARGV == 1 && ($check || 0) + ($dry_run || 0) + ($apply || 0) <= 1
+    && $min_age =~ /\A[0-9]{1,10}\z/ && $max_bytes =~ /\A[0-9]{1,12}\z/
+    && $max_bytes > 0 && $max_bytes <= 1073741824;
+my $root = shift @ARGV;
+$check = 1 unless $dry_run || $apply;
+my @defaults = qw(txt csv sh md conf cfg ini json xml yaml yml sql py pl);
+@include = @defaults unless @include;
+push @exclude, qw(bin xls xlsx xlsm xlsb);
+for my $value (@include, @exclude) {
+    $value =~ s/\A\*?\.//;
+    usage(2) unless $value =~ /\A[a-zA-Z0-9][a-zA-Z0-9_+-]{0,31}\z/;
+    $value = lc($value);
+}
+my (%allowed, %denied);
+@allowed{@include} = (1) x @include;
+@denied{@exclude} = (1) x @exclude;
+my @root_stat = lstat($root);
+if (!@root_stat || S_ISLNK($root_stat[2])
+    || (!S_ISDIR($root_stat[2]) && !S_ISREG($root_stat[2]))) {
+    print STDERR "text-eol-normalize: invalid root (regular file or real directory required): ",
+        display_path($root), "\n";
+    exit 1;
+}
+my ($examined, $dos, $converted, $skipped, $errors) = (0,0,0,0,0);
+my $on_error = sub {
+    my ($path, $detail) = @_;
+    print STDERR "ERROR\t", display_path($path), "\t$detail\n";
+    ++$errors;
+};
+my $on_entry = sub {
+    my ($path, $st) = @_;
+    return if !S_ISREG($st->[2]);
+    my ($extension) = $path =~ /\.([^.\/]+)\z/;
+    return unless defined($extension);
+    $extension = lc($extension);
+    return unless $allowed{$extension} && !$denied{$extension};
+    ++$examined;
+    my $result = inspect_file($path, $max_bytes, $min_age);
+    if ($result->{status} eq 'error') { $on_error->($path, $result->{detail}); return; }
+    if ($result->{status} eq 'skip') {
+        ++$skipped;
+        print "SKIP\t", display_path($path), "\t$result->{detail}\n" if $verbose;
+        return;
+    }
+    return if $result->{status} eq 'unix';
+    ++$dos;
+    my $label = $apply ? 'CONVERT' : $dry_run ? 'WOULD_CONVERT' : 'DOS';
+    if ($apply) {
+        my ($success, $detail) = convert_file($path, $result);
+        if (!$success) { $on_error->($path, $detail); return; }
+        ++$converted;
+    }
+    print "$label\t", display_path($path), "\tCRLF=$result->{crlf} LF=$result->{lf}\n";
+};
+
+if (S_ISREG($root_stat[2])) {
+    $on_entry->($root, \@root_stat);
+} elsif ($recursive) {
+    walk_tree($root, $one_fs, $on_entry, $on_error);
+} else {
+    opendir(my $dh, $root) or do {
+        print STDERR "text-eol-normalize: cannot read directory: $!\n"; exit 1;
+    };
+    my @opened = stat($dh);
+    if (!@opened || $opened[0] != $root_stat[0] || $opened[1] != $root_stat[1]) {
+        print STDERR "text-eol-normalize: root directory changed\n"; exit 1;
+    }
+    my @names = sort grep { $_ ne '.' && $_ ne '..' } readdir($dh);
+    closedir($dh) or do {
+        print STDERR "text-eol-normalize: cannot close directory: $!\n"; exit 1;
+    };
+    for my $name (@names) {
+        my $path = File::Spec->catfile($root, $name);
+        my @st = lstat($path);
+        if (!@st) { $on_error->($path, "lstat failed: $!"); next; }
+        $on_entry->($path, \@st);
+    }
+}
+print "SUMMARY\texamined=$examined\tdos=$dos\tconverted=$converted\tskipped=$skipped\terrors=$errors\n";
+exit($errors ? 1 : 0);
+
+sub usage {
+    my ($code) = @_;
+    my $out = $code ? *STDERR : *STDOUT;
+    print {$out} <<'HELP';
+Usage: text-eol-normalize [--check | --dry-run | --apply] [OPTIONS] FILE_OR_DIR
+       text-eol-normalize --help | --version
+Default: read-only --check. No changes without --apply.
+--recursive          Visit subdirectories (no symlink traversal).
+--one-file-system    Do not descend to a different device (recursive only).
+--include EXT        Allow extension, repeatable (defaults to common text types).
+--exclude EXT        Deny extension, repeatable (Excel and bin always denied).
+--min-age SECONDS    Ignore recently modified files (for staged imports).
+--max-bytes N        Maximum file size to inspect (default 16777216 bytes).
+--verbose            Print skipped files and reasons.
+HELP
+    exit($code);
+}
