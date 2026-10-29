@@ -56,6 +56,8 @@ from a VM/filesystem snapshot where appropriate.
 
 ## Release checklist
 
+Use the [systematic release-gap register](RELEASE-GAPS.md) and `make release-gap-audit` to inventory *static* source gaps. Its PASS records do not establish native or privileged release acceptance. MANUAL records remain open until reviewed evidence exists; never promote a release from this scanner alone.
+
 1. Start from a clean reproducible commit/tag; reconcile CLI versions and the
    changelog.
 2. Confirm `make test`, `make shellcheck`, mandatory DNS/LDAPS integration and

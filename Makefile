@@ -3,7 +3,7 @@
 PREFIX ?= /usr/freeware
 DESTDIR ?=
 
-.PHONY: all check test integration-test shellcheck install uninstall
+.PHONY: all check test integration-test shellcheck install uninstall release-gap-audit
 all: test
 
 check:
@@ -33,6 +33,11 @@ test: check
 shellcheck:
 	@command -v shellcheck >/dev/null 2>&1 || { echo "make shellcheck: install ShellCheck first" >&2; exit 1; }
 	@shellcheck bin/rotate tests/test_rotate.sh tests/test_rotate_safety.sh
+
+# Read-only maintainer inventory: outputs open MANUAL gates on purpose.
+# It is not a release approval step and performs no native operations.
+release-gap-audit:
+	@perl tools/release-gap-audit.pl
 
 integration-test: check
 	@command -v prove >/dev/null 2>&1 || { echo "make integration-test: prove is required" >&2; exit 1; }
