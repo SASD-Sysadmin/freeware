@@ -41,7 +41,7 @@ Das optionale Ziel `make integration-test` prüft native DNS- und LDAPS-Clients 
 
 ## Qualitätsvertrag der Kommandozeilenschnittstellen
 
-Alle 30 Programme unter `bin/` und `sbin/` unterstützen `--help` und
+Die ausführbaren Programme unter `bin/` und `sbin/` unterstützen `--help` und
 `--version`, ohne Systemdateien auszulesen, Zustände zu verändern,
 Netzwerkverbindungen aufzubauen oder Root-Rechte zu benötigen. `--help`
 gibt eine Aufrufhilfe auf stdout aus (Exitcode 0), `--version` gibt

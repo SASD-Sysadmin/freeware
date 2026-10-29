@@ -1,5 +1,7 @@
 # SASD Freeware – Bestandsaufnahme und priorisierte Roadmap
 
+**M9 Release-Gap-Analyse (29. Oktober 2026):** Das [Release-Gap-Register](RELEASE-GAPS.de.md) erfasst 54 Programme und priorisiert Freigabenachweise, native/privilegierte Abnahmen sowie Dokumentationslücken. Dies ist keine Release-Ankündigung.
+
 ## Aktuelle kapitelorientierte Planung (14. Oktober 2026)
 
 **Ziel:** Die Werkzeuge zu den Buchkapiteln 2–10 systematisch ergänzen.

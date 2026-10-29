@@ -66,6 +66,8 @@ die Sicherungen prüfen und gegebenenfalls den VM-Snapshot wiederherstellen.
 
 ## Freigabe-Checkliste
 
+Das [Release-Gap-Register](RELEASE-GAPS.de.md) und `make release-gap-audit` dokumentieren den *statischen* Quellcodebestand. PASS bedeutet keine native oder privilegierte Abnahme. MANUAL bleibt bis zur Prüfung realer Nachweise offen; aus dem Scanner allein folgt keine Freigabe.
+
 1. Für einen reproduzierbaren Commit oder Tag eine saubere Git-Arbeitskopie
    verwenden; Versionsnummern und `CHANGELOG.md` abstimmen.
 2. `make test`, `make shellcheck`, verpflichtende DNS-/LDAPS-Integration und

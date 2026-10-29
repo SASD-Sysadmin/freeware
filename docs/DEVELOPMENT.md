@@ -41,7 +41,7 @@ The opt-in `make integration-test` target tests native DNS and LDAPS clients aga
 
 ## Command-line quality contract
 
-All 30 programs in `bin/` and `sbin/` support `--help` and `--version` without
+The executable commands in `bin/` and `sbin/` support `--help` and `--version` without
 reading system files, changing state, opening sockets, or needing elevated
 privileges. `--help` writes a usage line to stdout and exits with status 0;
 `--version` writes `COMMAND MAJOR.MINOR.PATCH` followed by a newline to stdout

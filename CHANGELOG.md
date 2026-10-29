@@ -4,6 +4,13 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### Release engineering – systematic M9 gap inventory
+
+- Add a read-only, maintainer-only `release-gap-audit` tool and 14+ offline tests.
+- Record verified source inventory separately from manual VM, CI, archive and release approval evidence.
+- Add bilingual, prioritized pre-release gap registers; remove obsolete fixed command counts.
+- Report static gaps in CI without mistaking the report for release authorization.
+
 ### Chapter 2 – Safe CRLF-to-LF normalization (`text-eol-normalize`)
 
 - Add a Perl-based, opt-in CLI and reusable `SASD::Freeware::TextEOL` module;

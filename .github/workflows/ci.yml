@@ -33,6 +33,10 @@ jobs:
           fi
       - name: Run Bash and Perl test suites
         run: make test
+      # Always record structural release gaps without turning CI green
+      # into a false claim of privileged/native release approval.
+      - name: Report static release gaps (informational)
+        run: make release-gap-audit
       - name: Install optional integration clients (Ubuntu)
         if: runner.os == 'Linux'
         run: |

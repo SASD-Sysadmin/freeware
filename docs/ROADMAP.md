@@ -1,5 +1,7 @@
 # SASD Freeware – Technical inventory and prioritized roadmap
 
+**M9 release-gap review (29 October 2026):** The [release-gap register](RELEASE-GAPS.md) inventories 54 commands and prioritizes release evidence, native/privileged acceptance and documentation coverage. This does not announce a release.
+
 ## Current chapter-based development plan (14 October 2026)
 
 **Goal:** Complete useful administration tools for book chapters 2–10 before
