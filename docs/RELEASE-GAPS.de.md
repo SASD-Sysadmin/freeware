@@ -25,6 +25,16 @@ und `tcp-check`. Das bedeutet nicht automatisch, dass sie undokumentiert sind:
 verschiedene Funktionen werden bereits in Sammelanleitungen erklärt. Für eine
 nachvollziehbare Release-Inventur empfehlen sich dennoch direkte Leitfäden.
 
+## M9.2-Nachtrag (Dokumentationsabdeckung)
+
+Die historische Zahl **47/54** oben gehört zum M9.1-Bestandsstichtag
+und bleibt als Nachweis unverändert. M9.2 ergänzt für alle sieben
+genannten Programme DE-/EN-Einzelanleitungen, direkte README-Verweise
+und einen Offline-Dokumentationsvertragstest. Ein erneutes
+`make release-gap-audit` sollte damit `GAP=0` melden.
+Die **sieben** weiterhin offenen `MANUAL`-Nachweise werden dadurch
+**nicht** zu einer Freigabe umgedeutet.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,
@@ -42,7 +52,7 @@ werden. P2 ist weitere Produktentwicklung.
 | RG-04 | P0 | Offen | Risiken bei Installer-Abbruch, manipulierten Dateien, fremden Dateinamen und Wiederherstellung in Wegwerf-Staging sowie mit dokumentiertem Rückweg prüfen |
 | RG-05 | P1 | Teilweise | Genaue Plattformmatrix und reale Native-Tests; Ubuntu/macOS-CI allein belegt weder fünf Linux-Distributionen noch BSD/Solaris oder einen funktionsfähigen privilegierten Backend-Einsatz |
 | RG-06 | P1 | Teilweise | Realistische Systemtests für beanspruchte SQL-, Postfix-, LDAP-/NIS- und Firewall-Funktionen; Mock-/Loopback-Fixtures nicht als Produktionserfahrung darstellen |
-| RG-07 | P1 | Offen | Sieben fehlende Einzelanleitungen oder dokumentierte, begründete Abweichung einschließlich direkter Verweise auf Sammelanleitungen |
+| RG-07 | P1 | Dokumentation durch M9.2 ergänzt, CI noch zu prüfen | Sieben fehlende Einzelanleitungen oder dokumentierte, begründete Abweichung einschließlich direkter Verweise auf Sammelanleitungen |
 | RG-08 | P1 | Behoben durch diese Änderung | Entwicklerdokumentation nicht mehr auf die historische Zahl von 30 Programmen festlegen |
 | RG-09 | P1 | Zu prüfen | Abhängigkeiten/Versionen, Drittanbieter-Lizenzen, Sicherheitsmeldungsweg und Rechte-/Eigentumsgrenzen für tatsächlich ausgelieferte Programme gegenchecken |
 | RG-10 | P2 | Laufend | Funktionale Lücken aus den Kapiteln 2–10 priorisiert nach administrativem Nutzen schließen; kein willkürlicher Blocker für einen bewusst kleineren Releaseumfang |

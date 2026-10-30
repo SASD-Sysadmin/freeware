@@ -9,6 +9,10 @@ und schreiben nach stdout.
 
 ## Zusammenfassung
 
+Ausführliche Einzelanleitungen: [hosts-lint](hosts-lint.de.md),
+[account-audit](account-audit.de.md) und [log-summary](log-summary.de.md).
+Die Sammelübersicht dient weiterhin als Einführung.
+
 Vier Perl-5-Kommandozeilenprogramme liefern lesende Auswertungen zu Verzeichnisinhalten, Hosts-Dateien, Kontodatensätzen und Logmeldungen. Die Programme verwenden Perl-Standardmodule und ändern keine Eingabedaten.
 
 ## `fs-report` — Überblick über ein Dateisystemverzeichnis

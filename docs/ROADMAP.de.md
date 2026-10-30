@@ -2,6 +2,11 @@
 
 **M9 Release-Gap-Analyse (29. Oktober 2026):** Das [Release-Gap-Register](RELEASE-GAPS.de.md) erfasst 54 Programme und priorisiert Freigabenachweise, native/privilegierte Abnahmen sowie Dokumentationslücken. Dies ist keine Release-Ankündigung.
 
+**M9.2 Dokumentationsabdeckung:** Sieben bestehende Programme erhalten
+jeweils eine englische und deutsche Einzelanleitung sowie direkte
+README-Verweise. Die statische Dokumentationslücke ist damit bearbeitet;
+manuelle VM-, Plattform- und Dienstabnahmen bleiben weiterhin offen.
+
 ## Aktuelle kapitelorientierte Planung (14. Oktober 2026)
 
 **Ziel:** Die Werkzeuge zu den Buchkapiteln 2–10 systematisch ergänzen.

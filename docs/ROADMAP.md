@@ -2,6 +2,11 @@
 
 **M9 release-gap review (29 October 2026):** The [release-gap register](RELEASE-GAPS.md) inventories 54 commands and prioritizes release evidence, native/privileged acceptance and documentation coverage. This does not announce a release.
 
+**M9.2 documentation coverage:** Seven existing commands now have
+individual English/German operator guides and direct README links.
+The static repository documentation gap is addressed; this does not
+close any manual VM, native platform or live-service release gate.
+
 ## Current chapter-based development plan (14 October 2026)
 
 **Goal:** Complete useful administration tools for book chapters 2–10 before

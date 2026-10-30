@@ -26,6 +26,16 @@ The seven commands without **individual** English/German guides are:
 guides. This is a discoverability and traceability gap, not a finding that
 these programs necessarily lack any documentation.
 
+## M9.2 follow-up (documentation coverage)
+
+The historical **47/54** guide count above describes the M9.1 baseline
+and is intentionally retained. In M9.2, dedicated English/German
+guides were added for all seven named commands, with direct links from
+the two READMEs and a new offline documentation-contract test.
+A fresh `make release-gap-audit` should therefore report `GAP=0`.
+This static result is **not** a human-approved release. The seven
+`MANUAL` evidence gates remain open until independently verified.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support
@@ -41,7 +51,7 @@ limitations are explicit. P2 is additional product development.
 | RG-04 | P0 | Open | Disposable staged conflict, interruption and rollback test evidence; verified recovery procedure and known installer transaction limitations |
 | RG-05 | P1 | Partial | Explicit support matrix and genuine native tests; Ubuntu/macOS CI is not five-distro/BSD/Solaris or privileged backend acceptance |
 | RG-06 | P1 | Partial | Live service evidence for claimed SQL, Postfix, LDAP/NIS and firewall features; mocked or loopback fixtures are not production-like validation |
-| RG-07 | P1 | Open | Seven missing dedicated command guides or formally documented shared-guide exceptions with direct links |
+| RG-07 | P1 | Documentation added in M9.2; CI verification pending | Seven missing dedicated command guides or formally documented shared-guide exceptions with direct links |
 | RG-08 | P1 | Corrected in this change | Eliminate the obsolete hard-coded “30 commands” figure from development guidelines |
 | RG-09 | P1 | Review pending | External dependency versions, third-party licensing, security reporting and per-command access/ownership requirements |
 | RG-10 | P2 | Ongoing | Additional chapter 2–10 functionality based on user value, not an arbitrary first-release blocker |
