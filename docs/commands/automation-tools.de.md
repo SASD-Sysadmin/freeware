@@ -9,6 +9,10 @@ und schreiben nach stdout.
 
 ## Zusammenfassung
 
+Einzelanleitungen: [ssh-key-audit](ssh-key-audit.de.md),
+[file-integrity](file-integrity.de.md), [suid-audit](suid-audit.de.md)
+und [tcp-check](tcp-check.de.md). Diese Übersicht bleibt als Einstieg.
+
 Vier Perl-5-Programme ermöglichen die Prüfung von SSH-Schlüsseldateien, SHA-256-Dateiintegrität, die Inventarisierung von SUID-/SGID-Dateien und die Kontrolle der IPv4-TCP-Erreichbarkeit. Parameter, Berechtigungen und Rückgabewerte sind jeweils beschrieben.
 
 ## `ssh-key-audit` – Prüfung von authorized_keys

@@ -8,6 +8,10 @@ reading their target files. These options exit with status 0 and write to stdout
 
 ## Summary
 
+Individual command guides: [hosts-lint](hosts-lint.md),
+[account-audit](account-audit.md) and [log-summary](log-summary.md).
+The grouped overview remains useful as an introduction.
+
 Four Perl 5 command-line utilities provide read-only reports for directory contents, hosts-file syntax, account records and log messages. The tools use standard Perl modules and do not change input data.
 
 ## `fs-report` — filesystem summary

@@ -8,6 +8,10 @@ reading their target files. These options exit with status 0 and write to stdout
 
 ## Summary
 
+Dedicated guides: [ssh-key-audit](ssh-key-audit.md),
+[file-integrity](file-integrity.md), [suid-audit](suid-audit.md),
+[tcp-check](tcp-check.md). The overview remains introductory.
+
 Four Perl 5 commands provide SSH key file inspection, SHA-256 file integrity tracking, SUID/SGID inventories and IPv4 TCP reachability checks. Each command has its own documented options, permission requirements and exit statuses.
 
 ## `ssh-key-audit` — basic authorized_keys review

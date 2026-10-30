@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### M9.2 – Standalone command documentation (Chapter 2–10)
+
+- Add 14 bilingual, command-specific guides for seven existing audit and
+  diagnostic programs; each documents usage, exit codes, safe examples,
+  dependencies and security/portability boundaries.
+- Point README and existing grouped overviews to the dedicated guides.
+- Add offline guide-contract tests; the static documentation gap should
+  fall to zero, while manual release-acceptance gates remain open.
+
 ### Release engineering – systematic M9 gap inventory
 
 - Add a read-only, maintainer-only `release-gap-audit` tool and 14+ offline tests.
