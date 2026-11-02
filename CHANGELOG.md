@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### M9.3a – Interrupted installer recovery regression
+
+- Add a deterministic, disposable-DESTDIR test for an interrupted upgrade:
+  pending transaction backups block install/uninstall without corrupting the
+  ownership manifest or operator-owned files.
+- Document safe manual recovery boundaries in English and German.
+- Keep RG-04 and all seven manual release-evidence gates open; this is not
+  evidence of live power-loss recovery or privileged VM acceptance.
+
 ### M9.2 – Standalone command documentation (Chapter 2–10)
 
 - Add 14 bilingual, command-specific guides for seven existing audit and

@@ -35,6 +35,16 @@ und einen Offline-Dokumentationsvertragstest. Ein erneutes
 Die **sieben** weiterhin offenen `MANUAL`-Nachweise werden dadurch
 **nicht** zu einer Freigabe umgedeutet.
 
+## M9.3a-Nachtrag (simulierter Installer-Abbruch)
+
+Ein isolierter Perl-Regressionstest prüft einen reproduzierbar simulierten
+Unterbrechungszustand und den sicheren Abbruch weiterer Installationsversuche.
+Alte Sicherung, Manifest und fremde Dateien bleiben geschützt; nach einer
+im Test kontrolliert nachgebildeten Wiederherstellung ist ein Upgrade möglich.
+Dies erweitert die Offline-Nachweise zu RG-04, **schließt** die manuelle
+Staging-Abnahme aber **nicht**: tatsächliche Prozessunterbrechungen,
+teilweise Rollbacks, Snapshot-Restore und unabhängige Abnahme fehlen noch.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,
