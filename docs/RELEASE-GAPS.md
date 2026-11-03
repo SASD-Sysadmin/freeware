@@ -36,6 +36,15 @@ A fresh `make release-gap-audit` should therefore report `GAP=0`.
 This static result is **not** a human-approved release. The seven
 `MANUAL` evidence gates remain open until independently verified.
 
+## M9.3a follow-up (simulated installer interruption)
+
+An isolated Perl regression now exercises one reproducible interrupted-upgrade
+state and the fail-closed recovery boundary. It protects the old backup,
+ownership manifest and unowned files, then checks a manually reconstructed
+fixture and successful retry. This improves offline RG-04 evidence but **does
+not close** the staged-upgrade MANUAL gate: real interruption, partial-rollback,
+snapshot recovery and independently reviewed acceptance remain outstanding.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

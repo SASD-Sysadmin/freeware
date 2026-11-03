@@ -64,6 +64,29 @@ unter Umständen eine manuelle Reparatur. Erhaltene Verzeichnisse mit Namen
 löschen: darin können alte Installationsdateien liegen. Zuerst den Zustand und
 die Sicherungen prüfen und gegebenenfalls den VM-Snapshot wiederherstellen.
 
+### M9.3a: simulierter unterbrochener Upgrade-Vorgang (Offline-Test)
+
+`tests/test_installation_interruption.t` simuliert in einem isolierten
+Wegwerf-`DESTDIR` eine Unterbrechung, nachdem eine zuvor verwaltete Datei
+in das Transaktions-Backup verschoben wurde. Sowohl Installation als auch
+Deinstallation müssen bei vorhandenem `.sasd-freeware-txn-*` abbrechen,
+ohne Sicherungen, Eigentumsmanifest oder fremde Bedienerdateien zu verändern.
+Anschließend prüft der Test die gesondert nachvollzogene Wiederherstellung
+vor einem erneuten Upgrade.
+
+Dies ist eine deterministische **Simulation eines Abbruchpunkts**, kein
+echter `SIGKILL`-, Stromausfall- oder vollständiger Rollback-Test.
+RG-04 und die manuelle Staging-Abnahme bleiben deshalb offen.
+
+Bei einem tatsächlichen Abbruch: automatische Wiederholungen stoppen;
+Zielpräfix und Transaktionsverzeichnis sichern und inventarisieren; Manifest,
+vorhandene Dateien und Prüfsummen unabhängig vergleichen und nach Möglichkeit
+einen geprüften Dateisystem-/VM-Snapshot wiederherstellen. Namen wie
+`old-N` enthalten **keine** Zuordnung zum ursprünglichen Dateipfad.
+Sicherungen nicht erraten, nicht blind löschen und `make uninstall` nicht
+als Reparaturabkürzung verwenden. Den reparierten Zustand vor Entfernen
+der Transaktionsmarkierung unabhängig prüfen und dokumentieren.
+
 ## Freigabe-Checkliste
 
 Das [Release-Gap-Register](RELEASE-GAPS.de.md) und `make release-gap-audit` dokumentieren den *statischen* Quellcodebestand. PASS bedeutet keine native oder privilegierte Abnahme. MANUAL bleibt bis zur Prüfung realer Nachweise offen; aus dem Scanner allein folgt keine Freigabe.

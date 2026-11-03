@@ -54,6 +54,27 @@ concurrent external modifications can require manual restoration. A leftover
 inspect it before removal as it may contain previous installed files. Recover
 from a VM/filesystem snapshot where appropriate.
 
+### M9.3a: simulated interrupted upgrade (offline regression)
+
+`tests/test_installation_interruption.t` models a disposable interrupted
+upgrade after a previous managed file has been moved into a transaction backup.
+It verifies that **both** install and uninstall refuse to proceed while the
+`.sasd-freeware-txn-*` directory exists, without consuming backups, modifying
+the ownership manifest, or touching unowned operator files. The test then
+models independently reviewed restoration before retrying an upgrade.
+
+This is a deterministic **simulation of one interruption point**. It does
+not kill a live process, prove power-loss durability, or certify every rollback
+path. RG-04 and the manual staged-upgrade gate remain open.
+
+For an actual interrupted installation, stop automated retries; secure and
+inventory the affected prefix and transaction directory; compare the installed
+manifest with the actual paths and checksums; and prefer restoring a verified
+filesystem/VM snapshot. The `old-N` backup filenames do **not** encode their
+original destinations. Do not guess mappings, delete backups, or run
+`make uninstall` as a recovery shortcut. Document independent verification
+of the recovered state before removing the transaction marker.
+
 ## Release checklist
 
 Use the [systematic release-gap register](RELEASE-GAPS.md) and `make release-gap-audit` to inventory *static* source gaps. Its PASS records do not establish native or privileged release acceptance. MANUAL records remain open until reviewed evidence exists; never promote a release from this scanner alone.
