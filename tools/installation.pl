@@ -13,6 +13,9 @@ use File::Temp qw(tempdir);
 use File::Copy qw(copy);
 use Cwd qw(abs_path);
 use Digest::SHA;
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use SASD::Freeware::InstallRollback qw(rollback_installation);
 
 my $magic = '# sasd-freeware-manifest-v1';
 my $manifest_name = '.sasd-freeware-install.tsv';
@@ -211,7 +214,9 @@ my $ok = eval {
         my $original = "$root/$rel";
         my $backup = "$txn/old-$index";
         rename($original, $backup) or die "cannot protect previous $rel: $!\n";
-        push @backups, [$original, $backup];
+        # Keep the source manifest digest with each backup so recovery
+        # can reject tampering before restoring an old file.
+        push @backups, [$original, $backup, $previous{$rel}];
     }
     $index = 0;
     for my $rel (sort keys %wanted) {
@@ -220,7 +225,10 @@ my $ok = eval {
         make_path(dirname($dst)) unless -d dirname($dst);
         ancestors_safe(dirname($dst), 0);
         rename("$txn/new-$index", $dst) or die "cannot install $rel: $!\n";
-        push @placed, $dst;
+        # Record the exact staged bytes. An operator or another process
+        # may change a new destination before an error is handled;
+        # rollback must not blindly delete such foreign changes.
+        push @placed, [$dst, $newhash{$rel}];
     }
     my $new_manifest = "$txn/manifest";
     open my $out, '>', $new_manifest or die "cannot write staged manifest: $!\n";
@@ -235,12 +243,30 @@ my $ok = eval {
 };
 if (!$ok) {
     my $reason = $@ || 'unknown failure';
-    for my $dst (reverse @placed) { unlink $dst or warn "installation: rollback unlink $dst: $!\n"; }
-    for my $item (reverse @backups) {
-        rename($item->[1], $item->[0]) or warn "installation: rollback restore $item->[0]: $!\n";
+
+    # The rollback engine is independently tested with deterministic failures
+    # of unlink(), rename(), changed payloads, and cleanup. It never deletes
+    # a transaction containing an old backup that could not be restored.
+    # This entire branch is still a failed install; even a complete rollback
+    # must return nonzero so automation cannot mistake it for an upgrade.
+    my $rollback = eval {
+        rollback_installation(
+            placed => \@placed,
+            backups => \@backups,
+            transaction => $txn,
+        );
+    };
+    if (!$rollback) {
+        my $unexpected = $@ || 'unknown rollback engine failure';
+        die "installation: update failed; rollback error: $unexpected"
+          . "; transaction preserved at $txn; initial failure: $reason";
     }
-    eval { remove_tree($txn) };
-    die "installation: update failed (rollback attempted): $reason";
+    if (!$rollback->{complete}) {
+        warn "installation: rollback issue: $_\n" for @{$rollback->{errors}};
+        die "installation: update failed (rollback INCOMPLETE; "
+          . "transaction preserved at $txn; manual recovery required): $reason";
+    }
+    die "installation: update failed (rollback complete): $reason";
 }
 remove_tree($txn);
 print "Installed ", scalar(keys %wanted), " managed files; ",
