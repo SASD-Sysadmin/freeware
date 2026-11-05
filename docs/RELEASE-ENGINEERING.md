@@ -75,6 +75,29 @@ original destinations. Do not guess mappings, delete backups, or run
 `make uninstall` as a recovery shortcut. Document independent verification
 of the recovered state before removing the transaction marker.
 
+### M9.3b: fail-closed rollback on partial filesystem failure
+
+The installer now delegates error recovery to the maintainer-only
+`tools/lib/SASD/Freeware/InstallRollback.pm` module. It records the SHA-256
+of each moved old backup and each newly placed file. A rollback removes new
+files **only while their digest still matches** the staged content and
+restores old files **only when the backup matches its recorded digest and the
+destination is absent**. This prevents a predictable overwrite of unowned or
+concurrently changed files during error handling.
+
+If any unlink, restore, digest check or cleanup fails, rollback reports a
+nonzero failure and keeps the `.sasd-freeware-txn-*` marker (except where a
+cleanup operation itself partially fails). **Never discard the transaction
+folder after a failed rollback:** `old-N` can be the sole surviving copy of a
+previous installed file. The installer refuses future install/uninstall
+operations until a human has independently reconciled the state.
+
+`tests/test_installation_rollback.t` injects deterministic failures through
+module-local test callbacks. The production installer has no fault-injection
+CLI flag or environment switch. The tests do not prove resistance to power
+loss, concurrent hostile filesystem changes or all partial-cleanup states;
+those remain RG-04 manual acceptance work in an isolated snapshot-capable VM.
+
 ## Release checklist
 
 Use the [systematic release-gap register](RELEASE-GAPS.md) and `make release-gap-audit` to inventory *static* source gaps. Its PASS records do not establish native or privileged release acceptance. MANUAL records remain open until reviewed evidence exists; never promote a release from this scanner alone.

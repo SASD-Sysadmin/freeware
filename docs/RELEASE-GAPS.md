@@ -45,6 +45,15 @@ fixture and successful retry. This improves offline RG-04 evidence but **does
 not close** the staged-upgrade MANUAL gate: real interruption, partial-rollback,
 snapshot recovery and independently reviewed acceptance remain outstanding.
 
+## M9.3b follow-up (partial rollback hardening)
+
+Rollback now retains any surviving transaction backups if file removal or
+restoration fails. Deterministic offline fault-injection tests cover damaged
+payloads, occupied destinations and failed cleanup. This improves RG-04
+regression evidence **without closing** its manual staged recovery gate:
+crash durability, native rollback and independently reviewed VM tests remain
+outstanding.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

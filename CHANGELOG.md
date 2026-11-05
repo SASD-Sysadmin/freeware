@@ -4,6 +4,15 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### M9.3b – Fail-closed rollback and retained backups
+
+- Move installer error recovery into a small maintainer-only Perl module with
+  independent, deterministic I/O-failure tests and extensive code comments.
+- Verify old/new file SHA-256 values before recovery, refuse occupied restore
+  destinations, and never remove a transaction containing unrestored backups.
+- Keep rollback incomplete and release acceptance explicitly open: simulated
+  errors do not establish crash consistency or cross-process atomicity.
+
 ### M9.3a – Interrupted installer recovery regression
 
 - Add a deterministic, disposable-DESTDIR test for an interrupted upgrade:

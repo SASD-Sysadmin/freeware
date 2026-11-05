@@ -45,6 +45,15 @@ Dies erweitert die Offline-Nachweise zu RG-04, **schließt** die manuelle
 Staging-Abnahme aber **nicht**: tatsächliche Prozessunterbrechungen,
 teilweise Rollbacks, Snapshot-Restore und unabhängige Abnahme fehlen noch.
 
+## M9.3b-Nachtrag (unvollständige Rollbacks absichern)
+
+Die Rollback-Logik erhält verbliebene Sicherungsdateien, wenn das Löschen oder
+Zurückspielen von Dateien fehlschlägt. Deterministische Offline-Tests prüfen
+beschädigte Nutzdaten, belegte Zielpfade und fehlgeschlagene Bereinigungen.
+Dies ergänzt die Regressionstests zu RG-04, **schließt** aber dessen manuelle
+Abnahme nicht: echte Systemabbrüche, native Wiederherstellung und unabhängig
+geprüfte Snapshot-VM-Tests bleiben ausstehend.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,

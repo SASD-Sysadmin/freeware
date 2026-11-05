@@ -87,6 +87,30 @@ Sicherungen nicht erraten, nicht blind löschen und `make uninstall` nicht
 als Reparaturabkürzung verwenden. Den reparierten Zustand vor Entfernen
 der Transaktionsmarkierung unabhängig prüfen und dokumentieren.
 
+### M9.3b: Sicherungen bei unvollständigem Rollback erhalten
+
+Der Installer verwendet zur Fehlerbehandlung jetzt das nur für Entwickler
+vorgesehene Perl-Modul `tools/lib/SASD/Freeware/InstallRollback.pm`. Zu jeder
+verschobenen alten Sicherung und jeder neu platzierten Datei wird der
+SHA-256-Wert notiert. Beim Rollback werden neue Dateien **nur bei unverändertem
+Inhalt** entfernt. Alte Sicherungen werden **nur mit gültiger Prüfsumme und
+freiem Zielpfad** zurückgespielt. Dadurch überschreibt die Wiederherstellung
+nicht versehentlich fremde oder zwischenzeitlich veränderte Dateien.
+
+Schlägt das Löschen, Zurückspielen, die Prüfsummenprüfung oder die Bereinigung
+fehl, endet der Installer mit einem Fehler; das Transaktionsverzeichnis bleibt
+zur Untersuchung erhalten (sofern nicht gerade die Bereinigung selbst teilweise
+fehlgeschlagen ist). **Unvollständige Rollbacks niemals durch Löschen des
+Verzeichnisses „reparieren“:** Eine Datei `old-N` kann die letzte vorhandene
+Kopie sein. Weitere Installations- oder Deinstallationsversuche bleiben bis
+zur unabhängig überprüften Wiederherstellung gesperrt.
+
+`tests/test_installation_rollback.t` simuliert I/O-Fehler reproduzierbar durch
+Perl-Test-Callbacks. Der Produktivinstaller kennt keinen entsprechenden
+Schalter und keine Umgebungsvariable. Damit sind weder Stromausfallsicherheit
+noch atomare konkurrierende Dateisystemoperationen bewiesen. Die manuelle
+RG-04-Abnahme in einer isolierten VM mit Snapshot bleibt offen.
+
 ## Freigabe-Checkliste
 
 Das [Release-Gap-Register](RELEASE-GAPS.de.md) und `make release-gap-audit` dokumentieren den *statischen* Quellcodebestand. PASS bedeutet keine native oder privilegierte Abnahme. MANUAL bleibt bis zur Prüfung realer Nachweise offen; aus dem Scanner allein folgt keine Freigabe.
