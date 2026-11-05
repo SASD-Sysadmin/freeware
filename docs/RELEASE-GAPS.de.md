@@ -54,6 +54,16 @@ Dies ergänzt die Regressionstests zu RG-04, **schließt** aber dessen manuelle
 Abnahme nicht: echte Systemabbrüche, native Wiederherstellung und unabhängig
 geprüfte Snapshot-VM-Tests bleiben ausstehend.
 
+## M9.3c-Nachtrag (parallele Prozesse und Abbruchnachweise)
+
+Eine dauerhafte private `flock`-Datei koordiniert nun parallel laufende,
+kooperierende Installationen und Deinstallationen. Ein vor der ersten
+Sicherungsverschiebung veröffentlichter Transaktionsplan ordnet `old-N` und
+`new-N` jeweils einen relativen Pfad und SHA-256-Wert zu. Dies erleichtert die
+manuelle Abbruchprüfung, garantiert aber weder Schutz vor fremden Schreibern
+noch Stromausfallsicherheit. RG-04 und alle sieben manuellen Abnahmen bleiben
+offen.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,

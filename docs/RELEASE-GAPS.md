@@ -54,6 +54,14 @@ regression evidence **without closing** its manual staged recovery gate:
 crash durability, native rollback and independently reviewed VM tests remain
 outstanding.
 
+## M9.3c follow-up (cooperative concurrency and crash evidence)
+
+A stable private advisory flock now serializes cooperating install/uninstall
+processes. A transaction plan published before backup moves maps each old-N
+and new-N to its relative path and digest, reducing ambiguity in manual crash
+inspection. Hostile external writers and power-loss durability are **not**
+solved; the isolated RG-04 and all seven manual gates remain open.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

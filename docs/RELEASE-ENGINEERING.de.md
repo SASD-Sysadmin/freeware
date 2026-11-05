@@ -111,6 +111,43 @@ Schalter und keine Umgebungsvariable. Damit sind weder Stromausfallsicherheit
 noch atomare konkurrierende Dateisystemoperationen bewiesen. Die manuelle
 RG-04-Abnahme in einer isolierten VM mit Snapshot bleibt offen.
 
+### M9.3c: Prozesssperre und nachvollziehbare Sicherungen
+
+Vor dem Lesen des Manifests und vor Installations-/Deinstallationsänderungen
+belegt der Installer eine **exklusive, nicht blockierend angeforderte
+`flock`-Sperre**. Die private Datei
+`PREFIX/.sasd-freeware-install.lock` (0600) bleibt **dauerhaft bestehen**, auch
+nach `uninstall`. Sie gehört nicht zu den verwalteten Dateien. Bei einer ersten
+Installation kann dadurch ein sonst noch leeres Zielverzeichnis entstehen,
+selbst wenn die anschließende Vorabprüfung fehlschlägt. Fremde Inhalte,
+unsichere Rechte, Hardlinks und Symlinks werden nicht als Lock akzeptiert.
+
+Die Sperre koordiniert ausschließlich Programme, die dieses Verfahren
+verwenden. Andere Schreibprogramme, Angreifer mit Kontrolle über
+Verzeichnisse und nicht kooperierende Windows-Programme werden dadurch nicht
+zuverlässig aufgehalten. Die Sperrdatei **nicht routinemäßig löschen**.
+Eine vorhandene Lockdatei ohne aktive Sperre ist nach einem normalen Lauf
+kein Fehler und zeigt für sich genommen keinen Absturz an.
+
+Neue Transaktionen enthalten vor der ersten Verschiebung alter Dateien eine
+private `.sasd-freeware-txn-*/plan.tsv` mit `OLD`- und `NEW`-Zeilen:
+Index ab 1, geprüfter relativer Dateipfad und SHA-256-Wert. Der Eintrag
+`OLD\t1\tbin/alpha\t...` ordnet `old-1` der Datei `bin/alpha` zu;
+entsprechend verweist `NEW` auf die zugehörige `new-N`-Datei. Dies dient der
+**manuellen Untersuchung**, ist aber kein ausführbares Wiederherstellungs-
+protokoll. Vor einer Rücksicherung müssen Plan, Manifest, Dateiinhalte und
+Hashes unabhängig verglichen werden. Ältere unterbrochene Transaktionen
+(M9.3a/b) besitzen keinen solchen Plan.
+
+Die Veröffentlichung der Plan-Datei mittels Umbenennen garantiert **keine**
+Stromausfallfestigkeit (kein `fsync`-Protokoll). Ein Abbruch kann vor oder nach
+der Manifest-Veröffentlichung sowie während des Aufräumens auftreten. Ein
+verbliebenes Transaktionsverzeichnis sperrt neue Installations-/Uninstall-
+Versuche weiterhin; der Installer repariert den Zustand nicht automatisch.
+Schlägt die Bereinigung nach Manifest-Veröffentlichung fehl, wird nicht
+fälschlich Erfolg gemeldet. RG-04 und die sieben manuellen Freigabeprüfungen
+bleiben offen.
+
 ## Freigabe-Checkliste
 
 Das [Release-Gap-Register](RELEASE-GAPS.de.md) und `make release-gap-audit` dokumentieren den *statischen* Quellcodebestand. PASS bedeutet keine native oder privilegierte Abnahme. MANUAL bleibt bis zur Prüfung realer Nachweise offen; aus dem Scanner allein folgt keine Freigabe.
