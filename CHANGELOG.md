@@ -4,6 +4,18 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### M9.3c – Cooperative installer serialization and recovery plan
+
+- Serialize cooperating installers and uninstallers with a persistent private
+  nonblocking prefix `flock`; reject foreign or unsafe lock objects.
+- Publish an indexed, SHA-256-annotated transaction mapping before moving any
+  previous managed payload to old-N backups, supporting manual crash review.
+- Report post-publication transaction cleanup failure rather than false
+  success; add isolated concurrency, tampering and plan-format tests.
+- Preserve open manual gates: neither advisory locking nor transaction mapping
+  guarantees power-loss durability, recovery atomicity or safety against
+  external writers.
+
 ### M9.3b – Fail-closed rollback and retained backups
 
 - Move installer error recovery into a small maintainer-only Perl module with

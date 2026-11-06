@@ -98,6 +98,40 @@ CLI flag or environment switch. The tests do not prove resistance to power
 loss, concurrent hostile filesystem changes or all partial-cleanup states;
 those remain RG-04 manual acceptance work in an isolated snapshot-capable VM.
 
+### M9.3c: cooperative lock and recovery mapping
+
+The installer now acquires a **nonblocking exclusive flock** before inspecting
+its ownership manifest, pending transactions, or install/uninstall payload.
+`PREFIX/.sasd-freeware-install.lock` is a **persistent, private (0600)** marker
+which must not be removed as routine cleanup. It is not listed in the owned
+manifest, and it remains after uninstall. The first install may create an
+otherwise empty prefix and lock even if subsequent validation fails. Unexpected
+lock contents, mode, inode, hardlinks or symlinks cause an explicit refusal.
+
+This is **advisory coordination**, not a defense against unrelated programs
+writing to the prefix, hostile users with control of parent directories, or
+Windows processes that do not honor WSL's lock protocol. Do not delete a lock
+while an installer could be running. A stale lock file without an active flock
+is normal and must be retained; the lock file is **not** a crash marker.
+
+For new transactions the installer publishes a private
+`.sasd-freeware-txn-*/plan.tsv` *before* the first old file is renamed. It
+contains `OLD` and `NEW` records: a 1-based index, a validated relative path,
+and the SHA-256 digest. For example, `OLD  1  bin/alpha  <digest>` maps
+`old-1` to `bin/alpha`; `NEW  1  ...` corresponds to `new-1`. This mapping
+helps an operator identify the correct backup during manual recovery. **Do not
+execute, blindly replay, or trust this plan alone.** Compare it against the
+installed manifest and independently checked filesystem digests. Earlier
+transactions (M9.3a/b) have no plan and still require independent inspection.
+
+The plan is written before destructive operations and renamed into place, but
+there is no fsync-based crash durability guarantee. Power loss can occur before
+or after manifest publication, during backup moves, or during cleanup. A
+leftover transaction directory always blocks subsequent install and uninstall
+attempts; it is not automatically repaired. On successful manifest publication,
+failed transaction cleanup returns a nonzero exit instead of claiming success.
+The isolated RG-04 VM acceptance and seven manual release gates remain open.
+
 ## Release checklist
 
 Use the [systematic release-gap register](RELEASE-GAPS.md) and `make release-gap-audit` to inventory *static* source gaps. Its PASS records do not establish native or privileged release acceptance. MANUAL records remain open until reviewed evidence exists; never promote a release from this scanner alone.

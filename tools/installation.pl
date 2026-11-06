@@ -16,6 +16,8 @@ use Digest::SHA;
 use FindBin;
 use lib "$FindBin::Bin/lib";
 use SASD::Freeware::InstallRollback qw(rollback_installation);
+use SASD::Freeware::InstallLock qw(acquire_install_lock);
+use SASD::Freeware::InstallPlan qw(write_install_plan);
 
 my $magic = '# sasd-freeware-manifest-v1';
 my $manifest_name = '.sasd-freeware-install.tsv';
@@ -127,7 +129,20 @@ sub load_manifest {
     return %previous;
 }
 
+# A stable advisory prefix lock is acquired BEFORE reading the manifest or
+# inspecting pending transactions. Never delete the lock file on exit: a new
+# inode could otherwise be created while another process still holds the old
+# inode locked. The private lock is not itself part of the ownership manifest.
+# On a first install this creates an empty prefix; it does NOT install payload
+# before the source and ownership preflight have completed.
 ancestors_safe($root, 0);
+if (!-d $root) {
+    $mode eq 'install'
+        or die "installation: no ownership manifest; refusing to guess what to remove\n";
+    make_path($root);
+    ancestors_safe($root, 0);
+}
+my $prefix_lock = acquire_install_lock("$root/.sasd-freeware-install.lock");
 if (-d $root) {
     opendir my $dh, $root or die "installation: cannot inspect prefix: $!\n";
     my @interrupted = grep { /\A\.sasd-freeware-txn-/ } readdir $dh;
@@ -208,6 +223,16 @@ my $ok = eval {
             or die "cannot set staged mode for $rel: $!\n";
         $newhash{$rel} = digest($tmp);
     }
+    # Publish the old-N/new-N pathname and SHA-256 mapping BEFORE moving
+    # the first old managed file. A hard process abort otherwise leaves only
+    # anonymous old-N backups that are unsafe to restore by guessing. This
+    # record is for HUMAN inspection, never for automatic crash replay.
+    # The staged new files are already complete and hashed at this point.
+    write_install_plan(
+        transaction => $txn,
+        old => [map { [$_, $previous{$_}] } sort keys %previous],
+        new => [map { [$_, $newhash{$_}] } sort keys %wanted],
+    );
     $index = 0;
     for my $rel (sort keys %previous) {
         ++$index;
@@ -268,7 +293,15 @@ if (!$ok) {
     }
     die "installation: update failed (rollback complete): $reason";
 }
-remove_tree($txn);
+# The ownership manifest has now been published. A cleanup failure must
+# NOT look like a successful update: the remaining marker will block future
+# install/uninstall requests until the operator examines the transaction.
+my $cleanup_errors = [];
+remove_tree($txn, { error => \$cleanup_errors });
+if (@$cleanup_errors || -e $txn || -l $txn) {
+    die "installation: manifest published but transaction cleanup incomplete; "
+      . "inspect installation and recovery evidence before retrying\n";
+}
 print "Installed ", scalar(keys %wanted), " managed files; ",
       scalar(keys %previous) - scalar(grep { exists $wanted{$_} } keys %previous),
       " obsolete files removed.\n";

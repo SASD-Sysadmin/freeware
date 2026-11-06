@@ -7,6 +7,7 @@ use File::Temp qw(tempdir);
 use File::Spec;
 use FindBin;
 use IO::Socket::INET;
+use Socket qw(AF_INET SOCK_STREAM IPPROTO_TCP inet_aton sockaddr_in);
 
 my $root = File::Spec->catdir($FindBin::Bin, '..');
 my $bin = File::Spec->catdir($root, 'bin');
@@ -100,7 +101,21 @@ my $port = $server->sockport;
 is($rc,0,'localhost listening port reachable');
 like($out,qr/^OK:/,'success output');
 close $server;
-($rc,$out)=run_tool('tcp-check','--host','127.0.0.1','--port',$port,'--timeout',1,'--nagios');
+# A port that was recently listening is not guaranteed to become an immediate
+# negative TCP fixture: pending connections and port reuse can make this check
+# succeed on busy macOS runners. Reserve a separate loopback port with bind()
+# and deliberately DO NOT call listen(). While this socket remains open, the
+# kernel prevents another process from binding a listener to the same port.
+#
+# This verifies the actual Nagios CRITICAL behavior without sleeping, relying
+# on scheduling, or changing the productive tcp-check implementation.
+socket(my $nonlistener, AF_INET, SOCK_STREAM, IPPROTO_TCP)
+    or die "cannot create non-listening TCP socket: $!";
+bind($nonlistener, sockaddr_in(0, inet_aton('127.0.0.1')))
+    or die "cannot reserve non-listening loopback port: $!";
+my ($refused_port) = sockaddr_in(getsockname($nonlistener));
+($rc,$out)=run_tool('tcp-check','--host','127.0.0.1','--port',$refused_port,'--timeout',1,'--nagios');
+close($nonlistener) or die "cannot close non-listening TCP socket: $!";
 is($rc,2,'Nagios critical exit code on failed connect');
 like($out,qr/^CRITICAL:/,'Nagios critical output');
 ($rc)=run_tool('tcp-check','--host','127.0.0.1','--port',65536);
