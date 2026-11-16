@@ -1,6 +1,6 @@
 # SASD Freeware – Second Continuation Roadmap
 
-[Deutsch](ROADMAP-CONTINUATION-2.de.md) · [Project](../README.md) · [Agent instructions](AGENTS.md) · [Earlier roadmap](ROADMAP.md) · [Release gaps](RELEASE-GAPS.md)
+[Deutsch](ROADMAP-CONTINUATION-2.de.md) · [Project](../README.md) · [Agent instructions](../AGENTS.md) · [Earlier roadmap](ROADMAP.md) · [Release gaps](RELEASE-GAPS.md)
 
 **Created:** 2026-11-07. **Status:** versioned continuation plan based on a renewed source review; neither a product release nor blanket implementation authorization for every listed feature.
 
