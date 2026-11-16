@@ -19,7 +19,7 @@ For every task, inspect the affected code and tests before changing them. Consul
 - Root: `README.md`, `README.de.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, `Makefile` and `.github/workflows/ci.yml`.
 - Engineering: `docs/DEVELOPMENT.md`, `docs/TESTING.md`, `docs/EXIT-CODES.md` and `docs/PLATFORMS.md` (including their German counterparts).
 - Safety/release: `docs/PRIVILEGED-SAFETY.md`, `docs/RELEASE-ENGINEERING.md` and `docs/RELEASE-GAPS.md` (including German counterparts).
-- Plans: `docs/ROADMAP.md` and any subsequently added continuation plans. Respect their dates and distinguish historical analysis, proposed features, agreed scope and verified evidence.
+- Plans: `docs/ROADMAP.md` (English) and `docs/ROADMAP.de.md` (German) are the only canonical roadmaps. Keep them synchronized; preserve dated historical reviews inside them rather than creating further continuation files. Distinguish historical analysis, proposed features, agreed scope and verified evidence.
 - Relevant command guides in `docs/commands/`, manpages, tests and any subtree instructions.
 
 Actual code and verified test results establish current behavior. Stable public CLI contracts and safety rules remain binding unless explicitly changed with a migration plan. A roadmap does **not** authorize all its tasks. Where a roadmap conflicts with the independent product identity or current evidence, document the conflict and recommend a correction rather than silently following it.
@@ -77,7 +77,7 @@ Any operation touching users, quotas, firewall rules, services or other privileg
 
 ## 8. Testing and evidence
 
-Use isolated temporary directories and disposable `DESTDIR` prefixes; never mutate actual `/etc`, system accounts, installed services or external infrastructure in normal tests. Follow `CONTRIBUTING.md` and run relevant checks in an appropriate unprivileged checkout:
+Use isolated temporary directories and disposable `DESTDIR` prefixes; never mutate actual `/etc`, system accounts, installed services or external infrastructure in normal tests. Follow `CONTRIBUTING.md` and run relevant checks in an appropriate unprivileged checkout. For long local runs, preserve complete test output with `set -o pipefail; make test 2>&1 | tee <local-log-file>` and keep logs with sensitive environment data out of Git:
 
 ```sh
 make check
