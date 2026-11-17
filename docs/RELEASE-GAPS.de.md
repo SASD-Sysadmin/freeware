@@ -64,6 +64,18 @@ manuelle Abbruchprüfung, garantiert aber weder Schutz vor fremden Schreibern
 noch Stromausfallsicherheit. RG-04 und alle sieben manuellen Abnahmen bleiben
 offen.
 
+## FR2-03-Nachtrag (rücksetzbare Deinstallation; Offline-Evidenz)
+
+Der Uninstall schützt nach vollständigem Preflight zunächst alle verwalteten
+Dateien in einer privaten Transaktion und nutzt bei regulären Fehlern vor dem
+Manifest-Commit den vorhandenen geprüften Rollback. Nach dem Commit werden
+Sicherungen einzeln gelöscht; bei Fehlern bleiben Transaktionsplan und
+zurückgezogenes Manifest bis zur vollständigen Nutzlastbereinigung erhalten.
+`tests/test_uninstall_transaction.t` deckt reguläre Verschiebungsfehler,
+Manifestfehler, manipulierte Backups und fehlgeschlagene Bereinigung ab.
+Diese deterministischen Offline-Prüfungen ersetzen **nicht** die native
+Wiederherstellungsabnahme. RG-04 und alle manuellen Freigabegates bleiben offen.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,

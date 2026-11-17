@@ -54,6 +54,30 @@ concurrent external modifications can require manual restoration. A leftover
 inspect it before removal as it may contain previous installed files. Recover
 from a VM/filesystem snapshot where appropriate.
 
+### FR2-03: reversible uninstall with fail-closed recovery
+
+`make uninstall` first moves every digest-verified, manifest-owned file into
+a private `.sasd-freeware-txn-*` quarantine. Before the first move,
+`plan.tsv` maps each `old-N` backup to its relative pathname and SHA-256.
+If a move or manifest-retirement step fails, the existing rollback engine
+attempts digest-checked restoration, only into vacant destinations. An
+incomplete rollback preserves the transaction and blocks further operations.
+
+After all files have moved, renaming the active manifest to `txn/manifest`
+is the **logical commit point**. Quarantined payload is then deleted one
+verified file at a time. The transaction plan and retired manifest are kept
+until payload deletion finishes. An error after this point cannot safely
+restore already-deleted backups: the installer returns failure, preserves
+remaining evidence, and requires manual inspection before retrying. Only
+complete cleanup reports success. Unowned/modified files and the stable
+prefix lock remain protected. `tests/test_uninstall_transaction.t` exercises
+these paths with nonprivileged temporary fixtures and test-local callbacks.
+
+This is **not** an atomic or fsync-durable uninstall. SIGKILL, power loss,
+noncooperating writers and partial cleanup still require independent staging
+review and possibly a known-good filesystem/VM snapshot. Never delete a
+transaction marker blindly. RG-04 remains open pending manual acceptance.
+
 ### M9.3a: simulated interrupted upgrade (offline regression)
 
 `tests/test_installation_interruption.t` models a disposable interrupted

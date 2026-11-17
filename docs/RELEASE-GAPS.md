@@ -62,6 +62,17 @@ and new-N to its relative path and digest, reducing ambiguity in manual crash
 inspection. Hostile external writers and power-loss durability are **not**
 solved; the isolated RG-04 and all seven manual gates remain open.
 
+## FR2-03 follow-up (reversible uninstall; offline evidence)
+
+Uninstall first quarantines all previously verified managed files, with
+pre-commit failures handled by the existing digest-checked rollback. After
+the manifest is retired, backups are removed individually while their plan
+and retired manifest remain until payload cleanup completes. Deterministic
+`tests/test_uninstall_transaction.t` covers move failure, manifest failure,
+backup tampering and cleanup failure. These offline tests **do not** prove
+native crash recovery or power-loss durability. RG-04 and all manual release
+gates remain open.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

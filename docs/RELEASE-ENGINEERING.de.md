@@ -64,6 +64,35 @@ unter Umständen eine manuelle Reparatur. Erhaltene Verzeichnisse mit Namen
 löschen: darin können alte Installationsdateien liegen. Zuerst den Zustand und
 die Sicherungen prüfen und gegebenenfalls den VM-Snapshot wiederherstellen.
 
+### FR2-03: Rücksetzbare Deinstallation mit gesicherter Fehlerbehandlung
+
+Bei `make uninstall` werden die zuvor vollständig gegen das Eigentumsmanifest
+geprüften Dateien zunächst mittels `rename` in ein privates
+`.sasd-freeware-txn-*`-Verzeichnis verschoben. Eine `plan.tsv` ordnet vor dem
+ersten Verschieben alle `old-N`-Dateien ihren Namen und SHA-256-Werten zu.
+Scheitert eine Verschiebung oder das Zurückziehen des Manifests, versucht der
+Installer, die bereits geschützten Dateien nur nach Hashprüfung und nur bei
+freien Zielpfaden wiederherzustellen. Scheitert das, bleiben Transaktion und
+Beweise erhalten; der nächste Installations- und Deinstallationsversuch wird
+blockiert.
+
+Erst nachdem alle Dateien geschützt sind, wird das aktive Manifest nach
+`txn/manifest` umbenannt (**logischer Commit-Punkt**). Die anschließende
+Bereinigung löscht geprüfte Sicherungen einzeln und bewahrt `plan.tsv` und das
+zurückgezogene Manifest bis zur vollständigen Löschung der Nutzlast. Bei einem
+Fehler nach dem Commit erfolgt **kein** automatisches Zurückspielen: Bereits
+gelöschte Sicherungen wären nicht mehr vollständig. Die Transaktion bleibt zur
+manuellen Zustandsprüfung erhalten. Nur ein vollständig aufgeräumter Vorgang
+meldet Erfolg. Fremde und veränderte Dateien sowie die dauerhafte Sperrdatei
+bleiben geschützt. `tests/test_uninstall_transaction.t` prüft die Fehlerpfade
+deterministisch mit temporären Dateien und testinternen Callbacks.
+
+Das ist keine atomare oder `fsync`-gesicherte Deinstallation. Bei SIGKILL,
+Stromausfall, unkooperativen Schreibern oder unvollständiger Bereinigung sind
+Staging-Prüfung, gesicherte Bestandsaufnahme und gegebenenfalls Snapshot-Restore
+erforderlich. Ein Transaktionsverzeichnis niemals blind entfernen; RG-04 bleibt
+bis zur separaten manuellen Abnahme offen.
+
 ### M9.3a: simulierter unterbrochener Upgrade-Vorgang (Offline-Test)
 
 `tests/test_installation_interruption.t` simuliert in einem isolierten

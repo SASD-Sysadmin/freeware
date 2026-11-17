@@ -71,7 +71,7 @@ Inspect `tools/installation.pl` and its helper modules before any install/uninst
 
 Do not delete `.sasd-freeware-install.lock` or `.sasd-freeware-txn-*` data merely to remove a blockage. Never guess restoration destinations or overwrite operator changes. Advisory `flock`, `rename` and offline fixtures do not prove transaction atomicity or power-loss durability.
 
-**Known technical follow-up:** Sequential uninstall may partially delete managed files and then fail, leaving the manifest inconsistent and retry blocked. Reproduce and address this with a focused regression and a documented recovery contract before claiming a fix. Also review shipped license notices and the Perl version/dependency claims. These are known investigation targets, not automatic permission to change unrelated files.
+**Current uninstall safeguard and remaining follow-ups:** Uninstall protects verified managed files in a private transaction before retiring the ownership manifest. Pre-commit errors attempt digest-checked rollback; post-commit cleanup errors retain evidence and block automatic retries. Do not claim power-loss durability or close RG-04 without separate native acceptance. Also review shipped license notices and the Perl version/dependency claims. These remain investigation targets, not permission to change unrelated files.
 
 Any operation touching users, quotas, firewall rules, services or other privileged system state requires explicit authorization. Default to read-only/preview behavior. Never run privileged integration or destructive failure injection on the user's workstation, everyday WSL distribution or production hosts. Such work requires a separately approved disposable, snapshotted VM with demonstrated restoration.
 

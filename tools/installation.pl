@@ -18,6 +18,7 @@ use lib "$FindBin::Bin/lib";
 use SASD::Freeware::InstallRollback qw(rollback_installation);
 use SASD::Freeware::InstallLock qw(acquire_install_lock);
 use SASD::Freeware::InstallPlan qw(write_install_plan);
+use SASD::Freeware::UninstallTransaction qw(uninstall_transaction);
 
 my $magic = '# sasd-freeware-manifest-v1';
 my $manifest_name = '.sasd-freeware-install.tsv';
@@ -197,11 +198,12 @@ for my $rel (sort keys %wanted) {
 }
 
 if ($mode eq 'uninstall') {
-    for my $rel (sort keys %previous) {
-        unlink "$root/$rel" or die "installation: cannot remove $rel: $!\n";
-    }
-    unlink $manifest or die "installation: cannot remove manifest: $!\n";
-    print "Uninstalled ", scalar(keys %previous), " managed files; unowned files preserved.\n";
+    my $count = uninstall_transaction(
+        root => $root,
+        manifest => $manifest,
+        previous => \%previous,
+    );
+    print "Uninstalled $count managed files; unowned files preserved.\n";
     exit 0;
 }
 
