@@ -4,6 +4,12 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### FR2-02 – Verified historical Perl runtime and dependency documentation
+
+- Record Debian/WSL2 Perl 5.14.4 operator evidence: 49 Perl suites, 6,146 TAP cases including 10 skips, two passing Bash test groups, and a clean syntax/CLI audit.
+- Correct unsupported blanket Perl 5.8 statements in both READMEs; add bilingual runtime/module/native-client matrices and a versioned read-only audit helper with false-positive guard.
+- Keep end-of-life runtime caveat, non-core verified TLS requirements, manual release gates and missing native-client-version evidence explicit. No shipped command behavior changes.
+
 ### M9.3c – Cooperative installer serialization and recovery plan
 
 - Serialize cooperating installers and uninstallers with a persistent private

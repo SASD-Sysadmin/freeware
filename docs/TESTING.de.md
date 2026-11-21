@@ -39,6 +39,10 @@ Die Testdienste lauschen nur auf `127.0.0.1`; ein Internetzugang ist nicht erfor
 
 Ein grüner CI-Lauf sollte nicht nur `make test`, sondern ausdrücklich auch die Integrationstests enthalten. Bei Problemen Client-Verfügbarkeit, Fehlermeldungen, Zertifikat und den lokalen Listener prüfen. **Zertifikatsprüfung niemals zum Reparieren eines Tests deaktivieren.**
 
+## Regression mit historischem Perl (FR2-02)
+
+Am 18.11.2026 bestand die vollständige Offline-Suite mit privat gebautem Perl 5.14.4 und dessen `prove`, einer reparierten `Errno.pm` **der Testumgebung** und privaten TLS-Modulen: 49 erfolgreiche Perl-Testdateien, 6.146 TAP-Testfälle (10 SKIPs) und zwei erfolgreiche Bash-Testgruppen. Damit sind **weder** `make integration-test` noch privilegierte Native-Vorgänge, andere Plattformen oder eine Veröffentlichung freigegeben. Umgebung, Versionen, Kommandos und Grenzen: [Perl-Kompatibilität](PERL-COMPATIBILITY.de.md).
+
 ## Schnittstellen- und Repository-Verträge
 
 `make test` umfasst außerdem `tests/test_cli_contracts.t` (`--help` und

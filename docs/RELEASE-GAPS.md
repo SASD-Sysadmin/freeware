@@ -73,6 +73,10 @@ backup tampering and cleanup failure. These offline tests **do not** prove
 native crash recovery or power-loss durability. RG-04 and all manual release
 gates remain open.
 
+## FR2-02 follow-up (Perl compatibility; 18 November 2026 operator evidence)
+
+At source commit `b1960f4d0dda11e736fe71829953cfb5e4398c63`, an isolated Debian/WSL2 Perl **5.14.4** environment passed 74 source/53 CLI syntax-help-version checks, then 49 offline Perl suites (6,146 TAP cases, including 10 SKIPs) and two Bash rotation test groups. `make release-gap-audit` reported `PASS=288 GAP=0 MANUAL=7`. An initial `Errno.pm` generation defect was fixed in the private historical Perl build, **not** the SASD code; verified SMTP/STARTTLS used private non-core TLS modules. Current README claims have been corrected, and detailed dependencies are in [PERL-COMPATIBILITY.md](PERL-COMPATIBILITY.md). This records a *demonstrated* runtime, not a universal minimum; client-version floors, exact-commit CI, native tests, external notices and release authorization remain outstanding. RG-09 is not closed by this note.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

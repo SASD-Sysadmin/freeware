@@ -28,6 +28,8 @@ Use code and current tests to establish behavior; distinguish implemented, fixtu
 
 **Next technical slice:** FR2-03, with a deterministic non-production reproduction, clear recovery architecture decision, and focused positive/negative regression tests. Do not combine it with unrelated new utilities or a release. Documentation consolidation alone resolves none of the release gaps.
 
+**FR2-02 evidence update (21 November 2026):** The 18 November operator run on source `b1960f4` passed the complete Debian/WSL2 Perl 5.14.4 offline suite (49 Perl suites, 6,146 TAP cases with 10 SKIPs, two Bash test groups), 74 source/53 CLI audit checks, and the release-gap static inventory (`PASS=288, GAP=0, MANUAL=7`). See [Perl compatibility](PERL-COMPATIBILITY.md). This corrects the current README 5.8 claim; it does not establish a universal minimum or close other release gates. Earlier dated roadmap assessments remain historical evidence.
+
 ## 3. Verification, test logs and release evidence
 
 Follow [CONTRIBUTING.md](../CONTRIBUTING.md), use an unprivileged checkout and disposable staging, and preserve production systems. For longer local runs, keep full output without losing the pipeline failure status:

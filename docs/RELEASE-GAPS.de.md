@@ -76,6 +76,10 @@ Manifestfehler, manipulierte Backups und fehlgeschlagene Bereinigung ab.
 Diese deterministischen Offline-Prüfungen ersetzen **nicht** die native
 Wiederherstellungsabnahme. RG-04 und alle manuellen Freigabegates bleiben offen.
 
+## FR2-02-Nachtrag (Perl-Kompatibilität; Betreibernachweis vom 18.11.2026)
+
+Für den Quellcommit `b1960f4d0dda11e736fe71829953cfb5e4398c63` bestand eine isolierte Debian-/WSL2-Umgebung mit Perl **5.14.4**: 74 Quell-/53 CLI-Syntax-/Hilfe-/Versionsprüfungen sowie 49 Perl-Offlinetestsuiten (6.146 TAP-Fälle einschließlich 10 SKIPs) und zwei Bash-Rotationstestgruppen. `make release-gap-audit` meldete `PASS=288 GAP=0 MANUAL=7`. Ein Fehler beim Generieren von `Errno.pm` wurde **nur im privaten historischen Perl-Build** behoben; verifiziertes SMTP/STARTTLS nutzte private Zusatzmodule. Die pauschalen README-Versionsangaben wurden korrigiert; Einzelheiten stehen unter [PERL-COMPATIBILITY.de.md](PERL-COMPATIBILITY.de.md). Damit ist eine *konkret getestete* Laufzeit dokumentiert, keine allgemeine Mindestversion. Client-Versionen, CI zum endgültigen Commit, Native-Abnahmen, Drittanbieterhinweise und Freigabe bleiben offen. RG-09 wird dadurch nicht geschlossen.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,

@@ -64,6 +64,7 @@ Use clear English identifiers and helpful comments explaining intent, failure mo
 - Use bounded runtime and output for probes/parsers as appropriate; refuse ambiguous, malformed, incomplete or hostile data rather than reporting it as healthy.
 - Keep secrets out of process arguments, logs, test fixtures and public evidence. Maintain TLS certificate and hostname verification.
 - Establish and test the actual Perl/runtime/module version floor. Do not infer compatibility with Perl 5.8 from outdated documentation.
+- FR2-02 historical operator evidence demonstrates a complete offline run on Perl 5.14.4 only in the recorded Debian/WSL2 environment; see `docs/PERL-COMPATIBILITY.md`. Never convert this into an unconditional version-floor, secure-production-runtime, native-client, CI or release claim.
 
 ## 7. Filesystem, installer and mutating operations
 

@@ -39,6 +39,10 @@ The integration fixture operates on `127.0.0.1` and does not require inbound Int
 
 A green GitHub job should include the integration step, not just `make test`. If an integration job fails, inspect which client was installed, the tool's stderr, certificate creation and the loopback listener startup. **Never disable certificate verification to make a test green.**
 
+## Historical Perl compatibility regression (FR2-02)
+
+The 18 November 2026 operator run exercised the full offline suite on privately built Perl 5.14.4 with its own `prove`, a repaired **test-build** `Errno.pm`, and private TLS modules. It reported 49 passing Perl test files, 6,146 TAP cases (10 SKIPs), and two passing Bash test groups. `make integration-test`, native privileged operations, cross-platform support and release approval are **not** established by this run. Exact setup, versions, commands and limitations: [Perl compatibility](PERL-COMPATIBILITY.md).
+
 ## Interface and repository contracts
 
 `make test` also runs `tests/test_cli_contracts.t` (the `--help`/`--version`

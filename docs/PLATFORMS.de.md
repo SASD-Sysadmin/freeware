@@ -4,6 +4,8 @@
 
 SASD Freeware wird mit GitHub Actions unter Ubuntu Linux und macOS getestet. **Bestandene Tests bestätigen das geprüfte Verhalten, nicht die vollständige Unterstützung aller Betriebssystemfunktionen.** Die Testmatrix steht in `.github/workflows/ci.yml`.
 
+Die lokal unter Debian/WSL2 geprüfte **Perl-Laufzeit 5.14.4**, Modulversionen und offenen Native-Abhängigkeiten sind unter [Perl-Kompatibilität und Abhängigkeiten](PERL-COMPATIBILITY.de.md) dokumentiert. Daraus folgt weder eine Erweiterung der Ubuntu-/macOS-CI-Zusagen noch eine Empfehlung für abgekündigte Perl-Versionen im Produktivbetrieb.
+
 | Bereich | Linux | macOS | Einschränkung |
 | --- | --- | --- | --- |
 | Lesende Dateisysteminventare und Prüfungen | Automatisierte Tests | Automatisierte Tests | APFS-ACLs, TCC/Datenschutz und Snapshots werden nicht geprüft; gesperrte Verzeichnisse können unvollständige Berichte liefern. |
