@@ -4,6 +4,14 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### FR2-04 – Install the required source license notice
+
+- Include root `LICENSE` in the SHA-256-owned staged install payload.
+- Refuse absent or symlinked source notices and preserve unowned or
+  modified installed notices during upgrades and uninstall.
+- Add nonprivileged source/upgrade/conflict/uninstall regressions;
+  retain all manual release-evidence gates and the MIT license.
+
 ### FR2-02 – Verified historical Perl runtime and dependency documentation
 
 - Record Debian/WSL2 Perl 5.14.4 operator evidence: 49 Perl suites, 6,146 TAP cases including 10 skips, two passing Bash test groups, and a clean syntax/CLI audit.

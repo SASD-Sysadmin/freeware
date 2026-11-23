@@ -66,6 +66,7 @@ my $original = "#!/bin/sh\necho original\n";
 my $replacement = "#!/bin/sh\necho upgraded\n";
 write_file("$source/bin/alpha", $original, 0755);
 write_file("$source/docs/commands/alpha.md", "alpha guide\n", 0644);
+write_file("$source/LICENSE", "MIT License\n\nCopyright (c) 2026 SASD fixture\n", 0644);
 
 my ($status, $output) = invoke('install');
 is($status, 0, 'fixture installation succeeds before interruption simulation');
@@ -73,13 +74,13 @@ my $original_manifest = read_file($manifest);
 write_file("$prefix/operator-notes.txt", "operator-owned\n", 0644);
 
 # Prepare an upgrade but model a crash immediately after the installer has
-# moved the first old managed file into its transaction backup directory.
+# moved bin/alpha (second in sort order, after LICENSE) to its backup.
 # The manifest still records the previous version; the backup must survive.
 write_file("$source/bin/alpha", $replacement, 0755);
 write_file("$source/bin/beta", "#!/bin/sh\nexit 0\n", 0755);
 my $transaction = "$prefix/.sasd-freeware-txn-simulated";
 make_path($transaction);
-rename("$prefix/bin/alpha", "$transaction/old-1")
+rename("$prefix/bin/alpha", "$transaction/old-2")
     or die "simulate interrupted backup: $!";
 
 ($status, $output) = invoke('install');
@@ -91,7 +92,7 @@ isnt($status, 0, 'uninstall also refuses an outstanding transaction');
 like($output, qr/interrupted installation transaction exists/,
     'uninstall does not bypass the interruption guard');
 
-is(read_file("$transaction/old-1"), $original,
+is(read_file("$transaction/old-2"), $original,
     'the previous managed payload remains in the transaction backup');
 is(read_file($manifest), $original_manifest,
     'neither rejected operation publishes a new ownership manifest');
@@ -103,7 +104,7 @@ ok(-d $transaction, 'the recovery evidence is not silently deleted');
 # These next actions model an explicitly reviewed manual recovery of a known
 # fixture state. The installer must NOT be taught to guess which old-N file
 # corresponds to which pathname: that mapping requires independent review.
-rename("$transaction/old-1", "$prefix/bin/alpha")
+rename("$transaction/old-2", "$prefix/bin/alpha")
     or die "restore simulated backup: $!";
 remove_tree($transaction);
 is(read_file("$prefix/bin/alpha"), $original,

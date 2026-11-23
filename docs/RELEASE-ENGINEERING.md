@@ -25,6 +25,26 @@ refused. Only the verified native macOS aliases `/var`, `/tmp` and `/etc`
 resolving to `/private/...` are accepted; operator-created symlinks remain
 forbidden.
 
+### FR2-04 – License delivered with installed files
+
+The repository-root `LICENSE` file is required for source installation.
+The installer copies its **exact bytes** to `PREFIX/LICENSE` as a
+non-executable (0644), SHA-256-manifest-owned file. The license follows
+the ordinary no-symlink, no-unowned-overwrite, digest-checked upgrade,
+rollback and uninstall paths. Missing or symlinked source licenses
+fail before the payload is published. A preexisting unowned
+`PREFIX/LICENSE` must never be replaced automatically. When upgrading
+an older manifest without a license entry, the new file can be adopted
+only if its destination is free. A modified installed license blocks
+both upgrade and uninstall pending operator review.
+
+This is a **license-delivery** correction, **not** a relicensing.
+The source license is not hard-coded in the installer; this repository
+remains MIT. A later separately licensed distribution requires its own
+rights, provenance, notices, governance and release review. The old
+MIT grant is not retroactively withdrawn. Privileged/native manual
+release gates remain open.
+
 ## Manifest ownership
 
 `PREFIX/.sasd-freeware-install.tsv` lists installed relative paths and their

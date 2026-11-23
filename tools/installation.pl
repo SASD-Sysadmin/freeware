@@ -100,6 +100,11 @@ sub ancestors_safe {
 }
 sub allowed_relative {
     my ($rel) = @_;
+    # Top-level license is handled by the same SHA-256 ownership,
+    # collision, upgrade and uninstall rules as all other payload.
+    # The license *content* is intentionally not hard-coded: a future
+    # separately authorized distribution may use another license.
+    return 1 if $rel eq 'LICENSE';
     return $rel =~ m{\A(?:bin/[A-Za-z0-9][A-Za-z0-9_.-]*|sbin/[A-Za-z0-9][A-Za-z0-9_.-]*|lib/SASD/Freeware/[A-Za-z0-9_.-]+\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING|MAIL-ACCEPTANCE)(?:\.de)?\.md)\z};
 }
 sub digest {
@@ -158,6 +163,13 @@ my %wanted;
 if ($mode eq 'install') {
     my $src = abs_path($source);
     defined($src) && -d $src or die "installation: source tree is unavailable\n";
+    # A source distribution without its license must never yield a
+    # seemingly complete installed product. Refuse missing, directory,
+    # or symlinked license input before staging any managed files.
+    my $license = "$src/LICENSE";
+    regular_file($license)
+        or die "installation: source LICENSE missing or not a regular file\n";
+    $wanted{'LICENSE'} = $license;
     for my $section ('bin', 'sbin', 'lib/SASD/Freeware', 'man/man1', 'man/man8',
                      'docs/commands', 'docs') {
         my $folder = "$src/$section";
@@ -176,7 +188,8 @@ if ($mode eq 'install') {
             $wanted{$rel} = $path;
         }
     }
-    keys %wanted or die "installation: refusing to install an empty package\n";
+    (grep { $_ ne 'LICENSE' } keys %wanted)
+        or die "installation: refusing to install an empty package\n";
 }
 
 # Full preflight happens before writing *any* installed files.

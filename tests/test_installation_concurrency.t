@@ -67,6 +67,7 @@ my $old = "#!/bin/sh\necho original\n";
 my $new = "#!/bin/sh\necho replacement\n";
 write_file("$source/bin/alpha", $old, 0755);
 write_file("$source/docs/commands/alpha.md", "guide\n");
+write_file("$source/LICENSE", "MIT License\n\nCopyright (c) 2026 SASD fixture\n");
 my ($status, $output) = invoke('install');
 is($status, 0, 'first installation succeeds and creates the persistent lock');
 ok(-f $lock_path && !-l $lock_path, 'persistent prefix lock is regular');

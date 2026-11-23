@@ -26,6 +26,28 @@ abgelehnt. Ausgenommen sind ausschließlich die fest definierten, geprüften
 macOS-Systemalias-Pfade `/var`, `/tmp` und `/etc` nach `/private/...`;
 selbst angelegte Symlinks im Installationspfad bleiben verboten.
 
+### FR2-04 – Lizenzdatei wird mitinstalliert
+
+Die Datei `LICENSE` im Quellverzeichnis ist für eine Installation
+verpflichtend. Der Installer übernimmt ihre **unveränderten Bytes**
+nach `PREFIX/LICENSE` (Modus 0644) und nimmt die Datei samt SHA-256
+in das Eigentumsmanifest auf. Damit gelten dieselben Sicherheitsregeln
+wie für Programme und andere Dokumente: keine Quell-Symlinks, kein
+Überschreiben fremder Ziele, Hashprüfung bei Upgrade, Rollback und
+Uninstall. Fehlt die Quelldatei oder ist sie ein Symlink, bricht die
+Installation vor dem Veröffentlichen der Nutzlast ab. Eine fremde
+`PREFIX/LICENSE` wird nicht überschrieben. Bei alten Manifesten ohne
+LICENSE-Eintrag wird die neue Datei nur an einem freien Ziel angelegt.
+Eine nachträglich geänderte installierte Lizenz blockiert Upgrade
+und Uninstall bis zur unabhängigen Prüfung.
+
+Dies korrigiert ausschließlich die **Lizenz-Auslieferung**,
+nicht die Produktlizenz. Der Installer erzwingt keinen MIT-Lizenztext;
+dieses Repository bleibt MIT. Eine spätere gesondert lizenzierte
+SASDGMBH-Veröffentlichung benötigt eigene Rechte-, Herkunfts-,
+Hinweis- und Freigabeprüfung. Frühere MIT-Nutzungsrechte bleiben
+unberührt. Die manuellen Release-Gates bleiben offen.
+
 ## Eigentum und Schutz
 
 Die Datei `PREFIX/.sasd-freeware-install.tsv` listet jede installierte Datei
