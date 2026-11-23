@@ -101,7 +101,7 @@ Installierte Programme und Anleitungen übernehmen die entsprechende Struktur un
 
 ## Lizenz und Herkunftsnachweise
 
-Das aktuelle Quell-Repository `SASD-Sysadmin/freeware` steht gemäß [`LICENSE`](LICENSE) unter **MIT**. FR2-04 dokumentiert [Lizenzhinweise, Herkunftsprüfungen und die inzwischen behobene historische Installationslücke](docs/LICENSE-PROVENANCE.de.md). Eine spätere **getrennte** `SASDGMBH`-Veröffentlichung unter `AGPL-3.0-only` ist ein Vorschlag, der Rechteprüfung und ausdrückliche Entscheidung verlangt; hier erfolgt **keine** Lizenzumstellung.
+Das aktuelle Quell-Repository `SASD-Sysadmin/freeware` steht gemäß [`LICENSE`](LICENSE) unter **MIT**. FR2-04 dokumentiert [Lizenzhinweise, Herkunftsprüfungen und die inzwischen behobene historische Installationslücke](docs/LICENSE-PROVENANCE.de.md). **Entscheidung vom 23. November 2026:** Die persönliche Entwicklungs-/Beta-Quelle bleibt MIT; die **getrennte** spätere `SASDGMBH`-Produktfassung erhält `AGPL-3.0-only`. Die verbindliche [Lizenzstrategie](docs/LICENSE-STRATEGY.de.md) und das [Evidenzregister](docs/RELEASE-EVIDENCE.de.md) dokumentieren die Umsetzungsschritte. Rechteprüfung und tatsächliche AGPL-Veröffentlichung stehen noch aus; dieses Repository bleibt MIT.
 
 ## Installation
 

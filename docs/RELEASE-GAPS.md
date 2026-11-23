@@ -81,6 +81,10 @@ At source commit `b1960f4d0dda11e736fe71829953cfb5e4398c63`, an isolated Debian/
 
 At the historical baseline `15e434799c7de424217c8dce7cff35af1af00e2f`, the root `LICENSE` was MIT and all 130 reviewed source/test files carried MIT SPDX identifiers. At that baseline the installer omitted root `LICENSE`; this was **fixed in `1f6f4f0` and confirmed in Ubuntu/macOS CI**. `CONTRIBUTING.md` grants contributions under MIT without proving separate exclusive/commercial rights. Copyright ownership, full source history and third-party provenance need human review. See [FR2-04 license and provenance](LICENSE-PROVENANCE.md). **RG-09, all seven MANUAL gates, and any AGPL licensing decision remain open.**
 
+## FR2-05 release evidence update (23 November 2026)
+
+At `686a86b`, [Ubuntu and macOS CI `45131942704`](https://github.com/SASD-Sysadmin/freeware/actions/runs/45131942704) passed. FR2-04a and FR2-04b are technically complete; [FR2-05 evidence](RELEASE-EVIDENCE.md) records that SHA and prior suite, staging and Perl evidence. The owner has **decided** MIT for the existing development/beta repository and `AGPL-3.0-only` for a **separate future** `SASDGMBH` release; see [license strategy](LICENSE-STRATEGY.md). This is not a current MIT relicensing or legal clearance. The static gate count stays `PASS=288`, `GAP=0`, `MANUAL=7`; final release-commit CI, native/privileged acceptance, corporate rights and approval remain outside this documentation slice.
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

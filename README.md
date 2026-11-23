@@ -101,7 +101,7 @@ Installed commands and guides use matching paths below the chosen `PREFIX`. Test
 
 ## License and provenance review
 
-The current `SASD-Sysadmin/freeware` source repository is distributed under **MIT**, as stated in [`LICENSE`](LICENSE). FR2-04 documents [license notices, provenance questions, and the now-fixed historical installer payload gap](docs/LICENSE-PROVENANCE.md). A possible **separate** future `SASDGMBH` release under `AGPL-3.0-only` is a proposal requiring ownership review and an explicit decision; no relicensing is in effect here.
+The current `SASD-Sysadmin/freeware` source repository is distributed under **MIT**, as stated in [`LICENSE`](LICENSE). FR2-04 documents [license notices, provenance questions, and the now-fixed historical installer payload gap](docs/LICENSE-PROVENANCE.md). **Decision (23 November 2026):** the personal development/beta source stays MIT; a **separate** future `SASDGMBH` product is designated `AGPL-3.0-only`. The decision is recorded in the [license strategy](docs/LICENSE-STRATEGY.md), with [release evidence](docs/RELEASE-EVIDENCE.md). The actual AGPL release and rights clearance are still pending; this repository is not relicensed.
 
 ## Installation
 

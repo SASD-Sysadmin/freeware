@@ -4,7 +4,11 @@
 
 **Prüfdatum:** 22. November 2026. **Geprüfter GitHub-Stand:** `SASD-Sysadmin/freeware`, `main`, Commit `15e434799c7de424217c8dce7cff35af1af00e2f`. **Nachtrag 23. November 2026:** Der mit Commit `1f6f4f04c7068603527c3867773cc1766bf50a86` eingespielte FR2-04b-Fix installiert `LICENSE` als verwaltete Datei. Die zugehörigen lokalen Tests und die Ubuntu-/macOS-CI (`45128966544`) sind erfolgreich. Der nachstehende Befund A04 beschreibt ausdrücklich den älteren Stand `15e4347` und ist inzwischen behoben. **Status:** überprüfte statische Befunde und Entscheidungsvorlage; **keine rechtliche Freigabe, Lizenzänderung oder Release-Abnahme**. Die Urheberschaft und Rechtekette können durch Quellcode- und Git-Metadaten allein nicht bewiesen werden.
 
-## 1. Lizenzstrategie und Entscheidungsschnittstelle
+## Aktuelle Lizenzentscheidung – 23. November 2026
+
+Der Projektverantwortliche **hat entschieden**: Die vorhandene Entwicklungs-/Beta-Quelle bleibt **MIT**; die spätere, **getrennte** offizielle `SASDGMBH`-Produktfassung soll **AGPL-3.0-only** erhalten. Siehe [aktuelle Lizenzstrategie](LICENSE-STRATEGY.de.md) und [SHA-bezogene Release-Evidenz](RELEASE-EVIDENCE.de.md). Der nachfolgende Vorschlag ist eine **historische Diskussion vom 22. November**, keine weiterhin offene Lizenzwahl. Das bestehende Repository `SASD-Sysadmin/freeware` bleibt MIT; Rechte-/Fremdhinweisprüfung, AGPL-Paketvorbereitung und Unternehmensfreigabe bleiben offen.
+
+## 1. Historischer Vorschlag (Stand 22. November 2026)
 
 Für ein anderes SASD-Projekt (SASD-Editor-Toolbox) wurde die Trennung **persönliches Entwicklungs-/Beta-Repository unter MIT** und **späteres, getrenntes SASDGMBH-Produktiv-Repository unter AGPL-3.0-only** zuvor ausdrücklich erörtert. Das kann als **Vorschlag** für SASD Freeware dienen, ist aber noch keine dokumentierte und autorisierte Lizenzentscheidung für dieses Repository. Der aktuelle Quellstand liegt unter **`SASD-Sysadmin/freeware`** (nicht unter `Robin-Goerlach/freeware`).
 

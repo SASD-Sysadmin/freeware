@@ -101,6 +101,8 @@ Document genuinely reused third-party material accurately; review applicable lic
 
 Before any release, resolve or explicitly scope out applicable P0 release gaps, confirm required tests and native evidence, verify a reproducible archive and its provenance, and record a responsible release decision. Never publish solely because a version string exists.
 
+**Dated license policy (23 November 2026):** The project owner has now selected **MIT** for this development/beta source repository and **AGPL-3.0-only** for a **separate future** `SASDGMBH` product/release repository; see `docs/LICENSE-STRATEGY.md`. Do not present this as an existing relicensing or copyright assignment, do not rewrite the MIT `LICENSE` or source SPDX markers here, and do not publish a corporate AGPL repository without rights/notice checks and explicit release authorization. Use `docs/RELEASE-EVIDENCE.md` for exact-commit CI and the seven still-open manual gates.
+
 ## 10. Completion and strategy handoff
 
 At the end of an authorized slice, report: exact base/current commit, changed files, behavior, actual tests and CI evidence, compatibility/security impacts, remaining limitations, and the next small technical recommendation. Include a concise German handoff for the separate strategy discussion when appropriate.

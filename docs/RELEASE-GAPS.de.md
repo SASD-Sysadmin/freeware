@@ -84,6 +84,10 @@ Für den Quellcommit `b1960f4d0dda11e736fe71829953cfb5e4398c63` bestand eine iso
 
 Beim historischen Prüfcommit `15e434799c7de424217c8dce7cff35af1af00e2f` war `LICENSE` MIT-lizenziert; alle 130 geprüften Quell-/Testdateien trugen MIT-SPDX-Kennzeichnungen. Das damalige Fehlen von `LICENSE` im Installationsumfang wurde **mit `1f6f4f0` korrigiert und in Ubuntu-/macOS-CI bestätigt**. `CONTRIBUTING.md` regelt Beiträge als MIT, ohne damit exklusive oder zusätzliche kommerzielle Rechte zu belegen. Rechtsträger, gesamte Historie und Fremdcode-Herkunft benötigen eine manuelle Prüfung. Siehe [FR2-04 Lizenz und Herkunft](LICENSE-PROVENANCE.de.md). **RG-09, die sieben MANUAL-Gates sowie jede AGPL-Entscheidung bleiben offen.**
 
+## FR2-05-Evidenznachtrag (23. November 2026)
+
+Für `686a86b` war [die Ubuntu-/macOS-CI `45131942704`](https://github.com/SASD-SysAdmin/freeware/actions/runs/45131942704) erfolgreich. FR2-04a/b sind technisch abgeschlossen; das [FR2-05-Evidenzregister](RELEASE-EVIDENCE.de.md) ordnet diesen SHA und ältere Perl-/Staging-Nachweise zu. Die Lizenzentscheidung lautet nun **MIT** für das bestehende Entwicklungs-/Beta-Repository und **AGPL-3.0-only** für die **getrennte spätere** `SASDGMBH`-Veröffentlichung; siehe [Lizenzstrategie](LICENSE-STRATEGY.de.md). Das ändert die MIT-Lizenz der aktuellen Quelle nicht und ist keine rechtliche Freigabe. Der statische Stand `PASS=288`, `GAP=0`, `MANUAL=7` bleibt: finaler Release-SHA, Native-/VM-Prüfung, Unternehmensrechte und Freigabe sind weiter offen.
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,

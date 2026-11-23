@@ -4,7 +4,11 @@
 
 **Reviewed:** 22 November 2026. **GitHub source baseline:** `SASD-Sysadmin/freeware`, `main`, commit `15e434799c7de424217c8dce7cff35af1af00e2f`. **Update 23 November 2026:** FR2-04b commit `1f6f4f04c7068603527c3867773cc1766bf50a86` added manifest-owned `LICENSE` delivery; local regressions and Ubuntu/macOS CI run `45128966544` passed. Item A04 below is a **historical finding at `15e4347`, now corrected**. **Status:** verified static findings and decision proposal, **not** legal clearance, relicensing or release approval. Source and Git metadata cannot establish all ownership and rights by themselves.
 
-## 1. Proposed licensing model, not yet a Freeware decision
+## Current licensing decision – 23 November 2026
+
+The project owner **has decided** to keep the existing beta/development source under **MIT** and publish a **separate** future `SASDGMBH` product under **AGPL-3.0-only**. See [the current decision and constraints](LICENSE-STRATEGY.md) and [the SHA-specific release evidence](RELEASE-EVIDENCE.md). The proposal discussed below is **historical as of 22 November**, not an ongoing undecided license choice. The existing `SASD-Sysadmin/freeware` LICENSE is unchanged, and rights/third-party notice review, a new AGPL source/payload, and corporate release approval remain open.
+
+## 1. Historical proposal reviewed on 22 November 2026
 
 For a different SASD project (SASD Editor Toolbox), a **personal MIT development/beta repository** and a separate **SASDGMBH AGPL-3.0-only production/release repository** had been explicitly discussed. This is a viable **proposal** for SASD Freeware, not a retroactively established decision for this codebase. The existing repository is **`SASD-Sysadmin/freeware`**, not `Robin-Goerlach/freeware`.
 

@@ -2,13 +2,19 @@
 
 Significant changes to this repository are documented here. Dates use ISO 8601 format.
 
+## [Unreleased]
+
+### FR2-05 – Recorded release evidence and decided license tracks
+
+- Record exact-SHA Ubuntu/macOS CI for FR2-04a/b, historical Perl 5.14.4 local acceptance, static provenance findings, and the seven still-open manual release gates in bilingual evidence registers.
+- Record the owner's chosen MIT personal/beta development track and a **separate future** `SASDGMBH` `AGPL-3.0-only` product track without changing the current MIT LICENSE, SPDX headers or any shipped code.
+- Document remaining legal rights, native VM, archive-provenance and formal release-signoff requirements; do not imply that a development-slice pass is an authorized product release.
 
 ### FR2-04 – Preliminary MIT notice and provenance audit (no relicensing)
 
 - Review the current MIT root license and SPDX headers in 76 source/maintainer files plus 54 test files against commit `15e4347`; no conflicting source/test SPDX identifiers found.
 - Record the root LICENSE omission found at baseline `15e4347` and its fix at `1f6f4f0`, the MIT-only contribution terms, and unresolved copyright authority/third-party provenance checks.
 - Add bilingual review records and a read-only Perl inventory with isolated fixture tests. The notice-delivery fix is separately implemented at `1f6f4f0`; ownership remains to be verified. Retain MIT and all manual release gates.
-## [Unreleased]
 
 ### FR2-04 – Install the required source license notice
 
