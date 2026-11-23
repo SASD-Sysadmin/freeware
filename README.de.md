@@ -99,6 +99,10 @@ Installierte Programme und Anleitungen übernehmen die entsprechende Struktur un
 - `rotate` benötigt Bash, kein Perl. Die bislang älteste mit vollständiger Offline-Suite erfolgreich getestete Perl-Laufzeit ist **Perl 5.14.4 unter Debian/WSL2** (18. November 2026); daraus folgt weder eine universell bewiesene Mindestversion noch eine Produktionsempfehlung. Die Perl-Programme benötigen die mitgelieferten Bibliotheken aus `lib/`. Siehe [Perl-Kompatibilität und Native-Abhängigkeiten](docs/PERL-COMPATIBILITY.de.md) für Versionen, die Besonderheit des historischen `Errno`-Builds, kommandoabhängige Voraussetzungen und offene Abnahmen.
 - Funktionsabhängig sind unter anderem `JSON::PP` für JSON, Socket-Resolver-APIs für `host-resolve`, **`IO::Socket::SSL >= 2.009`** für verifiziertes STARTTLS in `mail-probe`, `postqueue -j` (Postfix **ab 3.1**) für Live-`mail-queue` sowie passende native Werkzeuge (`df`, Quota-Befehle, `dig`, `ldapsearch`, `ypwhich`, SQL-/Netzwerk-/Firewall-Clients). Für SMTP-TLS-Fixtures ist zusätzlich `openssl` erforderlich. Nicht jedes Programm benötigt alle diese Werkzeuge.
 
+## Lizenz und Herkunftsnachweise
+
+Das aktuelle Quell-Repository `SASD-Sysadmin/freeware` steht gemäß [`LICENSE`](LICENSE) unter **MIT**. FR2-04 dokumentiert [Lizenzhinweise, Herkunftsprüfungen und die inzwischen behobene historische Installationslücke](docs/LICENSE-PROVENANCE.de.md). Eine spätere **getrennte** `SASDGMBH`-Veröffentlichung unter `AGPL-3.0-only` ist ein Vorschlag, der Rechteprüfung und ausdrückliche Entscheidung verlangt; hier erfolgt **keine** Lizenzumstellung.
+
 ## Installation
 
 ### Empfohlen: Quellcode klonen und ausführbare Dateien installieren

@@ -2,6 +2,12 @@
 
 Significant changes to this repository are documented here. Dates use ISO 8601 format.
 
+
+### FR2-04 – Preliminary MIT notice and provenance audit (no relicensing)
+
+- Review the current MIT root license and SPDX headers in 76 source/maintainer files plus 54 test files against commit `15e4347`; no conflicting source/test SPDX identifiers found.
+- Record the root LICENSE omission found at baseline `15e4347` and its fix at `1f6f4f0`, the MIT-only contribution terms, and unresolved copyright authority/third-party provenance checks.
+- Add bilingual review records and a read-only Perl inventory with isolated fixture tests. The notice-delivery fix is separately implemented at `1f6f4f0`; ownership remains to be verified. Retain MIT and all manual release gates.
 ## [Unreleased]
 
 ### FR2-04 – Install the required source license notice

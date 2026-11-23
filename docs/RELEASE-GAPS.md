@@ -77,6 +77,10 @@ gates remain open.
 
 At source commit `b1960f4d0dda11e736fe71829953cfb5e4398c63`, an isolated Debian/WSL2 Perl **5.14.4** environment passed 74 source/53 CLI syntax-help-version checks, then 49 offline Perl suites (6,146 TAP cases, including 10 SKIPs) and two Bash rotation test groups. `make release-gap-audit` reported `PASS=288 GAP=0 MANUAL=7`. An initial `Errno.pm` generation defect was fixed in the private historical Perl build, **not** the SASD code; verified SMTP/STARTTLS used private non-core TLS modules. Current README claims have been corrected, and detailed dependencies are in [PERL-COMPATIBILITY.md](PERL-COMPATIBILITY.md). This records a *demonstrated* runtime, not a universal minimum; client-version floors, exact-commit CI, native tests, external notices and release authorization remain outstanding. RG-09 is not closed by this note.
 
+## FR2-04 preliminary provenance review (22 November 2026)
+
+At the historical baseline `15e434799c7de424217c8dce7cff35af1af00e2f`, the root `LICENSE` was MIT and all 130 reviewed source/test files carried MIT SPDX identifiers. At that baseline the installer omitted root `LICENSE`; this was **fixed in `1f6f4f0` and confirmed in Ubuntu/macOS CI**. `CONTRIBUTING.md` grants contributions under MIT without proving separate exclusive/commercial rights. Copyright ownership, full source history and third-party provenance need human review. See [FR2-04 license and provenance](LICENSE-PROVENANCE.md). **RG-09, all seven MANUAL gates, and any AGPL licensing decision remain open.**
+
 ## 2. Prioritized release gaps
 
 Priorities assume a **deliberately scoped first release**, not full support

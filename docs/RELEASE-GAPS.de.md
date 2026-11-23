@@ -80,6 +80,10 @@ Wiederherstellungsabnahme. RG-04 und alle manuellen Freigabegates bleiben offen.
 
 Für den Quellcommit `b1960f4d0dda11e736fe71829953cfb5e4398c63` bestand eine isolierte Debian-/WSL2-Umgebung mit Perl **5.14.4**: 74 Quell-/53 CLI-Syntax-/Hilfe-/Versionsprüfungen sowie 49 Perl-Offlinetestsuiten (6.146 TAP-Fälle einschließlich 10 SKIPs) und zwei Bash-Rotationstestgruppen. `make release-gap-audit` meldete `PASS=288 GAP=0 MANUAL=7`. Ein Fehler beim Generieren von `Errno.pm` wurde **nur im privaten historischen Perl-Build** behoben; verifiziertes SMTP/STARTTLS nutzte private Zusatzmodule. Die pauschalen README-Versionsangaben wurden korrigiert; Einzelheiten stehen unter [PERL-COMPATIBILITY.de.md](PERL-COMPATIBILITY.de.md). Damit ist eine *konkret getestete* Laufzeit dokumentiert, keine allgemeine Mindestversion. Client-Versionen, CI zum endgültigen Commit, Native-Abnahmen, Drittanbieterhinweise und Freigabe bleiben offen. RG-09 wird dadurch nicht geschlossen.
 
+## FR2-04-Vorprüfung zu Lizenz und Herkunft (22. November 2026)
+
+Beim historischen Prüfcommit `15e434799c7de424217c8dce7cff35af1af00e2f` war `LICENSE` MIT-lizenziert; alle 130 geprüften Quell-/Testdateien trugen MIT-SPDX-Kennzeichnungen. Das damalige Fehlen von `LICENSE` im Installationsumfang wurde **mit `1f6f4f0` korrigiert und in Ubuntu-/macOS-CI bestätigt**. `CONTRIBUTING.md` regelt Beiträge als MIT, ohne damit exklusive oder zusätzliche kommerzielle Rechte zu belegen. Rechtsträger, gesamte Historie und Fremdcode-Herkunft benötigen eine manuelle Prüfung. Siehe [FR2-04 Lizenz und Herkunft](LICENSE-PROVENANCE.de.md). **RG-09, die sieben MANUAL-Gates sowie jede AGPL-Entscheidung bleiben offen.**
+
 ## 2. Freigabelücken nach Priorität
 
 Die Prioritäten beziehen sich auf eine **erste explizit begrenzte Freigabe**,

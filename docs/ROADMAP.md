@@ -30,6 +30,8 @@ Use code and current tests to establish behavior; distinguish implemented, fixtu
 
 **FR2-02 evidence update (21 November 2026):** The 18 November operator run on source `b1960f4` passed the complete Debian/WSL2 Perl 5.14.4 offline suite (49 Perl suites, 6,146 TAP cases with 10 SKIPs, two Bash test groups), 74 source/53 CLI audit checks, and the release-gap static inventory (`PASS=288, GAP=0, MANUAL=7`). See [Perl compatibility](PERL-COMPATIBILITY.md). This corrects the current README 5.8 claim; it does not establish a universal minimum or close other release gates. Earlier dated roadmap assessments remain historical evidence.
 
+**FR2-04 preliminary evidence (22 November 2026):** The reviewed `15e4347` source had consistent MIT code/test SPDX identifiers; the installer then omitted the root `LICENSE`, **fixed and CI-verified in `1f6f4f0`**. See [license and provenance review](LICENSE-PROVENANCE.md). The document and auditor do not change project licensing or close RG-09. Notice-delivery regressions are now implemented and CI-verified; provenance/legal authority review and an explicit future SASDGMBH release-license decision remain required.
+
 ## 3. Verification, test logs and release evidence
 
 Follow [CONTRIBUTING.md](../CONTRIBUTING.md), use an unprivileged checkout and disposable staging, and preserve production systems. For longer local runs, keep full output without losing the pipeline failure status:

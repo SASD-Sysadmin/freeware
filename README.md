@@ -99,6 +99,10 @@ Installed commands and guides use matching paths below the chosen `PREFIX`. Test
 - `rotate` needs Bash, not Perl. The oldest fully exercised Perl runtime for the complete offline suite is **Perl 5.14.4 on Debian/WSL2** (18 November 2026); this is not a universal minimum-version or production-support claim. The shipped Perl commands require their corresponding `lib/` modules. See the [Perl compatibility and native-client matrix](docs/PERL-COMPATIBILITY.md) for tested versions, the `Errno` test-build caveat, per-command dependencies and outstanding acceptance.
 - Feature-specific requirements include `JSON::PP` for JSON processing, Socket resolver APIs for `host-resolve`, **`IO::Socket::SSL >= 2.009`** for verified STARTTLS in `mail-probe`, `postqueue -j` (Postfix **3.1+**) for live `mail-queue`, and the appropriate host utilities (`df`, quota commands, `dig`, `ldapsearch`, `ypwhich`, native SQL/network/firewall tools) only when using those features. The SMTP TLS fixture tests additionally need `openssl`; no native client is globally required by every command.
 
+## License and provenance review
+
+The current `SASD-Sysadmin/freeware` source repository is distributed under **MIT**, as stated in [`LICENSE`](LICENSE). FR2-04 documents [license notices, provenance questions, and the now-fixed historical installer payload gap](docs/LICENSE-PROVENANCE.md). A possible **separate** future `SASDGMBH` release under `AGPL-3.0-only` is a proposal requiring ownership review and an explicit decision; no relicensing is in effect here.
+
 ## Installation
 
 ### Recommended: clone and install only distributable files

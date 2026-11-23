@@ -30,6 +30,8 @@ Maßgeblich für implementiertes Verhalten sind Code und aktuelle Tests. Zwische
 
 **FR2-02-Nachtrag (21. November 2026):** Beim Betreiberlauf vom 18.11.2026 auf Quellstand `b1960f4` bestand die vollständige Debian-/WSL2-Offline-Suite mit Perl 5.14.4 (49 Perl-Testsuiten, 6.146 TAP-Fälle mit 10 SKIPs, zwei Bash-Testgruppen), ebenso die Quell-/CLI-Prüfung (74/53) und die statische Release-Inventur (`PASS=288, GAP=0, MANUAL=7`). Siehe [Perl-Kompatibilität](PERL-COMPATIBILITY.de.md). Die aktuelle README-Aussage zu 5.8 wurde korrigiert; eine allgemeine Mindestversion oder andere Release-Gates sind damit nicht nachgewiesen beziehungsweise abgeschlossen. Frühere datierte Roadmap-Befunde bleiben historisch erhalten.
 
+**FR2-04-Vornachweis (22. November 2026):** Im historischen Prüfstand `15e4347` waren die MIT-SPDX-Kennzeichnungen der Programme und Tests konsistent; die damals fehlende Installationsbeilage `LICENSE` wurde mit `1f6f4f0` behoben und in der CI geprüft. Siehe [Lizenz- und Herkunftsprüfung](LICENSE-PROVENANCE.de.md). Dokument und Auditor ändern keine Lizenz und schließen RG-09 nicht. Die Lizenzbeilage-Regression ist umgesetzt und in der CI geprüft. Rechteprüfung und ausdrückliche spätere SASDGMBH-Lizenzentscheidung bleiben offen.
+
 ## 3. Prüfungen, Testprotokolle und Release-Nachweise
 
 Gemäß [CONTRIBUTING.md](../CONTRIBUTING.md) in einem unprivilegierten Checkout und mit Wegwerf-Staging testen; Produktivsysteme schützen. Längere lokale Testläufe gleichzeitig anzeigen und vollständig protokollieren, ohne den Fehlerstatus in einer Pipeline zu verdecken:
