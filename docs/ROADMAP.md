@@ -34,6 +34,8 @@ Use code and current tests to establish behavior; distinguish implemented, fixtu
 
 **FR2-04 closure / FR2-05 evidence update (23 November 2026):** Both technical FR2-04 slices are committed and successful on Ubuntu/macOS: [installer LICENSE CI `45128966544`](https://github.com/SASD-Sysadmin/freeware/actions/runs/45128966544) at `1f6f4f0`, and [provenance-doc CI `45131942704`](https://github.com/SASD-Sysadmin/freeware/actions/runs/45131942704) at `686a86b`. The **licensing choice is now decided**: personal/beta **MIT**, separate future `SASDGMBH` **AGPL-3.0-only**; see [license strategy](LICENSE-STRATEGY.md). [FR2-05 evidence register](RELEASE-EVIDENCE.md) distinguishes passes, skips and seven outstanding MANUAL release gates. Rights-chain and external-material review remain open; technical FR2-04 completion is not legal release approval.
 
+**FR2-06a preparation (23 November 2026):** A [nonprivileged staging fixture and separately authorised Debian KVM VM-acceptance plan](FR2-06-VM-ACCEPTANCE.md) define evidence and stop conditions. This package does **not** execute privileged changes, certify restore, or close any MANUAL release gate. Baseline: `f25aa3f` with CI [45139166377](https://github.com/SASD-SysAdmin/freeware/actions/runs/45139166377).
+
 ## 3. Verification, test logs and release evidence
 
 Follow [CONTRIBUTING.md](../CONTRIBUTING.md), use an unprivileged checkout and disposable staging, and preserve production systems. For longer local runs, keep full output without losing the pipeline failure status:

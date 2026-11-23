@@ -4,6 +4,12 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### FR2-06a – Safe staging acceptance and Debian KVM laboratory plan
+
+- Add an opt-in nonprivileged staging smoke exercising fresh/repeat/upgrade, unowned conflicts, tampered managed files, transaction guard, LICENSE ownership and uninstall in throwaway `DESTDIR`; never touch the real checkout, accounts or quota records.
+- Add bilingual VM acceptance procedures and private report templates. Privileged account/quota apply, independent snapshot restore, live-service tests, release approval and all seven MANUAL gates remain open.
+- Pin the starting revision `f25aa3f` and passing CI `45139166377` as historical evidence, not as CI for the new changes. MIT beta and separate future SASDGMBH AGPL-3.0-only policy remain unchanged.
+
 ### FR2-05 – Recorded release evidence and decided license tracks
 
 - Record exact-SHA Ubuntu/macOS CI for FR2-04a/b, historical Perl 5.14.4 local acceptance, static provenance findings, and the seven still-open manual release gates in bilingual evidence registers.

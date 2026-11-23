@@ -103,6 +103,8 @@ Before any release, resolve or explicitly scope out applicable P0 release gaps, 
 
 **Dated license policy (23 November 2026):** The project owner has now selected **MIT** for this development/beta source repository and **AGPL-3.0-only** for a **separate future** `SASDGMBH` product/release repository; see `docs/LICENSE-STRATEGY.md`. Do not present this as an existing relicensing or copyright assignment, do not rewrite the MIT `LICENSE` or source SPDX markers here, and do not publish a corporate AGPL repository without rights/notice checks and explicit release authorization. Use `docs/RELEASE-EVIDENCE.md` for exact-commit CI and the seven still-open manual gates.
 
+FR2-06a test boundary: `tools/fr2-06a-staging-acceptance.sh` may only mutate a private temporary source copy and DESTDIR as a non-root operator. Never extend it to run `sudo`, real `account-manage`/`quota-set --apply`, `virsh` mutations or automatic snapshot recovery. Follow `docs/FR2-06-VM-ACCEPTANCE.md` and require explicit, separately recorded human authority before any real VM action. MANUAL gates stay open by default.
+
 ## 10. Completion and strategy handoff
 
 At the end of an authorized slice, report: exact base/current commit, changed files, behavior, actual tests and CI evidence, compatibility/security impacts, remaining limitations, and the next small technical recommendation. Include a concise German handoff for the separate strategy discussion when appropriate.

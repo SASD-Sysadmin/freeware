@@ -103,6 +103,8 @@ Installierte Programme und Anleitungen übernehmen die entsprechende Struktur un
 
 Das aktuelle Quell-Repository `SASD-Sysadmin/freeware` steht gemäß [`LICENSE`](LICENSE) unter **MIT**. FR2-04 dokumentiert [Lizenzhinweise, Herkunftsprüfungen und die inzwischen behobene historische Installationslücke](docs/LICENSE-PROVENANCE.de.md). **Entscheidung vom 23. November 2026:** Die persönliche Entwicklungs-/Beta-Quelle bleibt MIT; die **getrennte** spätere `SASDGMBH`-Produktfassung erhält `AGPL-3.0-only`. Die verbindliche [Lizenzstrategie](docs/LICENSE-STRATEGY.de.md) und das [Evidenzregister](docs/RELEASE-EVIDENCE.de.md) dokumentieren die Umsetzungsschritte. Rechteprüfung und tatsächliche AGPL-Veröffentlichung stehen noch aus; dieses Repository bleibt MIT.
 
+FR2-06a ergänzt ein [unprivilegiertes Staging-Abnahmeverfahren und den VM-Testplan für Debian KVM/libvirt](docs/FR2-06-VM-ACCEPTANCE.de.md). Echte privilegierte Änderungen und Snapshot-Wiederherstellung bleiben **MANUAL / OFFEN**; es liegt keine Produktfreigabe vor.
+
 ## Installation
 
 ### Empfohlen: Quellcode klonen und ausführbare Dateien installieren

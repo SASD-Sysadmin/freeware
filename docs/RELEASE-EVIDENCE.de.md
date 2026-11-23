@@ -59,6 +59,10 @@ Für jeden Gate-Abschluss werden mindestens die folgenden Felder befüllt und un
 | Recovery | Was wurde wiederhergestellt und wie unabhängig verifiziert? |
 | Entscheidung | Ausdrückliche Freigabe oder Ablehnung, Datum, verantwortliche autorisierte Person |
 
+## FR2-06a-Vorbereitung: reproduzierbares Staging und freizugebender VM-Plan
+
+Der FR2-05-Ausgangscommit `f25aa3f2f5c84911fa03d7b8a93daff06b736bef` hat erfolgreiche [Ubuntu-/macOS-CI 45139166377](https://github.com/SASD-SysAdmin/freeware/actions/runs/45139166377). FR2-06a ergänzt einen [unprivilegierten Wegwerf-Staging-Test und einen manuellen Debian-KVM-Abnahmeplan](FR2-06-VM-ACCEPTANCE.de.md) samt [Protokollvorlage](FR2-06-REPORT-TEMPLATE.de.md). Das dokumentiert die Vorbereitung, **keine durchgeführte privilegierte VM-Abnahme** und keinen Release. `staged-upgrade`, `privileged-vm` und alle anderen `MANUAL`-Gates bleiben bis zur unabhängigen Abnahme am exakten Kandidaten-SHA offen.
+
 ## 5. Nächster sicherer Schritt
 
 1. Dieses Register als **dokumentationsbezogenen** FR2-05-Zwischenstand committen und die CI für dessen neuen SHA prüfen.

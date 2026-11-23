@@ -2,6 +2,8 @@
 
 [Deutsch](PRIVILEGED-SAFETY.de.md) · [Testing](TESTING.md) · [Security policy](../SECURITY.md) · [Roadmap](ROADMAP.md)
 
+FR2-06a provides a [nonprivileged staging smoke and separately authorised Debian-KVM VM plan](FR2-06-VM-ACCEPTANCE.md). It does not change the limits or approve real `--apply` calls.
+
 ## Scope and threat model
 
 SASD Freeware distinguishes **read-only inspection**, **local writes**, and

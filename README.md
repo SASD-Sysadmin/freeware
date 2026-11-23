@@ -103,6 +103,8 @@ Installed commands and guides use matching paths below the chosen `PREFIX`. Test
 
 The current `SASD-Sysadmin/freeware` source repository is distributed under **MIT**, as stated in [`LICENSE`](LICENSE). FR2-04 documents [license notices, provenance questions, and the now-fixed historical installer payload gap](docs/LICENSE-PROVENANCE.md). **Decision (23 November 2026):** the personal development/beta source stays MIT; a **separate** future `SASDGMBH` product is designated `AGPL-3.0-only`. The decision is recorded in the [license strategy](docs/LICENSE-STRATEGY.md), with [release evidence](docs/RELEASE-EVIDENCE.md). The actual AGPL release and rights clearance are still pending; this repository is not relicensed.
 
+FR2-06a adds a [nonprivileged staging acceptance script and isolated Debian KVM/libvirt VM acceptance plan](docs/FR2-06-VM-ACCEPTANCE.md). Actual privileged operations and snapshot recovery remain **MANUAL / OPEN**; no release is authorized.
+
 ## Installation
 
 ### Recommended: clone and install only distributable files

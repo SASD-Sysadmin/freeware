@@ -59,6 +59,10 @@ For each gate, record and independently review:
 | Recovery | Restoration procedure and independent restored-state verification |
 | Decision | Explicit approved/rejected status, date and authorized signer |
 
+## FR2-06a preparation: reproducible staging and approved VM plan
+
+The baseline FR2-05 commit `f25aa3f2f5c84911fa03d7b8a93daff06b736bef` has successful [Ubuntu/macOS CI 45139166377](https://github.com/SASD-SysAdmin/freeware/actions/runs/45139166377). FR2-06a adds a [nonprivileged scratch staging script and manual Debian-KVM acceptance plan](FR2-06-VM-ACCEPTANCE.md) with a [report template](FR2-06-REPORT-TEMPLATE.md). This records preparation, **not executed VM work** or final release evidence. `staged-upgrade`, `privileged-vm`, and all other MANUAL gates remain open until individually validated on the exact candidate SHA.
+
 ## 5. Next safe step
 
 1. Commit this **documentation-only** FR2-05 evidence snapshot and validate CI for its new SHA.

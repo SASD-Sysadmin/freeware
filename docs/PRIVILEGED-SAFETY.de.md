@@ -2,6 +2,8 @@
 
 [English](PRIVILEGED-SAFETY.md) · [Tests](TESTING.de.md) · [Sicherheitsrichtlinie](../SECURITY.md) · [Roadmap](ROADMAP.de.md)
 
+FR2-06a stellt einen [unprivilegierten Staging-Test und einen separat freizugebenden Debian-KVM-Abnahmeplan](FR2-06-VM-ACCEPTANCE.de.md) bereit. Die Sicherheitsgrenzen bleiben bestehen; reale `--apply`-Aufrufe werden dadurch nicht freigegeben.
+
 ## Umfang und Bedrohungsmodell
 
 SASD Freeware unterscheidet **lesende Prüfungen**, **lokale Schreibvorgänge**

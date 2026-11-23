@@ -34,6 +34,8 @@ Maßgeblich für implementiertes Verhalten sind Code und aktuelle Tests. Zwische
 
 **FR2-04-Abschluss / FR2-05-Evidenznachtrag (23. November 2026):** Beide technischen FR2-04-Teilpakete sind committed und in Ubuntu-/macOS-CI erfolgreich: [Installer-LICENSE-CI `45128966544`](https://github.com/SASD-Sysadmin/freeware/actions/runs/45128966544) auf `1f6f4f0` und [Herkunftsdokumentations-CI `45131942704`](https://github.com/SASD-Sysadmin/freeware/actions/runs/45131942704) auf `686a86b`. Die **Lizenzwahl ist jetzt entschieden**: persönliche Beta **MIT**, getrennte spätere `SASDGMBH`-Fassung **AGPL-3.0-only**; siehe [Lizenzstrategie](LICENSE-STRATEGY.de.md). Das [FR2-05-Evidenzregister](RELEASE-EVIDENCE.de.md) trennt bestandene Nachweise, SKIPs und sieben weiterhin offene manuelle Release-Gates. Rechtekette und Fremdübernahmen bleiben zu prüfen; technischer Abschluss ist keine rechtliche Release-Freigabe.
 
+**FR2-06a-Vorbereitung (23. November 2026):** [Unprivilegierte Staging-Prüfung und gesondert freizugebender Debian-KVM-Abnahmeplan](FR2-06-VM-ACCEPTANCE.de.md) legen Belege und Stop-Kriterien fest. Das Paket führt **keine** privilegierten Änderungen aus, bestätigt keinen Restore und schließt keine `MANUAL`-Release-Gates. Ausgangsstand: `f25aa3f`, CI [45139166377](https://github.com/SASD-SysAdmin/freeware/actions/runs/45139166377).
+
 ## 3. Prüfungen, Testprotokolle und Release-Nachweise
 
 Gemäß [CONTRIBUTING.md](../CONTRIBUTING.md) in einem unprivilegierten Checkout und mit Wegwerf-Staging testen; Produktivsysteme schützen. Längere lokale Testläufe gleichzeitig anzeigen und vollständig protokollieren, ohne den Fehlerstatus in einer Pipeline zu verdecken:
