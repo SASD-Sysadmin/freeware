@@ -131,3 +131,42 @@ FR2-06a test boundary: `tools/fr2-06a-staging-acceptance.sh` may only mutate a p
 At the end of an authorized slice, report: exact base/current commit, changed files, behavior, actual tests and CI evidence, compatibility/security impacts, remaining limitations, and the next small technical recommendation. Include a concise German handoff for the separate strategy discussion when appropriate.
 
 The development chat may make routine reversible technical choices independently. Refer genuinely new product features, major interface changes, platform commitments and release-scope decisions to strategy. Avoid turning an isolated implementation issue into an unrequested product redesign.
+
+## 11. Session logging and context handoff
+
+Maintain a local, persistent development-session handoff outside the checkout
+at `../logs/`. This workflow applies to every development slice and is
+independent of the available Codex context or use of `/new`.
+
+- At session start, read `AGENTS.md`, then `../logs/LAST_SESSION.md` when it
+  exists. Inspect `../logs/CURRENT_SESSION.md` for an interrupted session
+  before starting or resuming work. Check the branch, `HEAD`, working tree,
+  remote state and the last handoff, and record discrepancies as observed
+  facts. Old logs provide context only; they do not authorize new work.
+- Keep these local files outside Git: `CURRENT_SESSION.md`, `LAST_SESSION.md`,
+  `SESSION_INDEX.md`, and uniquely named timestamped archives in the same
+  directory. Use actual local system time and include the time zone. Never
+  overwrite an archive or silently discard an unfinished session.
+- Update `CURRENT_SESSION.md` after material discoveries, decisions, code or
+  documentation changes, failures and corrections, tests, staging checks,
+  commits, pushes, blockers and strategy changes. Keep entries concise and do
+  not copy sensitive raw command output.
+- Each session record includes project/repository, session name and lifecycle
+  timestamps, authorized scope, base commit, branch, working-tree state,
+  objective, chronological work, architecture decisions, changed files,
+  problems and corrections, relevant commands, tests and their actual results,
+  failed or unavailable checks, security/compatibility limits, commits,
+  push/remote state, CI evidence, open work, risks, next steps, unauthorized
+  work and a `/new` recommendation. Distinguish observed facts, assumptions
+  and unverified information.
+- Before recommending `/new` or ending an authorized slice, verify the actual
+  repository state, complete `CURRENT_SESSION.md`, archive it under
+  `YYYY-MM-DD_HH-MM-SS_SESSION-NAME.md`, update `LAST_SESSION.md`, update
+  `SESSION_INDEX.md`, mark the current session complete, and verify the files
+  were written. Recommend `/new` only after this handoff is safely stored; if
+  logging is blocked, report the blocker and do not claim readiness.
+- Logs are local-only and must never be committed or uploaded. Do not record
+  passwords, tokens, private keys, customer data, complete sensitive
+  environment variables, raw traces, core dumps or debugger output. Use
+  restrictive permissions where supported. If the sandbox blocks `../logs`,
+  request only the required write permission for that directory.
