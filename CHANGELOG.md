@@ -4,6 +4,18 @@ Significant changes to this repository are documented here. Dates use ISO 8601 f
 
 ## [Unreleased]
 
+### TRACE-02 – Bounded streaming Linux strace parser
+
+- Add core-only `Reader`, `Event` and `Strace` Perl modules for offline saved
+  traces, with bounded byte reads, safe diagnostics and no native `strace`
+  dependency.
+- Parse documented plain/PID/timestamp/duration/signal/exit and bounded
+  unfinished/resumed forms without allowlisting syscall names; reject or expose
+  malformed, unsupported, truncated and statistics-table records.
+- Add bilingual parser references and 33 deterministic synthetic tests. Native
+  strace acceptance, aggregation, public JSON/JSONL and diagnosis remain out
+  of scope.
+
 ### FR2-06a – Safe staging acceptance and Debian KVM laboratory plan
 
 - Add an opt-in nonprivileged staging smoke exercising fresh/repeat/upgrade, unowned conflicts, tampered managed files, transaction guard, LICENSE ownership and uninstall in throwaway `DESTDIR`; never touch the real checkout, accounts or quota records.

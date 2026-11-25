@@ -96,6 +96,16 @@ Historical research candidates: adb/dbx, Solaris coreadm/mdb/pstack, AIX dbx, HP
 
 **Acceptance and next slice:** Authorize TRACE-01 separately. Define formats, dependencies, exit codes and coverage before coding. Test plain untimed traces, -f/-ff, unfinished/resumed, signals/restarts, quoted delimiters and escaped paths, nonblocking operations, unknown/truncated records, hostile text, large streams and memory limits, missing values and sanitized reports. Generate native fixtures only in separately authorized isolated environments with known expected outcomes and no real secrets. Cross-check native summaries only where semantics match. Record exact commit, parser/tool versions, evidence and limitations; distinguish fixture tests, native acceptance, SKIPs and CI. EN/DE documentation, applicable manpages and existing CLI/installer contracts remain binding. No release gate closes through planning.
 
+**TRACE-02 status (25 November 2026):** Implemented as a core-only, bounded
+streaming reader, internal event model and Linux strace text adapter in
+`lib/SASD/Freeware/Trace/`. The contract and bilingual reference are in
+`docs/TRACE-02-PARSER.md` and `.de.md`; deterministic offline coverage is in
+`tests/test_trace_parser.t`. Plain calls, unknown names, selected timestamps,
+durations, signals, exits, opaque descriptor annotations and bounded
+unfinished/resumed joining are covered. Native strace acceptance, aggregation,
+diagnostic rules, public output schema and all later TRACE packages remain open.
+The evidence is fixture/local evidence only and does not close a release gate.
+
 
 ## 3. Verification, test logs and release evidence
 

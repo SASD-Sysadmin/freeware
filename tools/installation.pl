@@ -105,7 +105,7 @@ sub allowed_relative {
     # The license *content* is intentionally not hard-coded: a future
     # separately authorized distribution may use another license.
     return 1 if $rel eq 'LICENSE';
-    return $rel =~ m{\A(?:bin/[A-Za-z0-9][A-Za-z0-9_.-]*|sbin/[A-Za-z0-9][A-Za-z0-9_.-]*|lib/SASD/Freeware/[A-Za-z0-9_.-]+\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING|MAIL-ACCEPTANCE)(?:\.de)?\.md)\z};
+    return $rel =~ m{\A(?:bin/[A-Za-z0-9][A-Za-z0-9_.-]*|sbin/[A-Za-z0-9][A-Za-z0-9_.-]*|lib/SASD/Freeware/(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9][A-Za-z0-9_.-]*\.pm|man/man[1-9]/[A-Za-z0-9_.-]+\.[1-9]|docs/commands/[A-Za-z0-9_.-]+\.md|docs/(?:PLATFORMS|TESTING|EXIT-CODES|PRIVILEGED-SAFETY|RELEASE-ENGINEERING|MAIL-ACCEPTANCE)(?:\.de)?\.md)\z};
 }
 sub digest {
     my ($path) = @_;
@@ -170,8 +170,11 @@ if ($mode eq 'install') {
     regular_file($license)
         or die "installation: source LICENSE missing or not a regular file\n";
     $wanted{'LICENSE'} = $license;
-    for my $section ('bin', 'sbin', 'lib/SASD/Freeware', 'man/man1', 'man/man8',
-                     'docs/commands', 'docs') {
+    my @sections = ('bin', 'sbin', 'lib/SASD/Freeware', 'man/man1', 'man/man8',
+                    'docs/commands', 'docs');
+    push @sections, 'lib/SASD/Freeware/Trace'
+        if -d "$src/lib/SASD/Freeware/Trace";
+    for my $section (@sections) {
         my $folder = "$src/$section";
         opendir my $dh, $folder or die "installation: cannot read $folder: $!\n";
         my @names = sort grep { $_ ne '.' && $_ ne '..' } readdir $dh;

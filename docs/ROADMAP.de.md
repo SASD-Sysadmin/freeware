@@ -96,6 +96,17 @@ Historische Recherchekandidaten: adb/dbx, Solaris coreadm/mdb/pstack, AIX dbx, H
 
 **Abnahme und nächster Slice:** TRACE-01 gesondert freigeben. Formate, Abhängigkeiten, Exit-Codes und Abdeckung vor dem Codieren spezifizieren. Einfache Logs ohne Laufzeiten, -f/-ff, unfinished/resumed, Signale/Restarts, zitierte Trennzeichen und Escape-Pfade, nichtblockierende Operationen, unbekannte/abgeschnittene Datensätze, feindliche Texte, große Streams/Speichergrenzen, fehlende Werte und bereinigte Berichte testen. Native Fixtures nur in gesondert autorisierter isolierter Umgebung mit bekannten Sollbefunden und ohne echte Geheimnisse erzeugen. Native Summen nur bei übereinstimmender Semantik gegenprüfen. Exakten Commit, Parser-/Toolversionen, Nachweise und Grenzen festhalten; Fixture-Tests, native Abnahme, SKIPs und CI trennen. EN/DE-Dokumentation, passende Manpages und bestehende CLI-/Installer-Verträge bleiben verbindlich. Kein Release-Gate wird durch Planung geschlossen.
 
+**TRACE-02-Status (25. November 2026):** Als core-only Bibliothek mit
+begrenztem Streaming-Reader, internem Ereignismodell und Linux-strace-
+Textadapter unter `lib/SASD/Freeware/Trace/` implementiert. Vertrag und
+zweisprachige Referenz stehen in `docs/TRACE-02-PARSER.md` und `.de.md`, die
+deterministische Offline-Abdeckung in `tests/test_trace_parser.t`. Einfache
+Aufrufe, unbekannte Namen, ausgewählte Zeitstempel, Laufzeiten, Signale, Enden,
+opake Deskriptor-Notationen und begrenzte unfinished/resumed-Zuordnung sind
+abgedeckt. Native strace-Abnahme, Aggregation, Diagnose-Regeln, öffentliches
+Ausgabeformat und spätere TRACE-Pakete bleiben offen. Dies ist nur Fixture-/lokale
+Evidenz und schließt kein Release-Gate.
+
 
 ## 3. Prüfungen, Testprotokolle und Release-Nachweise
 
