@@ -66,6 +66,16 @@ Use clear English identifiers and helpful comments explaining intent, failure mo
 - Establish and test the actual Perl/runtime/module version floor. Do not infer compatibility with Perl 5.8 from outdated documentation.
 - FR2-02 historical operator evidence demonstrates a complete offline run on Perl 5.14.4 only in the recorded Debian/WSL2 environment; see `docs/PERL-COMPATIBILITY.md`. Never convert this into an unconditional version-floor, secure-production-runtime, native-client, CI or release claim.
 
+### Application crash diagnostics and core dumps (25 November 2026)
+
+The agreed CD-01–CD-07 planning scope lives in both canonical roadmaps, section 2.1. Current P0/FR2 priorities and release gates are unchanged. Implement only a separately authorized slice; start with CD-01 and review `bin/core-report`, its EN/DE guides, manpage and `tests/test_filesystem_tools.t`. Preserve its candidate-inventory contract; do not introduce a duplicate finder. Prefer small Perl/shell commands and optional native adapters, using repository naming conventions; no own debugger, daemon, framework or web interface.
+
+- Treat dumps, binaries, symbols, debugger output and reports as untrusted and potentially secret-bearing. Use explicit authorized inputs, read-only defaults, synthetic secret-free fixtures, private outputs and bounded processing. Never commit real customer dumps or sensitive raw reports; no automatic uploads or symbol downloads.
+- Use trusted patched tools in isolated non-root environments, preferably disposable and network-disabled. Disable debugger startup scripts and auto-loading; never execute the supplied inferior. Validate paths/identity, reject unsafe links/special files, use argument vectors without shell interpolation and bound time/resources/output. Flags alone are not isolation.
+- No dump-setting changes, live attachment, crash generation, privilege escalation, archival/deletion or host mutation without separately approved scope. Synthetic crash generation and native testing require a separately authorized disposable VM without host secrets or production targets. Retention/cleanup preview is read-only; destructive actions require their own safety contract.
+- Verify executable/symbol identity where possible; explicitly report missing/mismatched symbols, unsupported formats/platforms, partial output and failures. Distinguish facts, hypotheses and corroborated root cause; never claim native acceptance from mock tests or commercial readiness from implementation.
+- Each slice needs a testable contract, EN/DE documentation, applicable manpages, regression and native evidence as appropriate. Record exact tested commits and limitations. Kernel crash analysis, live tracing/profiling and memory forensics are not implicit in initial application-core work.
+
 ## 7. Filesystem, installer and mutating operations
 
 Inspect `tools/installation.pl` and its helper modules before any install/uninstall change. Preserve manifest-based ownership, content-digest checks, rejection of unowned/modified destinations, safe paths, symlink controls, persistent private cooperative locking, human-readable transaction mapping, verified rollback and retained recovery evidence.
