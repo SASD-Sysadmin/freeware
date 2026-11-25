@@ -76,6 +76,17 @@ The agreed CD-01–CD-07 planning scope lives in both canonical roadmaps, sectio
 - Verify executable/symbol identity where possible; explicitly report missing/mismatched symbols, unsupported formats/platforms, partial output and failures. Distinguish facts, hypotheses and corroborated root cause; never claim native acceptance from mock tests or commercial readiness from implementation.
 - Each slice needs a testable contract, EN/DE documentation, applicable manpages, regression and native evidence as appropriate. Record exact tested commits and limitations. Kernel crash analysis, live tracing/profiling and memory forensics are not implicit in initial application-core work.
 
+### System call trace analysis (25 November 2026)
+
+The agreed cross-platform System Call Trace Analysis Toolbox scope is TRACE-01–TRACE-11 in both canonical roadmaps, section 2.2; it complements section 2.1/CD-06. Start only with separately authorized TRACE-01; offline MVP is TRACE-01–04 and TRACE-07, Linux strace first, later version-specific truss/ktrace/kdump/dtruss adapters only after evidence. Existing P0/FR2 priorities and release gates are unchanged. Review native tools and licenses before adding code; prefer small repository-style commands and shared streaming Perl parsing with bounded aggregation, not a custom tracer, framework, daemon, GUI, database or cloud/AI dependency.
+
+- Support ordinary saved strace -o text without requiring timestamps or durations. Define supported variants, PID/TID and unfinished/resumed handling, missing/unsupported fields, source-line evidence and CLI contracts. Never silently discard unknown records or fabricate timing, descriptor identity, parentage or ordering.
+- Treat traces as untrusted secret-bearing input; analyze explicit authorized local files/stdin read-only. Validate paths/types, never execute embedded text or traced programs, bound line size, pending state, aggregation, runtime and output; sanitize control characters and disclose truncation. Preserve originals, use synthetic fixtures and private outputs. No raw customer traces in Git, automatic upload or network dependency. Redaction requires review before sharing.
+- Separate observed facts, heuristics and corroborated cause; normal probes/retries and blocking waits are not automatically defects, concurrent durations are not elapsed time or CPU time. Suggest read-only checks, never automatic repair.
+- Capture/live attach needs separate approval under CD-06; no default execution, production attachment, privilege escalation, ptrace-policy changes or permanent monitoring. Native acceptance is separate from fixture tests and unsupported platforms remain explicit.
+- Each slice requires documented dependencies, exit codes, positive/negative and resource-limit tests, EN/DE guides and applicable manpages, exact-commit evidence and preservation of existing CLI/installer contracts.
+
+
 ## 7. Filesystem, installer and mutating operations
 
 Inspect `tools/installation.pl` and its helper modules before any install/uninstall change. Preserve manifest-based ownership, content-digest checks, rejection of unowned/modified destinations, safe paths, symlink controls, persistent private cooperative locking, human-readable transaction mapping, verified rollback and retained recovery evidence.
