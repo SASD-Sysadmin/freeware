@@ -7,6 +7,8 @@ SASD Freeware provides a collection of command-line utilities, scripts, and libr
 
 M6.4 mail integration and lab acceptance: [English guide](docs/MAIL-ACCEPTANCE.md) · [Deutsch](docs/MAIL-ACCEPTANCE.de.md). The offline suite does not replace live Postfix validation.
 
+TRACE planning: [system call trace analysis design](docs/TRACE-ANALYSIS-DESIGN.md) · [Deutsch](docs/TRACE-ANALYSIS-DESIGN.de.md). TRACE-01 is documentation only; no trace parser or capture command is shipped yet.
+
 ## Included utilities
 
 | Command | Location | Purpose | Documentation |

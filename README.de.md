@@ -7,6 +7,8 @@ SASD Freeware stellt Kommandozeilenprogramme, Scripts und Bibliotheken für die 
 
 M6.4 Mail-Integration und Laborabnahme: [Deutsche Anleitung](docs/MAIL-ACCEPTANCE.de.md) · [English](docs/MAIL-ACCEPTANCE.md). Offline-Tests ersetzen keine echte Postfix-Abnahme.
 
+TRACE-Planung: [Entwurf zur Systemaufrufanalyse](docs/TRACE-ANALYSIS-DESIGN.de.md) · [English](docs/TRACE-ANALYSIS-DESIGN.md). TRACE-01 ist ausschließlich Dokumentation; Parser oder Capture-Kommando sind noch nicht enthalten.
+
 ## Enthaltene Werkzeuge
 
 | Befehl | Pfad | Funktion | Dokumentation |
